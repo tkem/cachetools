@@ -1,4 +1,4 @@
-"""TODO"""
+"""Python 2.7 memoizing collections and decorators"""
 import collections
 
 __version__ = '0.0.1'

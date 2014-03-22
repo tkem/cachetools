@@ -1,4 +1,4 @@
-:mod:`cachetools` --- TODO
+:mod:`cachetools` --- Python 2.7 memoizing collections and decorators
 =======================================================================
 
 .. module:: cachetools

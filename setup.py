@@ -14,7 +14,7 @@ setup(
     author_email='tkemmer@computer.org',
     url='https://github.com/tkem/cachetools',
     license='MIT',
-    description='TODO',  # noqa
+    description='Python 2.7 memoizing collections and decorators',  # noqa
     long_description=open('README.rst').read(),
     keywords='cache caching lru lfu ttl',
     classifiers=[
