@@ -18,7 +18,7 @@ setup(
     long_description=open('README.rst').read(),
     keywords='cache caching lru lfu ttl',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 2 - Pre-Alpha',
         'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
