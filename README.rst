@@ -2,13 +2,11 @@ cachetools
 ========================================================================
 
 This module provides various memoizing collections and function
-decorators, including a variant of the Python 3 functools.lru_cache_
-decorator.
+decorators, including a variant of the Python 3 Standard Library
+lru_cache_ decorator.
 
-.. note::
-
-    This module is in early pre-alpha, and not fit for *any* purpose
-    (yet).
+    Important Note: This module is in early pre-alpha, and not fit for
+    *any* purpose (yet).
 
 .. code-block:: pycon
 
@@ -56,7 +54,7 @@ cachetools is Copyright 2014 Thomas Kemmer.
 Licensed under the `MIT License`_.
 
 
-.. _functools.lru_cache: http://docs.python.org/3.4/library/functools.html#functools.lru_cache
+.. _lru_cache: http://docs.python.org/3.4/library/functools.html#functools.lru_cache
 
 .. _Documentation: http://pythonhosted.org/cachetools/
 .. _Source Code: https://github.com/tkem/cachetools/

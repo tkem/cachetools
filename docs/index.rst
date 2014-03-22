@@ -4,8 +4,8 @@
 .. module:: cachetools
 
 This module provides various memoizing collections and function
-decorators, including a variant of the Python 3 functools.lru_cache_
-decorator.
+decorators, including a variant of the Python 3 Standard Library
+lru_cache_ decorator.
 
 .. note::
 
@@ -36,4 +36,4 @@ decorator.
 
 .. autofunction:: lfu_cache
 
-.. _functools.lru_cache: http://docs.python.org/3.4/library/functools.html#functools.lru_cache
+.. _lru_cache: http://docs.python.org/3/library/functools.html#functools.lru_cache
