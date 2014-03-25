@@ -14,11 +14,11 @@ setup(
     author_email='tkemmer@computer.org',
     url='https://github.com/tkem/cachetools',
     license='MIT',
-    description='Python 2.7 memoizing collections and decorators',  # noqa
+    description='Extensible memoizing collections and decorators',  # noqa
     long_description=open('README.rst').read(),
     keywords='cache caching lru lfu ttl',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
@@ -26,10 +26,11 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.2',
         'Topic :: Internet',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     py_modules=['cachetools'],
-    test_suite='nose.collector',
-    tests_require=['nose']
+    test_suite='tests'
 )
