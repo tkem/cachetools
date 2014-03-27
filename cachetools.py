@@ -8,53 +8,63 @@ try:
 except ImportError:
     from dummy_threading import RLock
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
-class Cache(collections.MutableMapping):
+def cache(cls):
+    """Class decorator that wraps any mutable mapping to work as a
+    cache."""
 
-    def __init__(self, maxsize, wrapped=None):
-        self.__wrapped__ = {} if wrapped is None else wrapped
-        self.maxsize = maxsize
+    class Cache(collections.MutableMapping):
 
-    def __getitem__(self, key):
-        return self.__wrapped__[key]
+        __wrapped__ = cls
 
-    def __setitem__(self, key, value):
-        while len(self) >= self.maxsize:
-            self.popitem()
-        self.__wrapped__[key] = value
+        def __init__(self, maxsize, *args, **kwargs):
+            self.__wrapped__ = cls(*args, **kwargs)
+            self.maxsize = maxsize
 
-    def __delitem__(self, key):
-        del self.__wrapped__[key]
+        def __getitem__(self, key):
+            return self.__wrapped__[key]
 
-    def __iter__(self):
-        return iter(self.__wrapped__)
+        def __setitem__(self, key, value):
+            while len(self) >= self.maxsize:
+                self.popitem()
+            self.__wrapped__[key] = value
 
-    def __len__(self):
-        return len(self.__wrapped__)
+        def __delitem__(self, key):
+            del self.__wrapped__[key]
 
-    def __repr__(self):
-        return '%s(%r, maxsize=%d)' % (
-            self.__class__.__name__,
-            self.__wrapped__,
-            self.__maxsize,
-        )
+        def __iter__(self):
+            return iter(self.__wrapped__)
 
-    @property
-    def maxsize(self):
-        return self.__maxsize
+        def __len__(self):
+            return len(self.__wrapped__)
 
-    @maxsize.setter
-    def maxsize(self, value):
-        if value < 1:
-            raise ValueError('maxsize must be >= 1')
-        while (len(self) > value):
-            self.popitem()
-        self.__maxsize = value
+        def __repr__(self):
+            return '%s(%r, maxsize=%d)' % (
+                self.__class__.__name__,
+                self.__wrapped__,
+                self.__maxsize,
+            )
+
+        @property
+        def maxsize(self):
+            return self.__maxsize
+
+        @maxsize.setter
+        def maxsize(self, value):
+            if not value > 0:
+                raise ValueError('maxsize must be > 0')
+            while (len(self) > value):
+                self.popitem()
+            self.__maxsize = value
+
+    # TODO: functools.update_wrapper() for class decorators?
+
+    return Cache
 
 
-class LRUCache(Cache):
+class LRUCache(cache(collections.OrderedDict)):
     """Least Recently Used (LRU) cache implementation.
 
     Discards the least recently used items first to make space when
@@ -66,25 +76,21 @@ class LRUCache(Cache):
 
     # OrderedDict.move_to_end is only available in Python 3
     if hasattr(collections.OrderedDict, 'move_to_end'):
-        def __update(self, key):
+        def __getitem__(self, key):
+            value = self.__wrapped__[key]
             self.__wrapped__.move_to_end(key)
+            return value
     else:
-        def __update(self, key):
-            self.__wrapped__[key] = self.__wrapped__.pop(key)
-
-    def __init__(self, maxsize):
-        Cache.__init__(self, maxsize, collections.OrderedDict())
-
-    def __getitem__(self, key):
-        value = Cache.__getitem__(self, key)
-        self.__update(key)
-        return value
+        def __getitem__(self, key):
+            value = self.__wrapped__.pop(key)
+            self.__wrapped__[key] = value
+            return value
 
     def popitem(self):
         return self.__wrapped__.popitem(False)
 
 
-class LFUCache(Cache):
+class LFUCache(cache(dict)):
     """Least Frequently Used (LFU) cache implementation.
 
     Counts how often an item is needed, and discards the items used
@@ -94,30 +100,33 @@ class LFUCache(Cache):
     track of usage counts.
     """
 
-    def __init__(self, maxsize):
-        Cache.__init__(self, maxsize)
+    def __init__(self, maxsize, *args, **kwargs):
+        super(LFUCache, self).__init__(maxsize, *args, **kwargs)
         self.__counter = collections.Counter()
 
     def __getitem__(self, key):
-        value = Cache.__getitem__(self, key)
+        value = super(LFUCache, self).__getitem__(key)
         self.__counter[key] += 1
         return value
 
     def __setitem__(self, key, value):
-        Cache.__setitem__(self, key, value)
+        super(LFUCache, self).__setitem__(key, value)
         self.__counter[key] += 0
 
     def __delitem__(self, key):
-        Cache.__delitem__(self, key)
+        super(LFUCache, self).__delitem__(key)
         del self.__counter[key]
 
     def popitem(self):
-        item = self.__counter.most_common()[-1]
-        self.pop(item[0])
+        try:
+            item = self.__counter.most_common()[-1]
+        except IndexError:
+            raise KeyError
+        super(LFUCache, self).pop(item[0])
         return item
 
 
-class RRCache(Cache):
+class RRCache(cache(dict)):
     """Random Replacement (RR) cache implementation.
 
     Randomly selects a candidate item and discards it to make space
@@ -127,11 +136,11 @@ class RRCache(Cache):
     to be discarded.
     """
 
-    def __init__(self, maxsize):
-        Cache.__init__(self, maxsize)
-
     def popitem(self):
-        item = random.choice(list(self.items()))
+        try:
+            item = random.choice(list(self.items()))
+        except IndexError:
+            raise KeyError
         self.pop(item[0])
         return item
 
@@ -154,7 +163,6 @@ def _cachedfunc(cache, makekey, lock):
     def decorator(func):
         count = [0, 0]
 
-        @functools.wraps(func)
         def wrapper(*args, **kwargs):
             key = makekey(args, kwargs)
             with lock:
@@ -177,7 +185,7 @@ def _cachedfunc(cache, makekey, lock):
 
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
-        return wrapper
+        return functools.update_wrapper(wrapper, func)
 
     return decorator
 

@@ -31,7 +31,7 @@ which item(s) to discard based on a suitable `cache algorithm`_.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
-calls.
+calls, and utilities for creating custom cache implementations.
 
 
 Installation
@@ -75,4 +75,4 @@ Licensed under the `MIT License`_.
 .. _Source Code: https://github.com/tkem/cachetools/
 .. _Issue Tracker: https://github.com/tkem/cachetools/issues/
 .. _Change Log: http://raw.github.com/tkem/cachetools/master/Changes
-.. _MIT License: http://raw.github.com/tkem/cachetools/master/MIT-LICENSE
+.. _MIT License: http://raw.github.com/tkem/cachetools/master/LICENSE
