@@ -110,6 +110,14 @@ Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
    (RR) algorithm.
 
 
+Method Decorators
+------------------------------------------------------------------------
+
+.. decorator:: cachedmethod(getcache, typed=False)
+
+   Decorator to wrap a class or instance method with a memoizing callable.
+
+
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
 .. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms

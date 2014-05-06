@@ -233,3 +233,27 @@ def rr_cache(maxsize=128, typed=False, lock=RLock):
         return _cachedfunc(RRCache(maxsize), _makekey_typed, lock())
     else:
         return _cachedfunc(RRCache(maxsize), _makekey, lock())
+
+
+def cachedmethod(getcache, typed=False):
+    """Decorator to wrap a class or instance method with a memoizing
+    callable.
+
+    """
+
+    makekey = _makekey_typed if typed else _makekey
+
+    def decorator(method):
+        def wrapper(self, *args, **kwargs):
+            cache = getcache(self)
+            key = makekey((self, method) + args, kwargs)
+            try:
+                return cache[key]
+            except KeyError:
+                result = method(self, *args, **kwargs)
+                cache[key] = result
+                return result
+
+        return functools.update_wrapper(wrapper, method)
+
+    return decorator

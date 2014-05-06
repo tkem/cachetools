@@ -62,7 +62,6 @@ class LRUCacheTest(unittest.TestCase):
         self.assertEqual(len(cache), 1)
         self.assertEqual(cache['c'], 3)
 
-
     def test_decorator(self):
         self.assertEqual(cached.cache_info(), (0, 0, 2, 0))
         self.assertEqual(cached(1), 1)
