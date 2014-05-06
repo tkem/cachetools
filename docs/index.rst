@@ -94,28 +94,51 @@ Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
 .. decorator:: lru_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
-   up to the `maxsize` most recent calls based on a Least Recently
-   Used (LRU) algorithm.
+   up to `maxsize` results based on a Least Recently Used (LRU)
+   algorithm.
 
 .. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
-   up to the `maxsize` most recent calls based on a Least Frequently
-   Used (LFU) algorithm.
+   up to `maxsize` results based on a Least Frequently Used (LFU)
+   algorithm.
 
 .. decorator:: rr_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
-   up to the `maxsize` most recent calls based on a Random Replacement
-   (RR) algorithm.
+   up to `maxsize` results based on a Random Replacement (RR)
+   algorithm.
 
 
 Method Decorators
 ------------------------------------------------------------------------
 
-.. decorator:: cachedmethod(getcache, typed=False)
+.. decorator:: cachedmethod(getcache, typed=False, lock=threading.RLock)
 
-   Decorator to wrap a class or instance method with a memoizing callable.
+   Decorator to wrap a class or instance method with a memoizing
+   callable that saves results in a (possibly shared) cache.
+
+   `getcache` specifies a function of one argument that, when passed
+   :const:`self`, will return the cache object for the instance or
+   class.  See the `Function Decorators`_ section for details on the
+   other arguments.
+
+   Python 3 example of a shared (class) LRU cache for static web
+   content::
+
+    class CachedPEPs(object):
+
+        cache = LRUCache(maxsize=32)
+
+        @cachedmethod(operator.attrgetter('cache'))
+        def get_pep(self, num):
+            """Retrieve text of a Python Enhancement Proposal"""
+            resource = 'http://www.python.org/dev/peps/pep-%04d/' % num
+            try:
+                with urllib.request.urlopen(resource) as s:
+                    return s.read()
+            except urllib.error.HTTPError:
+                return 'Not Found'
 
 
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable

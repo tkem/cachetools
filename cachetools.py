@@ -202,58 +202,60 @@ def _cachedfunc(cache, makekey, lock):
     return decorator
 
 
-def lru_cache(maxsize=128, typed=False, lock=RLock):
-    """Decorator to wrap a function with a memoizing callable that
-    saves up to the `maxsize` most recent calls based on a Least
-    Recently Used (LRU) algorithm.
-    """
-    if typed:
-        return _cachedfunc(LRUCache(maxsize), _makekey_typed, lock())
-    else:
-        return _cachedfunc(LRUCache(maxsize), _makekey, lock())
-
-
-def lfu_cache(maxsize=128, typed=False, lock=RLock):
-    """Decorator to wrap a function with a memoizing callable that
-    saves up to the `maxsize` most recent calls based on a Least
-    Frequently Used (LFU) algorithm.
-    """
-    if typed:
-        return _cachedfunc(LFUCache(maxsize), _makekey_typed, lock())
-    else:
-        return _cachedfunc(LFUCache(maxsize), _makekey, lock())
-
-
-def rr_cache(maxsize=128, typed=False, lock=RLock):
-    """Decorator to wrap a function with a memoizing callable that
-    saves up to the `maxsize` most recent calls based on a Random
-    Replacement (RR) algorithm.
-    """
-    if typed:
-        return _cachedfunc(RRCache(maxsize), _makekey_typed, lock())
-    else:
-        return _cachedfunc(RRCache(maxsize), _makekey, lock())
-
-
-def cachedmethod(getcache, typed=False):
-    """Decorator to wrap a class or instance method with a memoizing
-    callable.
-
-    """
-
-    makekey = _makekey_typed if typed else _makekey
-
-    def decorator(method):
+def _cachedmeth(getcache, makekey, lock):
+    def decorator(func):
         def wrapper(self, *args, **kwargs):
+            key = makekey((func,) + args, kwargs)
             cache = getcache(self)
-            key = makekey((self, method) + args, kwargs)
-            try:
-                return cache[key]
-            except KeyError:
-                result = method(self, *args, **kwargs)
+            with lock:
+                try:
+                    return cache[key]
+                except KeyError:
+                    pass
+            result = func(self, *args, **kwargs)
+            with lock:
                 cache[key] = result
-                return result
+            return result
 
-        return functools.update_wrapper(wrapper, method)
+        return functools.update_wrapper(wrapper, func)
 
     return decorator
+
+
+def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Least Recently Used (LRU)
+    algorithm.
+
+    """
+    makekey = _makekey_typed if typed else _makekey
+    return _cachedfunc(LRUCache(maxsize, getsizeof), makekey, lock())
+
+
+def lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Least Frequently Used (LFU)
+    algorithm.
+
+    """
+    makekey = _makekey_typed if typed else _makekey
+    return _cachedfunc(LFUCache(maxsize, getsizeof), makekey, lock())
+
+
+def rr_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Random Replacement (RR)
+    algorithm.
+
+    """
+    makekey = _makekey_typed if typed else _makekey
+    return _cachedfunc(RRCache(maxsize, getsizeof), makekey, lock())
+
+
+def cachedmethod(getcache, typed=False, lock=RLock):
+    """Decorator to wrap a class or instance method with a memoizing
+    callable that saves results in a (possibly shared) cache.
+
+    """
+    makekey = _makekey_typed if typed else _makekey
+    return _cachedmeth(getcache, makekey, lock())
