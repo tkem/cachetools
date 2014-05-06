@@ -14,26 +14,36 @@ including a variant of the Python 3 Standard Library
    >>> cache['first'] = 1
    >>> cache['second'] = 2
    >>> cache
-   LRUCache(OrderedDict([('first', 1), ('second', 2)]), maxsize=2)
+   LRUCache(OrderedDict([('first', 1), ('second', 2)]), size=2, maxsize=2)
    >>> cache['third'] = 3
    >>> cache
-   LRUCache(OrderedDict([('second', 2), ('third', 3)]), maxsize=2)
+   LRUCache(OrderedDict([('second', 2), ('third', 3)]), size=2, maxsize=2)
    >>> cache['second']
    2
    >>> cache
-   LRUCache(OrderedDict([('third', 3), ('second', 2)]), maxsize=2)
+   LRUCache(OrderedDict([('third', 3), ('second', 2)]), size=2, maxsize=2)
    >>> cache['fourth'] = 4
    >>> cache
-   LRUCache(OrderedDict([('second', 2), ('fourth', 4)]), maxsize=2)
+   LRUCache(OrderedDict([('second', 2), ('fourth', 4)]), size=2, maxsize=2)
 
-For the purpose of this module, a *cache* is a mutable mapping_ of
-fixed size, defined by its :attr:`maxsize` attribute.  When the cache
-is full, i.e. ``len(cache) == cache.maxsize``, the cache must choose
-which item(s) to discard based on a suitable `cache algorithm`_.
+For the purpose of this module, a *cache* is a mutable_ mapping_ with
+additional attributes :attr:`size` and :attr:`maxsize`, which hold the
+current and maximum size of the cache, and a (possibly static) method
+:meth:`getsizeof`.
+
+The current size of the cache is the sum of the results of
+:meth:`getsizeof` applied to each of the cache's values,
+i.e. ``cache.size == sum(map(cache.getsizeof, cache.values()), 0)``.
+As a special case, if :meth:`getsizeof` returns :const:`1`
+irrespective of its argument, ``cache.size == len(cache)``.
+
+When the cache is full, i.e. ``cache.size > cache.maxsize``, the cache
+must choose which item(s) to discard based on a suitable `cache
+algorithm`_.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
-calls, and utilities for creating custom cache implementations.
+and method calls.
 
 
 Cache Implementations
@@ -56,12 +66,17 @@ This module provides several memoizing function decorators compatible
 with --- though not necessarily as efficient as --- the Python 3
 Standard Library :func:`functools.lru_cache` decorator.
 
-In addition to a `maxsize` parameter, all decorators feature two
-optional arguments, which should be specified as keyword arguments for
+In addition to a `maxsize` parameter, all decorators feature optional
+arguments, which should be specified as keyword arguments for
 compatibility with future extensions:
 
 If `typed` is set to :const:`True`, function arguments of different
 types will be cached separately.
+
+`getsizeof` specifies a function of one argument that will be applied
+to each cache value to determine its size.  The default value is
+:const:`None`, which will assign each element an equal size of
+:const:`1`.
 
 `lock` specifies a function of zero arguments that returns a `context
 manager`_ to lock the cache when necessary.  If not specified,
@@ -76,65 +91,26 @@ documentation for details.
 Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
 :const:`None` is not supported.
 
-.. decorator:: lru_cache(maxsize=128, typed=False, lock=threading.RLock)
+.. decorator:: lru_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to the `maxsize` most recent calls based on a Least Recently
    Used (LRU) algorithm.
 
-.. decorator:: lfu_cache(maxsize=128, typed=False, lock=threading.RLock)
+.. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to the `maxsize` most recent calls based on a Least Frequently
    Used (LFU) algorithm.
 
-.. decorator:: rr_cache(maxsize=128, typed=False, lock=threading.RLock)
+.. decorator:: rr_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to the `maxsize` most recent calls based on a Random Replacement
    (RR) algorithm.
 
 
-Class Decorators
-------------------------------------------------------------------------
-
-.. decorator:: cache
-
-   Class decorator that wraps any mutable mapping to work as a cache.
-
-   This class decorator may be useful when implementing new cache
-   classes.  It converts any mutable mapping into a cache-like class
-   with a :attr:`maxsize` attribute.  If :func:`__setitem__` is called
-   when the cache is full, i.e. ``len(self) == self.maxsize``,
-   :func:`popitem` is invoked to make room for new items::
-
-     @cache
-     class DictCache(dict):
-         pass
-
-     c = DictCache(maxsize=2)
-     c['x'] = 1
-     c['y'] = 2
-     c['z'] = 3  # calls dict.popitem(c)
-
-   The original underlying class or object is accessible through the
-   :attr:`__wrapped__` attribute.  This is useful for subclasses that
-   need to access the original mapping object directly, e.g. to
-   implement their own version of :func:`popitem`.
-
-   It is also possible, and arguably more comprehensible, to use the
-   wrapper class as a base class::
-
-     class OrderedDictCache(cache(collections.OrderedDict)):
-         def popitem(self):
-             return self.__wrapped__.popitem(last=False)  # pop first item
-
-     c = OrderedDictCache(maxsize=2)
-     c['x'] = 1
-     c['y'] = 2
-     c['z'] = 3  # removes 'x'
-
-
+.. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
 .. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
 .. _context manager: http://docs.python.org/dev/glossary.html#term-context-manager

@@ -33,6 +33,28 @@ class LFUCacheTest(unittest.TestCase):
         self.assertEqual(cache['d'], 4)
         self.assertEqual(cache['a'], 1)
 
+    def test_getsizeof(self):
+        cache = LFUCache(maxsize=3, getsizeof=lambda x: x)
+
+        cache['a'] = 1
+        cache['b'] = 2
+
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cache['a'], 1)
+        self.assertEqual(cache['b'], 2)
+
+        cache['c'] = 3
+
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cache['c'], 3)
+        self.assertNotIn('a', cache)
+        self.assertNotIn('b', cache)
+
+        with self.assertRaises(ValueError):
+            cache['d'] = 4
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cache['c'], 3)
+
     def test_decorator(self):
         self.assertEqual(cached(1), 1)
         self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
