@@ -190,7 +190,7 @@ def _cachedfunc(cache, makekey, lock):
             return result
 
         def cache_info():
-            return CacheInfo(count[0], count[1], cache.maxsize, len(cache))
+            return CacheInfo(count[0], count[1], cache.maxsize, cache.size)
 
         def cache_clear():
             cache.clear()
