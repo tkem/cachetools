@@ -1,3 +1,8 @@
+0.3.1 2014-05-07
+
+* Add proper locking for cache_clear(), cache_info().
+* Report cache.size in cache_info().
+
 0.3.0 2014-05-06
 
 * Remove @cache decorator.

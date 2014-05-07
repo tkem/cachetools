@@ -10,7 +10,7 @@ try:
 except ImportError:
     from dummy_threading import RLock
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 
 class _Cache(collections.MutableMapping):
