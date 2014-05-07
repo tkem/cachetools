@@ -173,27 +173,29 @@ def _makekey_typed(args, kwargs):
 
 def _cachedfunc(cache, makekey, lock):
     def decorator(func):
-        count = [0, 0]
+        stats = [0, 0]
 
         def wrapper(*args, **kwargs):
             key = makekey(args, kwargs)
             with lock:
                 try:
                     result = cache[key]
-                    count[0] += 1
+                    stats[0] += 1
                     return result
                 except KeyError:
-                    count[1] += 1
+                    stats[1] += 1
             result = func(*args, **kwargs)
             with lock:
                 cache[key] = result
             return result
 
         def cache_info():
-            return CacheInfo(count[0], count[1], cache.maxsize, cache.size)
+            with lock:
+                return CacheInfo(stats[0], stats[1], cache.maxsize, cache.size)
 
         def cache_clear():
-            cache.clear()
+            with lock:
+                cache.clear()
 
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
