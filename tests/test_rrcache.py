@@ -1,5 +1,6 @@
 import unittest
 
+from . import CacheTestMixin
 from cachetools import RRCache, rr_cache
 
 
@@ -13,41 +14,10 @@ def cached_typed(n):
     return n
 
 
-class RRCacheTest(unittest.TestCase):
+class RRCacheTest(unittest.TestCase, CacheTestMixin):
 
-    def test_insert(self):
-        cache = RRCache(maxsize=2)
-
-        cache['a'] = 1
-        cache['b'] = 2
-        cache['c'] = 3
-
-        self.assertEqual(len(cache), 2)
-        self.assertTrue('a' in cache or ('b' in cache and 'c' in cache))
-        self.assertTrue('b' in cache or ('a' in cache and 'c' in cache))
-        self.assertTrue('c' in cache or ('a' in cache and 'b' in cache))
-
-    def test_getsizeof(self):
-        cache = RRCache(maxsize=3, getsizeof=lambda x: x)
-
-        cache['a'] = 1
-        cache['b'] = 2
-
-        self.assertEqual(len(cache), 2)
-        self.assertEqual(cache['a'], 1)
-        self.assertEqual(cache['b'], 2)
-
-        cache['c'] = 3
-
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache['c'], 3)
-        self.assertNotIn('a', cache)
-        self.assertNotIn('b', cache)
-
-        with self.assertRaises(ValueError):
-            cache['d'] = 4
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache['c'], 3)
+    def make_cache(self, maxsize, getsizeof=None):
+        return RRCache(maxsize, getsizeof)
 
     def test_decorator(self):
         self.assertEqual(cached(1), 1)

@@ -14,7 +14,7 @@ including a variant of the Python 3 Standard Library
    >>> cache['first'] = 1
    >>> cache['second'] = 2
    >>> cache
-   LRUCache(OrderedDict([('first', 1), ('second', 2)]), size=2, maxsize=2)
+   LRUCache(maxsize=2, currsize=2, items=[('first', 1)])
    >>> cache['third'] = 3
    >>> cache
    LRUCache(OrderedDict([('second', 2), ('third', 3)]), size=2, maxsize=2)
@@ -26,24 +26,28 @@ including a variant of the Python 3 Standard Library
    >>> cache
    LRUCache(OrderedDict([('second', 2), ('fourth', 4)]), size=2, maxsize=2)
 
-For the purpose of this module, a *cache* is a mutable_ mapping_ with
-additional attributes :attr:`size` and :attr:`maxsize`, which hold the
-current and maximum size of the cache, and a (possibly static) method
-:meth:`getsizeof`.
+For the purpose of this module, a *cache* is a mutable_ mapping_ of a
+fixed maximum *size*.  When the cache is full, i.e. the current size
+of the cache exceeds its maximum size, the cache must choose which
+item(s) to discard based on a suitable `cache algorithm`_.
 
-The current size of the cache is the sum of the results of
-:meth:`getsizeof` applied to each of the cache's values,
-i.e. ``cache.size == sum(map(cache.getsizeof, cache.values()), 0)``.
-As a special case, if :meth:`getsizeof` returns :const:`1`
-irrespective of its argument, ``cache.size == len(cache)``.
-
-When the cache is full, i.e. ``cache.size > cache.maxsize``, the cache
-must choose which item(s) to discard based on a suitable `cache
-algorithm`_.
+In general, a cache's size is the sum of its element's sizes.  For the
+trivial case, if the size of each element is :const:`1`, a cache's
+size is equal to the number of its entries, i.e. :func:`len`.  An
+element's size may also be a property or function of its value,
+e.g. the result of :func:`sys.getsizeof`, or :func:`len` for string
+and sequence elements.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
 and method calls.
+
+
+Cache Base Class
+------------------------------------------------------------------------
+
+.. autoclass:: Cache
+   :members:
 
 
 Cache Implementations
@@ -57,6 +61,18 @@ Cache Implementations
 
 .. autoclass:: RRCache
    :members:
+
+.. autoclass:: TTLCache
+   :members:
+
+   Note that a cache element may expire at *any* time, so the
+   following *may* raise an exception::
+
+     cache = TTLCache(100, 1)
+     ...
+     for k in cache:
+       print(cache[k])
+
 
 
 Function Decorators
@@ -126,7 +142,7 @@ Method Decorators
    Python 3 example of a shared (class) LRU cache for static web
    content::
 
-    class CachedPEPs(object):
+     class CachedPEPs(object):
 
         cache = LRUCache(maxsize=32)
 

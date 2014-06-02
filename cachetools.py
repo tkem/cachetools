@@ -4,157 +4,294 @@ import collections
 import functools
 import operator
 import random
+import time
 
 try:
     from threading import RLock
 except ImportError:
     from dummy_threading import RLock
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
+
+_marker = object()
 
 
-class _Cache(collections.MutableMapping):
-    """Class that wraps a mutable mapping to work as a cache."""
+class _Link(object):
+    __slots__ = 'prev', 'next', 'data'
 
-    def __init__(self, mapping, maxsize):
-        self.__data = mapping
-        self.__size = sum(map(self.getsizeof, mapping.values()), 0)
-        self.maxsize = maxsize
+
+class Cache(collections.MutableMapping):
+    """Mutable mapping to serve as a cache.
+
+    This class discards arbitrary items using :meth:`popitem` to make
+    space when necessary.  Derived classes may override
+    :meth:`popitem` to implement specific caching strategies.
+
+    """
+
+    def __init__(self, maxsize, getsizeof=None):
+        if getsizeof is not None:
+            self.getsizeof = getsizeof
+        self.__mapping = dict()
+        self.__maxsize = maxsize
+        self.__currsize = 0
 
     def __getitem__(self, key):
-        return self.__data[key]
+        return self.__mapping[key][0]
 
     def __setitem__(self, key, value):
+        mapping = self.__mapping
+        maxsize = self.__maxsize
         size = self.getsizeof(value)
-        if size > self.maxsize:
-            raise ValueError
-        while self.size > self.maxsize - size:
-            self.pop(next(iter(self)))
-        self.__data[key] = value
-        self.__size += size
+        if size > maxsize:
+            raise ValueError('value too large')
+        if key not in mapping or mapping[key][1] < size:
+            while self.__currsize + size > maxsize:
+                self.popitem()
+        if key in mapping:
+            self.__currsize -= mapping[key][1]
+        mapping[key] = (value, size)
+        self.__currsize += size
 
     def __delitem__(self, key):
-        self.__size -= self.getsizeof(self.__data.pop(key))
+        _, size = self.__mapping.pop(key)
+        self.__currsize -= size
 
     def __iter__(self):
-        return iter(self.__data)
+        return iter(self.__mapping)
 
     def __len__(self):
-        return len(self.__data)
+        return len(self.__mapping)
 
     def __repr__(self):
-        return '%s(%r, size=%d, maxsize=%d)' % (
+        return '%s(%r, maxsize=%d, currsize=%d)' % (
             self.__class__.__name__,
-            self.__data,
-            self.__size,
+            list(self.items()),
             self.__maxsize,
+            self.__currsize,
         )
 
     @property
-    def size(self):
-        return self.__size
-
-    @property
     def maxsize(self):
+        """Return the maximum size of the cache."""
         return self.__maxsize
 
-    @maxsize.setter
-    def maxsize(self, value):
-        while self.size > value:
-            self.pop(next(iter(self)))
-        self.__maxsize = value
+    @property
+    def currsize(self):
+        """Return the current size of the cache."""
+        return self.__currsize
 
     @staticmethod
-    def getsizeof(_):
+    def getsizeof(object):
+        """Return the size of a cache element."""
         return 1
 
 
-class LRUCache(_Cache):
-    """Least Recently Used (LRU) cache implementation.
-
-    Discards the least recently used items first to make space when
-    necessary.
-
-    This implementation uses :class:`collections.OrderedDict` to keep
-    track of item usage.
-    """
-
-    class OrderedDict(collections.OrderedDict):
-        # OrderedDict.move_to_end is only available in Python 3
-        if hasattr(collections.OrderedDict, 'move_to_end'):
-            def __getitem__(self, key,
-                            getitem=collections.OrderedDict.__getitem__):
-                self.move_to_end(key)
-                return getitem(self, key)
-        else:
-            def __getitem__(self, key,
-                            getitem=collections.OrderedDict.__getitem__,
-                            delitem=collections.OrderedDict.__delitem__,
-                            setitem=collections.OrderedDict.__setitem__):
-                value = getitem(self, key)
-                delitem(self, key)
-                setitem(self, key, value)
-                return value
-
-    def __init__(self, maxsize, getsizeof=None):
-        if getsizeof is not None:
-            self.getsizeof = getsizeof
-        _Cache.__init__(self, self.OrderedDict(), maxsize)
-
-
-class LFUCache(_Cache):
-    """Least Frequently Used (LFU) cache implementation.
-
-    Counts how often an item is needed, and discards the items used
-    least often to make space when necessary.
-
-    This implementation uses :class:`collections.Counter` to keep
-    track of usage counts.
-    """
-
-    def __init__(self, maxsize, getsizeof=None):
-        if getsizeof is not None:
-            self.getsizeof = getsizeof
-        _Cache.__init__(self, {}, maxsize)
-        self.__counter = collections.Counter()
-
-    def __getitem__(self, key):
-        value = _Cache.__getitem__(self, key)
-        self.__counter[key] += 1
-        return value
-
-    def __setitem__(self, key, value):
-        _Cache.__setitem__(self, key, value)
-        self.__counter[key] += 0
-
-    def __delitem__(self, key):
-        _Cache.__delitem__(self, key)
-        del self.__counter[key]
-
-    def __iter__(self):
-        items = reversed(self.__counter.most_common())
-        return iter(map(operator.itemgetter(0), items))
-
-
-class RRCache(_Cache):
+class RRCache(Cache):
     """Random Replacement (RR) cache implementation.
 
-    Randomly selects candidate items and discards then to make space
-    when necessary.
+    This cache randomly selects candidate items and discards them to
+    make space when necessary.
 
-    This implementations uses :func:`random.shuffle` to select the
-    items to be discarded.
+    """
+
+    def popitem(self):
+        """Remove and return a random `(key, value)` pair."""
+        try:
+            key = random.choice(list(self))
+        except IndexError:
+            raise KeyError('cache is empty')
+        return (key, self.pop(key))
+
+
+class LFUCache(Cache):
+    """Least Frequently Used (LFU) cache implementation.
+
+    This cache counts how often an item is retrieved, and discards the
+    items used least often to make space when necessary.
+
     """
 
     def __init__(self, maxsize, getsizeof=None):
         if getsizeof is not None:
-            self.getsizeof = getsizeof
-        _Cache.__init__(self, {}, maxsize)
+            Cache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+        else:
+            Cache.__init__(self, maxsize)
 
-    def __iter__(self):
-        keys = list(_Cache.__iter__(self))
-        random.shuffle(keys)
-        return iter(keys)
+    def __getitem__(self, key, cache_getitem=Cache.__getitem__):
+        entry = cache_getitem(self, key)
+        entry[1] += 1
+        return entry[0]
+
+    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
+        cache_setitem(self, key, [value, 0])
+
+    def popitem(self):
+        """Remove and return the `(key, value)` pair least frequently used."""
+        items = ((key, Cache.__getitem__(self, key)[1]) for key in self)
+        try:
+            key, _ = min(items, key=operator.itemgetter(1))
+        except ValueError:
+            raise KeyError('cache is empty')
+        return (key, self.pop(key))
+
+
+class LRUCache(Cache):
+    """Least Recently Used (LRU) cache implementation.
+
+    This cache discards the least recently used items first to make
+    space when necessary.
+
+    """
+
+    def __init__(self, maxsize, getsizeof=None):
+        if getsizeof is not None:
+            Cache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+        else:
+            Cache.__init__(self, maxsize)
+        root = _Link()
+        root.prev = root.next = root
+        self.__root = root
+
+    def __getitem__(self, key, cache_getitem=Cache.__getitem__):
+        value, link = cache_getitem(self, key)
+        root = self.__root
+        link.prev.next = link.next
+        link.next.prev = link.prev
+        link.prev = tail = root.prev
+        link.next = root
+        tail.next = root.prev = link
+        return value
+
+    def __setitem__(self, key, value,
+                    cache_getitem=Cache.__getitem__,
+                    cache_setitem=Cache.__setitem__):
+        try:
+            _, link = cache_getitem(self, key)
+        except KeyError:
+            link = _Link()
+        cache_setitem(self, key, (value, link))
+        try:
+            link.prev.next = link.next
+            link.next.prev = link.prev
+        except AttributeError:
+            link.data = key
+        root = self.__root
+        link.prev = tail = root.prev
+        link.next = root
+        tail.next = root.prev = link
+
+    def __delitem__(self, key,
+                    cache_getitem=Cache.__getitem__,
+                    cache_delitem=Cache.__delitem__):
+        _, link = cache_getitem(self, key)
+        cache_delitem(self, key)
+        link.prev.next = link.next
+        link.next.prev = link.prev
+        del link.next
+        del link.prev
+
+    def popitem(self):
+        """Remove and return the `(key, value)` pair least recently used."""
+        root = self.__root
+        link = root.next
+        if link is root:
+            raise KeyError('cache is empty')
+        key = link.data
+        return (key, self.pop(key))
+
+
+class TTLCache(LRUCache):
+    """LRU cache implementation with per-item time-to-live (TTL) value.
+
+    This least-recently-used cache associates a time-to-live value
+    with each item.  Items that expire because they have exceeded
+    their time-to-live are removed from the cache automatically.
+
+    """
+
+    def __init__(self, maxsize, ttl, getsizeof=None, timer=time.time):
+        if getsizeof is not None:
+            LRUCache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+        else:
+            LRUCache.__init__(self, maxsize)
+        root = _Link()
+        root.prev = root.next = root
+        self.__root = root
+        self.__timer = timer
+        self.__ttl = ttl
+
+    def __getitem__(self, key,
+                    cache_getitem=LRUCache.__getitem__,
+                    cache_delitem=LRUCache.__delitem__):
+        value, link = cache_getitem(self, key)
+        if self.__timer() < link.data[1]:
+            return value
+        root = self.__root
+        head = root.next
+        link = link.next
+        while head is not link:
+            cache_delitem(self, head.data[0])
+            head.next.prev = root
+            head = root.next = head.next
+        raise KeyError('%r has expired' % key)
+
+    def __setitem__(self, key, value,
+                    cache_getitem=LRUCache.__getitem__,
+                    cache_setitem=LRUCache.__setitem__,
+                    cache_delitem=LRUCache.__delitem__):
+        root = self.__root
+        head = root.next
+        time = self.__timer()
+        while head is not root and head.data[1] < time:
+            cache_delitem(self, head.data[0])
+            head.next.prev = root
+            head = root.next = head.next
+        try:
+            _, link = cache_getitem(self, key)
+        except KeyError:
+            link = _Link()
+        cache_setitem(self, key, (value, link))
+        try:
+            link.prev.next = link.next
+            link.next.prev = link.prev
+        except AttributeError:
+            pass
+        link.data = (key, time + self.__ttl)
+        link.prev = tail = root.prev
+        link.next = root
+        tail.next = root.prev = link
+
+    def __delitem__(self, key,
+                    cache_getitem=LRUCache.__getitem__,
+                    cache_delitem=LRUCache.__delitem__):
+        _, link = cache_getitem(self, key)
+        cache_delitem(self, key)
+        link.prev.next = link.next
+        link.next.prev = link.prev
+
+    def __repr__(self, cache_getitem=LRUCache.__getitem__):
+        return '%s(%r, maxsize=%d, currsize=%d)' % (
+            self.__class__.__name__,
+            [(key, cache_getitem(self, key)[0]) for key in self],
+            self.maxsize,
+            self.currsize,
+        )
+
+    def pop(self, key, default=_marker):
+        try:
+            value, link = LRUCache.__getitem__(self, key)
+        except KeyError:
+            if default is _marker:
+                raise
+            else:
+                return default
+        LRUCache.__delitem__(self, key)
+        link.prev.next = link.next
+        link.next.prev = link.prev
+        del link.next
+        del link.prev
+        return value
 
 
 CacheInfo = collections.namedtuple('CacheInfo', 'hits misses maxsize currsize')
@@ -191,7 +328,10 @@ def _cachedfunc(cache, makekey, lock):
 
         def cache_info():
             with lock:
-                return CacheInfo(stats[0], stats[1], cache.maxsize, cache.size)
+                hits, misses = stats
+                maxsize = cache.maxsize
+                currsize = cache.currsize
+            return CacheInfo(hits, misses, maxsize, currsize)
 
         def cache_clear():
             with lock:
@@ -204,19 +344,17 @@ def _cachedfunc(cache, makekey, lock):
     return decorator
 
 
-def _cachedmeth(getcache, makekey, lock):
+def _cachedmeth(getcache, makekey):
     def decorator(func):
         def wrapper(self, *args, **kwargs):
             key = makekey((func,) + args, kwargs)
             cache = getcache(self)
-            with lock:
-                try:
-                    return cache[key]
-                except KeyError:
-                    pass
+            try:
+                return cache[key]
+            except KeyError:
+                pass
             result = func(self, *args, **kwargs)
-            with lock:
-                cache[key] = result
+            cache[key] = result
             return result
 
         return functools.update_wrapper(wrapper, func)
@@ -254,10 +392,10 @@ def rr_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
     return _cachedfunc(RRCache(maxsize, getsizeof), makekey, lock())
 
 
-def cachedmethod(getcache, typed=False, lock=RLock):
+def cachedmethod(cache, typed=False):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a (possibly shared) cache.
 
     """
     makekey = _makekey_typed if typed else _makekey
-    return _cachedmeth(getcache, makekey, lock())
+    return _cachedmeth(cache, makekey)
