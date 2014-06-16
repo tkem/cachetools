@@ -27,10 +27,10 @@ of the cache exceeds its maximum size, the cache must choose which
 item(s) to discard based on a suitable `cache algorithm`_.
 
 In general, a cache's size is the sum of the size of its items.  If
-the size of each items is :const:`1`, a cache's size is equal to the
-number of its items, i.e. :func:`len`.  An items's size may also be a
-property or function of its value, e.g. the result of
-:func:`sys.getsizeof`, or :func:`len` for string and sequence values.
+the size of each items is `1`, a cache's size is equal to the number
+of its items, i.e. `len`.  An items's size may also be a property or
+function of its value, e.g. the result of `sys.getsizeof`, or `len`
+for string and sequence values.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
