@@ -3,7 +3,7 @@ cachetools
 
 This module provides various memoizing collections and decorators,
 including a variant of the Python 3 Standard Library
-`functools.lru_cache` function decorator.
+``functools.lru_cache`` function decorator.
 
 .. code-block:: pycon
 
