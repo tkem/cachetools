@@ -9,35 +9,28 @@ including a variant of the Python 3 Standard Library
 
    >>> from cachetools import LRUCache
    >>> cache = LRUCache(maxsize=2)
-   >>> cache['first'] = 1
-   >>> cache['second'] = 2
+   >>> cache.update([('first', 1), ('second', 2)])
    >>> cache
-   LRUCache(OrderedDict([('first', 1), ('second', 2)]), size=2, maxsize=2)
+   LRUCache([('second', 2), ('first', 1)], maxsize=2, currsize=2)
    >>> cache['third'] = 3
    >>> cache
-   LRUCache(OrderedDict([('second', 2), ('third', 3)]), size=2, maxsize=2)
+   LRUCache([('second', 2), ('third', 3)], maxsize=2, currsize=2)
    >>> cache['second']
    2
-   >>> cache
-   LRUCache(OrderedDict([('third', 3), ('second', 2)]), size=2, maxsize=2)
    >>> cache['fourth'] = 4
-   >>> cache
-   LRUCache(OrderedDict([('second', 2), ('fourth', 4)]), size=2, maxsize=2)
+   LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
 
-For the purpose of this module, a *cache* is a mutable_ mapping_ with
-additional attributes ``size`` and ``maxsize``, which hold the current
-and maximum size of the cache, and a (possibly static) method
-``getsizeof``.
 
-The current size of the cache is the sum of the results of
-``getsizeof`` applied to each of the cache's values, i.e. ``cache.size
-== sum(map(cache.getsizeof, cache.values()), 0)``.  As a special case,
-if ``getsizeof`` returns ``1`` irrespective of its argument,
-``cache.size == len(cache)``.
+For the purpose of this module, a *cache* is a mutable_ mapping_ of a
+fixed maximum *size*.  When the cache is full, i.e. the current size
+of the cache exceeds its maximum size, the cache must choose which
+item(s) to discard based on a suitable `cache algorithm`_.
 
-When the cache is full, i.e. ``cache.size > cache.maxsize``, the cache
-must choose which item(s) to discard based on a suitable `cache
-algorithm`_.
+In general, a cache's size is the sum of the size of its items.  If
+the size of each items is :const:`1`, a cache's size is equal to the
+number of its items, i.e. :func:`len`.  An items's size may also be a
+property or function of its value, e.g. the result of
+:func:`sys.getsizeof`, or :func:`len` for string and sequence values.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function

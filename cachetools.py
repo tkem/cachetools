@@ -21,11 +21,14 @@ class _Link(object):
 
 
 class Cache(collections.MutableMapping):
-    """Mutable mapping to serve as a cache.
+    """Mutable mapping to serve as a simple cache or cache base class.
 
     This class discards arbitrary items using :meth:`popitem` to make
     space when necessary.  Derived classes may override
-    :meth:`popitem` to implement specific caching strategies.
+    :meth:`popitem` to implement specific caching strategies.  If a
+    subclass has to keep track of item access, insertion or deletion,
+    it may need override :meth:`__getitem__`, :meth:`__setitem__` and
+    :meth:`__delitem__`, too.
 
     """
 
@@ -82,7 +85,7 @@ class Cache(collections.MutableMapping):
         return self.__currsize
 
     @staticmethod
-    def getsizeof(object):
+    def getsizeof(value):
         """Return the size of a cache element."""
         return 1
 
@@ -90,7 +93,7 @@ class Cache(collections.MutableMapping):
 class RRCache(Cache):
     """Random Replacement (RR) cache implementation.
 
-    This cache randomly selects candidate items and discards them to
+    This class randomly selects candidate items and discards them to
     make space when necessary.
 
     """
@@ -107,7 +110,7 @@ class RRCache(Cache):
 class LFUCache(Cache):
     """Least Frequently Used (LFU) cache implementation.
 
-    This cache counts how often an item is retrieved, and discards the
+    This class counts how often an item is retrieved, and discards the
     items used least often to make space when necessary.
 
     """
@@ -139,7 +142,7 @@ class LFUCache(Cache):
 class LRUCache(Cache):
     """Least Recently Used (LRU) cache implementation.
 
-    This cache discards the least recently used items first to make
+    This class discards the least recently used items first to make
     space when necessary.
 
     """
@@ -191,6 +194,14 @@ class LRUCache(Cache):
         del link.next
         del link.prev
 
+    def __repr__(self, cache_getitem=Cache.__getitem__):
+        return '%s(%r, maxsize=%d, currsize=%d)' % (
+            self.__class__.__name__,
+            [(key, cache_getitem(self, key)[0]) for key in self],
+            self.maxsize,
+            self.currsize,
+        )
+
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used."""
         root = self.__root
@@ -202,11 +213,13 @@ class LRUCache(Cache):
 
 
 class TTLCache(LRUCache):
-    """LRU cache implementation with per-item time-to-live (TTL) value.
+    """Cache implementation with per-item time-to-live (TTL) value.
 
-    This least-recently-used cache associates a time-to-live value
-    with each item.  Items that expire because they have exceeded
-    their time-to-live are removed from the cache automatically.
+    This class associates a time-to-live value with each item.  Items
+    that expire because they have exceeded their time-to-live will be
+    removed automatically.  If no expired items are there to remove,
+    the least recently used items will be discarded first to make
+    space when necessary.
 
     """
 
@@ -282,10 +295,9 @@ class TTLCache(LRUCache):
         try:
             value, link = LRUCache.__getitem__(self, key)
         except KeyError:
-            if default is _marker:
-                raise
-            else:
+            if default is not _marker:
                 return default
+            raise
         LRUCache.__delitem__(self, key)
         link.prev.next = link.next
         link.next.prev = link.prev
@@ -344,24 +356,6 @@ def _cachedfunc(cache, makekey, lock):
     return decorator
 
 
-def _cachedmeth(getcache, makekey):
-    def decorator(func):
-        def wrapper(self, *args, **kwargs):
-            key = makekey((func,) + args, kwargs)
-            cache = getcache(self)
-            try:
-                return cache[key]
-            except KeyError:
-                pass
-            result = func(self, *args, **kwargs)
-            cache[key] = result
-            return result
-
-        return functools.update_wrapper(wrapper, func)
-
-    return decorator
-
-
 def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Recently Used (LRU)
@@ -398,4 +392,20 @@ def cachedmethod(cache, typed=False):
 
     """
     makekey = _makekey_typed if typed else _makekey
-    return _cachedmeth(cache, makekey)
+
+    def decorator(method):
+        def wrapper(self, *args, **kwargs):
+            # TODO: `shared`, locking...
+            key = makekey((method,) + args, kwargs)
+            mapping = cache(self)
+            try:
+                return mapping[key]
+            except KeyError:
+                pass
+            result = method(self, *args, **kwargs)
+            mapping[key] = result
+            return result
+
+        return functools.update_wrapper(wrapper, method)
+
+    return decorator
