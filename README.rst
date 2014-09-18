@@ -76,7 +76,7 @@ Licensed under the `MIT License`_.
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
 
 .. _Documentation: http://pythonhosted.org/cachetools/
-.. _Source Code: https://github.com/tkem/cachetools/
 .. _Issue Tracker: https://github.com/tkem/cachetools/issues/
+.. _Source Code: https://github.com/tkem/cachetools/
 .. _Change Log: http://raw.github.com/tkem/cachetools/master/Changes
 .. _MIT License: http://raw.github.com/tkem/cachetools/master/LICENSE

@@ -11,7 +11,7 @@ try:
 except ImportError:
     from dummy_threading import RLock
 
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 _marker = object()
 

@@ -1,25 +1,46 @@
-0.4.0 2014-06-16
+0.5.0 UNRELEASED
+----------------
 
-* Add TTLCache.
-* Add Cache base class.
-* Remove @cachedmethod lock parameter.
+- Update Changelog, README.
+
+
+0.4.0 2014-06-16
+----------------
+
+- Add `TTLCache`.
+
+- Add `Cache` base class.
+
+- Remove `@cachedmethod` `lock` parameter.
+
 
 0.3.1 2014-05-07
+----------------
 
-* Add proper locking for cache_clear(), cache_info().
-* Report cache.size in cache_info().
+- Add proper locking for `cache_clear()` and `cache_info()`.
+
+- Report `size` in `cache_info()`.
+
 
 0.3.0 2014-05-06
+----------------
 
-* Remove @cache decorator.
-* Add size, getsizeof members.
-* Add @cachedmethod decorator.
+- Remove `@cache` decorator.
+
+- Add `size`, `getsizeof` members.
+
+- Add `@cachedmethod` decorator.
+
 
 0.2.0 2014-04-02
+----------------
 
-* Add @cache decorator.
-* Update documentation.
+- Add `@cache` decorator.
+
+- Update documentation.
+
 
 0.1.0 2014-03-27
+----------------
 
-* Initial release.
+- Initial release.
