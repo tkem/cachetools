@@ -9,7 +9,7 @@ def get_version(filename):
 
 setup(
     name='cachetools',
-    version=get_version('cachetools.py'),
+    version=get_version('cachetools/__init__.py'),
     author='Thomas Kemmer',
     author_email='tkemmer@computer.org',
     url='https://github.com/tkem/cachetools',
@@ -31,6 +31,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    py_modules=['cachetools'],
+    packages=['cachetools'],
     test_suite='tests'
 )

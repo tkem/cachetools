@@ -52,9 +52,9 @@ current size of the cache.
 returns the size of a given item and may be overridden by subclasses.
 The default implementation of :meth:`getsizeof` returns :const:`1`
 irrespective of its `value` argument.  For convenience, all cache
-classes also accept an optional constructor parameter `getsizeof`,
-that may specify a function of one argument used to extract the size
-of an item's value instead of the class' :meth:`getsizeof` method.
+classes also accept an optional named constructor parameter
+`getsizeof`, that may specify a function of one argument used to
+retrieve the size of an item's value.
 
 
 .. autoclass:: Cache
@@ -73,8 +73,8 @@ of an item's value instead of the class' :meth:`getsizeof` method.
    :members:
 
    Note that a cache item may expire at *any* time, so iterating over
-   the items of a :class:`TTLCache` may raise :class:`KeyError` or
-   :class:`RuntimeError` unexpectedly::
+   the items of a :class:`TTLCache` may raise :class:`KeyError`
+   unexpectedly::
 
       from cachetools import TTLCache
       import time
@@ -83,14 +83,11 @@ of an item's value instead of the class' :meth:`getsizeof` method.
       cache.update({1: 1, 2: 2, 3: 3})
       time.sleep(1)
 
-      try:
-          for key in cache:
-              try:
-                  print(cache[key])
-              except KeyError:
-                  print('Key %r has expired' % key)
-      except RuntimeError as e:
-          print(e)
+      for key in cache:
+          try:
+              print(cache[key])
+          except KeyError:
+              print('Key %r has expired' % key)
 
 
 Function Decorators
