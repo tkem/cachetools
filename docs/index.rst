@@ -150,26 +150,37 @@ Method Decorators
 .. decorator:: cachedmethod(cache, typed=False)
 
    `cache` specifies a function of one argument that, when passed
-   :const:`self`, will return the cache object for the instance or
-   class.  See the `Function Decorators`_ section for details on the
-   `typed` argument.
+   :const:`self`, will return a *cache* for the respective instance or
+   class.  Multiple methods of an object or class may share the same
+   cache.
 
-   Python 3 example of a shared (class) LRU cache for static web
-   content::
+   One advantage of the `@cachedmethod` decorator over the similar
+   function decorators is that cache properties such as `maxsize` can
+   be set at runtime::
 
-      class CachedPEPs(object):
+     import operator
+     import urllib.request
 
-         cache = LRUCache(maxsize=32)
+     from cachetools import LRUCache, cachedmethod
 
-         @cachedmethod(operator.attrgetter('cache'))
-         def get_pep(self, num):
-             """Retrieve text of a Python Enhancement Proposal"""
-             resource = 'http://www.python.org/dev/peps/pep-%04d/' % num
-             try:
-                 with urllib.request.urlopen(resource) as s:
-                     return s.read()
-             except urllib.error.HTTPError:
-                 return 'Not Found'
+     class CachedPEPs(object):
+
+       def __init__(self, cachesize):
+         self.cache = LRUCache(maxsize=cachesize)
+
+       @cachedmethod(operator.attrgetter('cache'))
+       def get_pep(self, num):
+         """Retrieve text of a Python Enhancement Proposal"""
+         url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+         with urllib.request.urlopen(url) as s:
+           return s.read()
+
+     peps = CachedPEPs(cachesize=10)
+     print("PEP #1: %s" % peps.get_pep(1))
+
+   Note that no locking will be performed on the object returned by
+   `cache(self)`, so dealing with concurrent access is entirely the
+   responsibility of the user.
 
 
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
