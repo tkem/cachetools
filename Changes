@@ -5,6 +5,8 @@
 
 - Do not delete expired items in TTLCache.__getitem__().
 
+- Add `@ttl_cache` function decorator.
+
 
 0.4.0 2014-06-16
 ----------------

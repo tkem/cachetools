@@ -23,7 +23,7 @@ class Cached(object):
         return count
 
 
-class MethodTest(unittest.TestCase):
+class CachedMethodTest(unittest.TestCase):
 
     def test_decorator(self):
         cached = Cached()

@@ -1,5 +1,7 @@
 from .lrucache import LRUCache
+from .decorators import cachedfunc
 from .link import Link
+from .lock import RLock
 
 import time
 
@@ -104,3 +106,12 @@ class TTLCache(LRUCache):
             cache_delitem(self, head.data[0])
             head.next.prev = root
             head = root.next = head.next
+
+
+def ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False,
+              getsizeof=None, lock=RLock):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Least Recently Used (LRU)
+    algorithm with a per-item time-to-live (TTL) value.
+    """
+    return cachedfunc(TTLCache(maxsize, ttl, timer, getsizeof), typed, lock())

@@ -1,5 +1,7 @@
 from .cache import Cache
+from .decorators import cachedfunc
 from .link import Link
+from .lock import RLock
 
 
 class LRUCache(Cache):
@@ -70,3 +72,12 @@ class LRUCache(Cache):
             raise KeyError('cache is empty')
         key = link.data
         return (key, self.pop(key))
+
+
+def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Least Recently Used (LRU)
+    algorithm.
+
+    """
+    return cachedfunc(LRUCache(maxsize, getsizeof), typed, lock())

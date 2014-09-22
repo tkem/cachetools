@@ -1,4 +1,6 @@
 from .cache import Cache
+from .decorators import cachedfunc
+from .lock import RLock
 
 import random
 
@@ -18,3 +20,12 @@ class RRCache(Cache):
         except IndexError:
             raise KeyError('cache is empty')
         return (key, self.pop(key))
+
+
+def rr_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Random Replacement (RR)
+    algorithm.
+
+    """
+    return cachedfunc(RRCache(maxsize, getsizeof), typed, lock())

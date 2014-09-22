@@ -122,6 +122,12 @@ documentation for details.
 Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
 :const:`None` is not supported.
 
+.. decorator:: rr_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
+
+   Decorator that wraps a function with a memoizing callable that
+   saves up to `maxsize` results based on a Random Replacement (RR)
+   algorithm.
+
 .. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator that wraps a function with a memoizing callable that
@@ -134,11 +140,11 @@ Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
 
-.. decorator:: rr_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: ttl_cache(maxsize=128, ttl=3600, timer=time.time, typed=False, getsizeof=None, lock=threading.RLock)
 
-   Decorator that wraps a function with a memoizing callable that
-   saves up to `maxsize` results based on a Random Replacement (RR)
-   algorithm.
+   Decorator to wrap a function with a memoizing callable that saves
+   up to `maxsize` results based on a Least Recently Used (LRU)
+   algorithm with a per-item time-to-live (TTL) value.
 
 
 Method Decorators
