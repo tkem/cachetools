@@ -98,7 +98,6 @@ class TTLCache(LRUCache):
         return value
 
     def expire(self, time=None, cache_delitem=LRUCache.__delitem__):
-        """TODO"""
         if time is None:
             time = self.__timer()
         root = self.__root
