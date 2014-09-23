@@ -136,7 +136,7 @@ Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
 
-.. decorator:: ttl_cache(maxsize=128, ttl=3600, timer=time.time, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
