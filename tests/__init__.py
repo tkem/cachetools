@@ -3,6 +3,16 @@ class CacheTestMixin(object):
     def make_cache(self, maxsize, getsizeof=None):
         raise NotImplementedError
 
+    def test_defaults(self):
+        cache = self.make_cache(maxsize=1)
+        self.assertEqual(0, len(cache))
+        self.assertEqual(1, cache.maxsize)
+        self.assertEqual(0, cache.currsize)
+        self.assertEqual(1, cache.getsizeof(None))
+        self.assertEqual(1, cache.getsizeof(''))
+        self.assertEqual(1, cache.getsizeof(0))
+
+
     def test_insert(self):
         cache = self.make_cache(maxsize=2)
 
@@ -93,6 +103,9 @@ class CacheTestMixin(object):
         cache = self.make_cache(maxsize=3, getsizeof=lambda x: x)
         self.assertEqual(3, cache.maxsize)
         self.assertEqual(0, cache.currsize)
+        self.assertEqual(1, cache.getsizeof(1))
+        self.assertEqual(2, cache.getsizeof(2))
+        self.assertEqual(3, cache.getsizeof(3))
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))

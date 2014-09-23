@@ -20,10 +20,11 @@ class TTLCache(LRUCache):
     """
 
     def __init__(self, maxsize, ttl, timer=time.time, getsizeof=None):
-        if getsizeof is not None:
-            LRUCache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
-        else:
+        if getsizeof is None:
             LRUCache.__init__(self, maxsize)
+        else:
+            LRUCache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+            self.getsizeof = getsizeof
         root = Link()
         root.prev = root.next = root
         self.__root = root

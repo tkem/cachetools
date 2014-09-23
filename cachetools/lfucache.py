@@ -14,10 +14,11 @@ class LFUCache(Cache):
     """
 
     def __init__(self, maxsize, getsizeof=None):
-        if getsizeof is not None:
-            Cache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
-        else:
+        if getsizeof is None:
             Cache.__init__(self, maxsize)
+        else:
+            Cache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+            self.getsizeof = getsizeof
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         entry = cache_getitem(self, key)

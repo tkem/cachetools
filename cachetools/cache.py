@@ -8,16 +8,19 @@ class Cache(collections.MutableMapping):
     space when necessary.  Derived classes may override
     :meth:`popitem` to implement specific caching strategies.  If a
     subclass has to keep track of item access, insertion or deletion,
-    it may need override :meth:`__getitem__`, :meth:`__setitem__` and
-    :meth:`__delitem__`, too.
+    it may additionally need to override :meth:`__getitem__`,
+    :meth:`__setitem__` and :meth:`__delitem__`.  If a subclass has to
+    keep meta data with its values, i.e. the `value` argument passed
+    to :meth:`Cache.__setitem__` is different from what a user would
+    regard as the cache's value, it will probably want to override
+    :meth:`getsizeof`, too.
 
     """
 
     def __init__(self, maxsize, getsizeof=None):
-        if getsizeof is not None:
-            self.getsizeof = getsizeof
         self.__mapping = dict()
         self.__maxsize = maxsize
+        self.__getsizeof = getsizeof or self.__one
         self.__currsize = 0
 
     def __repr__(self):
@@ -34,7 +37,7 @@ class Cache(collections.MutableMapping):
     def __setitem__(self, key, value):
         mapping = self.__mapping
         maxsize = self.__maxsize
-        size = self.getsizeof(value)
+        size = self.__getsizeof(value)
         if size > maxsize:
             raise ValueError('value too large')
         if key not in mapping or mapping[key][1] < size:
@@ -65,7 +68,10 @@ class Cache(collections.MutableMapping):
         """Return the current size of the cache."""
         return self.__currsize
 
-    @staticmethod
-    def getsizeof(value):
+    def getsizeof(self, value):
         """Return the size of a cache element."""
+        return self.__getsizeof(value)
+
+    @staticmethod
+    def __one(value):
         return 1

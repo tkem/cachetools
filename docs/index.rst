@@ -23,15 +23,12 @@ including a variant of the Python 3 Standard Library
    LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
-fixed maximum *size*.  When the cache is full, i.e. the current size
-of the cache exceeds its maximum size, the cache must choose which
-item(s) to discard based on a suitable `cache algorithm`_.
-
-In general, a cache's size is the sum of the size of its items.  If
-the size of each item is 1, a cache's size is equal to the number of
-its items, i.e. `len(cache)`.  An items's size may also be a property
-or function of its value, e.g. the result of :func:`sys.getsizeof`, or
-:func:`len` for string and sequence values.
+fixed maximum size.  When the cache is full, i.e. the size of the
+cache would exceed its maximum size, the cache must choose which
+item(s) to discard based on a suitable `cache algorithm`_.  A cache's
+size is the sum of the size of its items, and an item's size in
+general is a property or function of its value, e.g. the result of
+:func:`sys.getsizeof`, or :func:`len` for string and sequence values.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
@@ -48,14 +45,13 @@ different cache algorithms.  All these classes derive from class
 :attr:`maxsize` and :attr:`currsize` to retrieve the maximum and
 current size of the cache.
 
-:class:`Cache` also features a static method :meth:`getsizeof`, which
-returns the size of a given item and may be overridden by subclasses.
-The default implementation of :meth:`getsizeof` returns :const:`1`
-irrespective of its `value` argument.  For convenience, all cache
-classes also accept an optional named constructor parameter
-`getsizeof`, that may specify a function of one argument used to
-retrieve the size of an item's value.
-
+:class:`Cache` also features a :meth:`getsizeof` method, which returns
+the size of a given item.  The default implementation of
+:meth:`getsizeof` returns :const:`1` irrespective of its `value`
+argument, making the cache's size equal to the number of its items, or
+`len(cache)`.  For convenience, all cache classes accept an optional
+named constructor parameter `getsizeof`, which may specify a function
+of one argument used to retrieve the size of an item's value.
 
 .. autoclass:: Cache
    :members:
