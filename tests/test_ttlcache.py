@@ -90,6 +90,17 @@ class TTLCacheTest(unittest.TestCase, LRUCacheTestMixin):
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
+    def test_ttl_tuple_key(self):
+        cache = self.make_ttl_cache(maxsize=1, ttl=0)
+
+        cache[(1, 2, 3)] = 42
+        self.assertEqual(42, cache[(1, 2, 3)])
+        cache.timer.inc()
+        with self.assertRaises(KeyError):
+            cache[(1, 2, 3)]
+        cache.expire()
+        self.assertNotIn((1, 2, 3), cache)
+
     def test_decorator(self):
         self.assertEqual(cached.cache_info(), (0, 0, 2, 0))
         self.assertEqual(cached(1), 1)

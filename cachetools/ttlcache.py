@@ -42,7 +42,7 @@ class TTLCache(LRUCache):
     def __getitem__(self, key, cache_getitem=LRUCache.__getitem__):
         value, link = cache_getitem(self, key)
         if link.data[1] < self.__timer():
-            raise KeyError('%r has expired' % key)
+            raise KeyError(key)
         return value
 
     def __setitem__(self, key, value,
