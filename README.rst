@@ -22,15 +22,12 @@ including a variant of the Python 3 Standard Library
 
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
-fixed maximum *size*.  When the cache is full, i.e. the current size
-of the cache exceeds its maximum size, the cache must choose which
-item(s) to discard based on a suitable `cache algorithm`_.
-
-In general, a cache's size is the sum of the size of its items.  If
-the size of each items is 1, a cache's size is equal to the number of
-its items, i.e. ``len(cache)``.  An items's size may also be a
-property or function of its value, e.g. the result of
-``sys.getsizeof()``, or ``len()`` for string and sequence values.
+fixed maximum size.  When the cache is full, i.e. the size of the
+cache would exceed its maximum size, the cache must choose which
+item(s) to discard based on a suitable `cache algorithm`_.  A cache's
+size is the sum of the size of its items, and an item's size in
+general is a property or function of its value, e.g. the result of
+``sys.getsizeof``, or ``len`` for string and sequence values.
 
 This module provides various cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
