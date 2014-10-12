@@ -45,13 +45,17 @@ Install cachetools using pip::
 Project Resources
 ------------------------------------------------------------------------
 
-.. image:: http://img.shields.io/pypi/v/cachetools.svg
+.. image:: http://img.shields.io/pypi/v/cachetools.svg?style=flat
     :target: https://pypi.python.org/pypi/cachetools/
     :alt: Latest PyPI version
 
-.. image:: http://img.shields.io/pypi/dm/cachetools.svg
+.. image:: http://img.shields.io/pypi/dm/cachetools.svg?style=flat
     :target: https://pypi.python.org/pypi/cachetools/
     :alt: Number of PyPI downloads
+
+.. image:: http://img.shields.io/travis/tkem/cachetools.svg?style=flat
+    :target: https://travis-ci.org/tkem/cachetools/
+    :alt: Travis CI build status
 
 - `Documentation`_
 - `Issue Tracker`_
