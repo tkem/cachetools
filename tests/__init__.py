@@ -12,7 +12,6 @@ class CacheTestMixin(object):
         self.assertEqual(1, cache.getsizeof(''))
         self.assertEqual(1, cache.getsizeof(0))
 
-
     def test_insert(self):
         cache = self.make_cache(maxsize=2)
 

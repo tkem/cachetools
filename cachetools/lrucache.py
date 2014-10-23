@@ -81,4 +81,4 @@ def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
     algorithm.
 
     """
-    return cachedfunc(LRUCache(maxsize, getsizeof), typed, lock())
+    return cachedfunc(LRUCache(maxsize, getsizeof), typed, lock)

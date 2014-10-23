@@ -1,29 +1,43 @@
 import collections
+import contextlib  # noqa
 import functools
+
+try:
+    from contextlib import ExitStack as NullContext  # Python 3.3
+except ImportError:
+    class NullContext:
+        def __enter__(self):
+            pass
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
 
 CacheInfo = collections.namedtuple('CacheInfo', 'hits misses maxsize currsize')
 
+nullcontext = NullContext()
 
-def _makekey(args, kwargs):
+
+def makekey_untyped(args, kwargs):
     return (args, tuple(sorted(kwargs.items())))
 
 
-def _makekey_typed(args, kwargs):
-    key = _makekey(args, kwargs)
+def makekey_typed(args, kwargs):
+    key = makekey_untyped(args, kwargs)
     key += tuple(type(v) for v in args)
     key += tuple(type(v) for _, v in sorted(kwargs.items()))
     return key
 
 
-def cachedfunc(cache, typed, lock):
-    makekey = _makekey_typed if typed else _makekey
+def cachedfunc(cache, typed=False, lock=None):
+    makekey = makekey_typed if typed else makekey_untyped
+    context = lock() if lock else nullcontext
 
     def decorator(func):
         stats = [0, 0]
 
         def wrapper(*args, **kwargs):
             key = makekey(args, kwargs)
-            with lock:
+            with context:
                 try:
                     result = cache[key]
                     stats[0] += 1
@@ -31,19 +45,19 @@ def cachedfunc(cache, typed, lock):
                 except KeyError:
                     stats[1] += 1
             result = func(*args, **kwargs)
-            with lock:
+            with context:
                 cache[key] = result
             return result
 
         def cache_info():
-            with lock:
+            with context:
                 hits, misses = stats
                 maxsize = cache.maxsize
                 currsize = cache.currsize
             return CacheInfo(hits, misses, maxsize, currsize)
 
         def cache_clear():
-            with lock:
+            with context:
                 cache.clear()
 
         wrapper.cache_info = cache_info
@@ -58,7 +72,7 @@ def cachedmethod(cache, typed=False):
     callable that saves results in a (possibly shared) cache.
 
     """
-    makekey = _makekey_typed if typed else _makekey
+    makekey = makekey_typed if typed else makekey_untyped
 
     def decorator(method):
         def wrapper(self, *args, **kwargs):

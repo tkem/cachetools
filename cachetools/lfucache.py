@@ -44,4 +44,4 @@ def lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
     algorithm.
 
     """
-    return cachedfunc(LFUCache(maxsize, getsizeof), typed, lock())
+    return cachedfunc(LFUCache(maxsize, getsizeof), typed, lock)

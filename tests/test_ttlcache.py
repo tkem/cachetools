@@ -9,7 +9,7 @@ def cached(n):
     return n
 
 
-@ttl_cache(maxsize=2, typed=True)
+@ttl_cache(maxsize=2, typed=True, lock=None)
 def cached_typed(n):
     return n
 

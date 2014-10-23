@@ -9,7 +9,7 @@ def cached(n):
     return n
 
 
-@rr_cache(maxsize=2, typed=True)
+@rr_cache(maxsize=2, typed=True, lock=None)
 def cached_typed(n):
     return n
 

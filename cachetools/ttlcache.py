@@ -114,4 +114,4 @@ def ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False,
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm with a per-item time-to-live (TTL) value.
     """
-    return cachedfunc(TTLCache(maxsize, ttl, timer, getsizeof), typed, lock())
+    return cachedfunc(TTLCache(maxsize, ttl, timer, getsizeof), typed, lock)

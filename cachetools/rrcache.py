@@ -28,4 +28,4 @@ def rr_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
     algorithm.
 
     """
-    return cachedfunc(RRCache(maxsize, getsizeof), typed, lock())
+    return cachedfunc(RRCache(maxsize, getsizeof), typed, lock)
