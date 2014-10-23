@@ -64,12 +64,12 @@ class TTLCacheTest(unittest.TestCase, LRUCacheTestMixin):
         cache[1] = 1
         self.assertEqual(1, cache[1])
         cache.timer.inc()
-        with self.assertRaises(KeyError):
+        with self.assertRaises(TTLCache.ExpiredError):
             cache[1]
         cache[2] = 2
         self.assertEqual(2, cache[2])
         cache.timer.inc()
-        with self.assertRaises(KeyError):
+        with self.assertRaises(TTLCache.ExpiredError):
             cache[2]
         cache[3] = 3
         self.assertEqual(3, cache[3])
@@ -96,7 +96,7 @@ class TTLCacheTest(unittest.TestCase, LRUCacheTestMixin):
         cache[(1, 2, 3)] = 42
         self.assertEqual(42, cache[(1, 2, 3)])
         cache.timer.inc()
-        with self.assertRaises(KeyError):
+        with self.assertRaises(TTLCache.ExpiredError):
             cache[(1, 2, 3)]
         cache.expire()
         self.assertNotIn((1, 2, 3), cache)
