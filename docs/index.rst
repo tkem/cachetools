@@ -85,7 +85,7 @@ of one argument used to retrieve the size of an item's value.
           except TTLCache.ExpiredError:
               print('Key %r has expired' % key)
 
-   .. automethod:: expire(self, time=None)
+   .. automethod:: expire(time=None)
 
       If `time` is not :const:`None`, remove all items whose
       time-to-live would have expired by `time`.
