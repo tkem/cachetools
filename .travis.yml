@@ -1,11 +1,13 @@
 language: python
 python:
-  - "2.7"
-  - "3.2"
-  - "3.3"
-  - "3.4"
-# command to install dependencies
+  - 2.7
+  - 3.2
+  - 3.3
+  - 3.4
 install:
-  - "pip install ."
-# command to run tests
-script: nosetests
+  - pip install .
+  - pip install coverage coveralls
+script:
+  - nosetests --with-coverage
+after_success:
+  - coveralls
