@@ -63,6 +63,8 @@ def cachedmethod(cache, typed=False):
     def decorator(method):
         def wrapper(self, *args, **kwargs):
             mapping = cache(self)
+            if mapping is None:
+                return method(self, *args, **kwargs)
             key = makekey((method,) + args, kwargs)
             try:
                 return mapping[key]
@@ -72,6 +74,7 @@ def cachedmethod(cache, typed=False):
             mapping[key] = result
             return result
 
+        wrapper.cache = cache
         return functools.update_wrapper(wrapper, method)
 
     return decorator

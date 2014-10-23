@@ -90,7 +90,7 @@ Function Decorators
 ------------------------------------------------------------------------
 
 This module provides several memoizing function decorators compatible
-with --- though not necessarily as efficient as --- the Python 3
+with -- though not necessarily as efficient as -- the Python 3
 Standard Library :func:`functools.lru_cache` decorator.
 
 In addition to a `maxsize` parameter, all decorators feature optional
@@ -149,13 +149,19 @@ Method Decorators
 .. decorator:: cachedmethod(cache, typed=False)
 
    `cache` specifies a function of one argument that, when passed
-   :const:`self`, will return a *cache* for the respective instance or
-   class.  Multiple methods of an object or class may share the same
-   cache.
+   :const:`self`, will return a cache object for the respective
+   instance or class.  If `cache(self)` returns :const:`None`, the
+   original underlying method is called directly and the result is not
+   cached.  The `cache` function is also available as the wrapped
+   function's :attr:`cache` attribute.
 
-   One advantage of the `@cachedmethod` decorator over the similar
-   function decorators is that cache properties such as `maxsize` can
-   be set at runtime::
+   Multiple methods of an object or class may share the same cache
+   object, but it is the user's responsibility to handle concurrent
+   cache access in a multi-threaded environment.
+
+   One advantage of this decorator over the similar function
+   decorators is that cache properties such as `maxsize` can be set at
+   runtime::
 
      import operator
      import urllib.request
@@ -168,18 +174,14 @@ Method Decorators
          self.cache = LRUCache(maxsize=cachesize)
 
        @cachedmethod(operator.attrgetter('cache'))
-       def get_pep(self, num):
+       def get(self, num):
          """Retrieve text of a Python Enhancement Proposal"""
          url = 'http://www.python.org/dev/peps/pep-%04d/' % num
          with urllib.request.urlopen(url) as s:
            return s.read()
 
      peps = CachedPEPs(cachesize=10)
-     print("PEP #1: %s" % peps.get_pep(1))
-
-   Note that no locking will be performed on the object returned by
-   `cache(self)`, so dealing with concurrent access is entirely the
-   responsibility of the user.
+     print("PEP #1: %s" % peps.get(1))
 
 
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
