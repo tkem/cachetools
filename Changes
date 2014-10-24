@@ -1,3 +1,13 @@
+0.6.0 2014-10-13
+----------------
+
+- Raise `TTLCache.ExpiredError` for expired `TTLCache` items.
+
+- Support unsynchronized function decorators.
+
+- Allow `@cachedmethod.cache()` to return None
+
+
 0.5.1 2014-09-25
 ----------------
 
