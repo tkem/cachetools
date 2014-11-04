@@ -53,11 +53,11 @@ Project Resources
    :target: https://pypi.python.org/pypi/cachetools/
    :alt: Number of PyPI downloads
 
-.. image:: http://img.shields.io/travis/tkem/cachetools.svg?style=flat
+.. image:: http://img.shields.io/travis/tkem/cachetools/master.svg?style=flat
    :target: https://travis-ci.org/tkem/cachetools/
    :alt: Travis CI build status
 
-.. image:: http://img.shields.io/coveralls/tkem/cachetools.svg?style=flat
+.. image:: http://img.shields.io/coveralls/tkem/cachetools/master.svg?style=flat
    :target: https://coveralls.io/r/tkem/cachetools
    :alt: Test coverage
 
