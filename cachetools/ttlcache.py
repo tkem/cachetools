@@ -1,14 +1,31 @@
-from .lrucache import LRUCache
+from .cache import Cache
 from .decorators import cachedfunc
-from .link import Link
 from .lock import RLock
 
 import time
 
-_marker = object()
+
+class Link(object):
+
+    __slots__ = (
+        'key', 'value', 'expire',
+        'ttl_prev', 'ttl_next',
+        'lru_prev', 'lru_next'
+    )
+
+    def unlink(self):
+        ttl_next = self.ttl_next
+        ttl_prev = self.ttl_prev
+        ttl_prev.ttl_next = ttl_next
+        ttl_next.ttl_prev = ttl_prev
+
+        lru_next = self.lru_next
+        lru_prev = self.lru_prev
+        lru_prev.lru_next = lru_next
+        lru_next.lru_prev = lru_prev
 
 
-class TTLCache(LRUCache):
+class TTLCache(Cache):
     """Cache implementation with per-item time-to-live (TTL) value.
 
     This class associates a time-to-live value with each item.  Items
@@ -34,82 +51,93 @@ class TTLCache(LRUCache):
 
     def __init__(self, maxsize, ttl, timer=time.time, getsizeof=None):
         if getsizeof is None:
-            LRUCache.__init__(self, maxsize)
+            Cache.__init__(self, maxsize)
         else:
-            LRUCache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+            Cache.__init__(self, maxsize, lambda e: getsizeof(e.value))
             self.getsizeof = getsizeof
-        root = Link()
-        root.prev = root.next = root
-        self.__root = root
+        self.__root = root = Link()
+        root.ttl_prev = root.ttl_next = root
+        root.lru_prev = root.lru_next = root
         self.__timer = timer
         self.__ttl = ttl
 
-    def __repr__(self, cache_getitem=LRUCache.__getitem__):
+    def __repr__(self, cache_getitem=Cache.__getitem__):
+        # prevent item reordering/expiration
         return '%s(%r, maxsize=%d, currsize=%d)' % (
             self.__class__.__name__,
-            [(key, cache_getitem(self, key)[0]) for key in self],
+            [(key, cache_getitem(self, key).value) for key in self],
             self.maxsize,
             self.currsize,
         )
 
-    def __getitem__(self, key, cache_getitem=LRUCache.__getitem__):
-        value, link = cache_getitem(self, key)
-        if link.data[1] < self.__timer():
+    def __getitem__(self, key, cache_getitem=Cache.__getitem__):
+        link = cache_getitem(self, key)
+        if link.expire < self.__timer():
             raise TTLCache.ExpiredError(key)
-        return value
+        next = link.lru_next
+        prev = link.lru_prev
+        prev.lru_next = next
+        next.lru_prev = prev
+        link.lru_next = root = self.__root
+        link.lru_prev = tail = root.lru_prev
+        tail.lru_next = root.lru_prev = link
+        return link.value
 
     def __setitem__(self, key, value,
-                    cache_getitem=LRUCache.__getitem__,
-                    cache_setitem=LRUCache.__setitem__,
-                    cache_delitem=LRUCache.__delitem__):
+                    cache_getitem=Cache.__getitem__,
+                    cache_setitem=Cache.__setitem__):
         time = self.__timer()
         self.expire(time)
         try:
-            _, link = cache_getitem(self, key)
+            oldlink = cache_getitem(self, key)
         except KeyError:
-            link = Link()
-        cache_setitem(self, key, (value, link))
-        try:
-            link.prev.next = link.next
-            link.next.prev = link.prev
-        except AttributeError:
-            pass
+            oldlink = None
+        link = Link()
+        link.key = key
+        link.value = value
+        link.expire = time + self.__ttl
+        cache_setitem(self, key, link)
+        if oldlink:
+            oldlink.unlink()
         root = self.__root
-        link.data = (key, time + self.__ttl)
-        link.prev = tail = root.prev
-        link.next = root
-        tail.next = root.prev = link
+        link.ttl_next = root
+        link.ttl_prev = tail = root.ttl_prev
+        tail.ttl_next = root.ttl_prev = link
+        link.lru_next = root
+        link.lru_prev = tail = root.lru_prev
+        tail.lru_next = root.lru_prev = link
 
     def __delitem__(self, key,
-                    cache_getitem=LRUCache.__getitem__,
-                    cache_delitem=LRUCache.__delitem__):
-        _, link = cache_getitem(self, key)
+                    cache_getitem=Cache.__getitem__,
+                    cache_delitem=Cache.__delitem__):
+        link = cache_getitem(self, key)
         cache_delitem(self, key)
         link.unlink()
         self.expire()
 
-    def expire(self, time=None, cache_delitem=LRUCache.__delitem__):
+    def expire(self, time=None):
         """Remove expired items from the cache."""
         if time is None:
             time = self.__timer()
         root = self.__root
-        head = root.next
-        while head is not root and head.data[1] < time:
-            cache_delitem(self, head.data[0])
-            head.next.prev = root
-            head = root.next = head.next
+        head = root.ttl_next
+        cache_delitem = Cache.__delitem__
+        while head is not root and head.expire < time:
+            cache_delitem(self, head.key)
+            next = head.ttl_next
+            head.unlink()
+            head = next
 
-    def pop(self, key, default=_marker):
-        try:
-            value, link = LRUCache.__getitem__(self, key)
-        except KeyError:
-            if default is _marker:
-                raise
-            return default
-        LRUCache.__delitem__(self, key)
+    def popitem(self):
+        """Remove and return the `(key, value)` pair least recently used."""
+        root = self.__root
+        link = root.lru_next
+        if link is root:
+            raise KeyError('cache is empty')
+        key = link.key
+        Cache.__delitem__(self, key)
         link.unlink()
-        self.expire()
-        return value
+        return (key, link.value)
 
     @property
     def timer(self):

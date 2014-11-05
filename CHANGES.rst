@@ -1,6 +1,8 @@
 0.7.0 UNRELEASED
 ----------------
 
+- Refactor ``LRUCache``, ``TTLCache``.
+
 - Remove ``NullContext`` implementation based on ``ExitStack``.
 
 - Rename `Changes` to `CHANGES.rst`.

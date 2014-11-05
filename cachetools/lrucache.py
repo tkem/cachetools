@@ -1,7 +1,17 @@
 from .cache import Cache
 from .decorators import cachedfunc
-from .link import Link
 from .lock import RLock
+
+
+class Link(object):
+
+    __slots__ = 'key', 'value', 'prev', 'next'
+
+    def unlink(self):
+        next = self.next
+        prev = self.prev
+        prev.next = next
+        next.prev = prev
 
 
 class LRUCache(Cache):
@@ -13,55 +23,55 @@ class LRUCache(Cache):
     """
 
     def __init__(self, maxsize, getsizeof=None):
-        if getsizeof is None:
-            Cache.__init__(self, maxsize)
-        else:
-            Cache.__init__(self, maxsize, lambda e: getsizeof(e[0]))
+        if getsizeof is not None:
+            Cache.__init__(self, maxsize, lambda link: getsizeof(link.value))
             self.getsizeof = getsizeof
-        root = Link()
+        else:
+            Cache.__init__(self, maxsize)
+        self.__root = root = Link()
         root.prev = root.next = root
-        self.__root = root
 
     def __repr__(self, cache_getitem=Cache.__getitem__):
+        # prevent item reordering
         return '%s(%r, maxsize=%d, currsize=%d)' % (
             self.__class__.__name__,
-            [(key, cache_getitem(self, key)[0]) for key in self],
+            [(key, cache_getitem(self, key).value) for key in self],
             self.maxsize,
             self.currsize,
         )
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
-        value, link = cache_getitem(self, key)
-        root = self.__root
-        link.prev.next = link.next
-        link.next.prev = link.prev
+        link = cache_getitem(self, key)
+        next = link.next
+        prev = link.prev
+        prev.next = next
+        next.prev = prev
+        link.next = root = self.__root
         link.prev = tail = root.prev
-        link.next = root
         tail.next = root.prev = link
-        return value
+        return link.value
 
     def __setitem__(self, key, value,
                     cache_getitem=Cache.__getitem__,
                     cache_setitem=Cache.__setitem__):
         try:
-            _, link = cache_getitem(self, key)
+            oldlink = cache_getitem(self, key)
         except KeyError:
-            link = Link()
-        cache_setitem(self, key, (value, link))
-        try:
-            link.prev.next = link.next
-            link.next.prev = link.prev
-        except AttributeError:
-            link.data = key
-        root = self.__root
+            oldlink = None
+        link = Link()
+        link.key = key
+        link.value = value
+        cache_setitem(self, key, link)
+        if oldlink:
+            oldlink.unlink()
+        link.next = root = self.__root
         link.prev = tail = root.prev
-        link.next = root
         tail.next = root.prev = link
 
     def __delitem__(self, key,
                     cache_getitem=Cache.__getitem__,
                     cache_delitem=Cache.__delitem__):
-        _, link = cache_getitem(self, key)
+        link = cache_getitem(self, key)
         cache_delitem(self, key)
         link.unlink()
 
@@ -71,8 +81,10 @@ class LRUCache(Cache):
         link = root.next
         if link is root:
             raise KeyError('cache is empty')
-        key = link.data
-        return (key, self.pop(key))
+        key = link.key
+        Cache.__delitem__(self, key)
+        link.unlink()
+        return (key, link.value)
 
 
 def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
