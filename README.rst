@@ -29,7 +29,7 @@ size is the sum of the size of its items, and an item's size in
 general is a property or function of its value, e.g. the result of
 ``sys.getsizeof``, or ``len`` for string and sequence values.
 
-This module provides various cache implementations based on different
+This module provides multiple cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
 and method calls.
 
@@ -83,5 +83,5 @@ Licensed under the `MIT License`_.
 .. _Documentation: http://pythonhosted.org/cachetools/
 .. _Issue Tracker: https://github.com/tkem/cachetools/issues/
 .. _Source Code: https://github.com/tkem/cachetools/
-.. _Change Log: http://raw.github.com/tkem/cachetools/master/Changes
+.. _Change Log: https://github.com/tkem/cachetools/blob/master/CHANGES.rst
 .. _MIT License: http://raw.github.com/tkem/cachetools/master/LICENSE

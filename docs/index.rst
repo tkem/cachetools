@@ -30,7 +30,7 @@ size is the sum of the size of its items, and an item's size in
 general is a property or function of its value, e.g. the result of
 :func:`sys.getsizeof`, or :func:`len` for string and sequence values.
 
-This module provides various cache implementations based on different
+This module provides multiple cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
 and method calls.
 
