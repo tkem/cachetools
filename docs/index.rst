@@ -119,7 +119,7 @@ documentation for details.
 Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
 :const:`None` is not supported.
 
-.. decorator:: rr_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Random Replacement (RR)

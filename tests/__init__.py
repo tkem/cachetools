@@ -1,10 +1,10 @@
 class CacheTestMixin(object):
 
-    def make_cache(self, maxsize, getsizeof=None):
+    def cache(self, maxsize, getsizeof=None):
         raise NotImplementedError
 
-    def test_defaults(self):
-        cache = self.make_cache(maxsize=1)
+    def test_cache_defaults(self):
+        cache = self.cache(maxsize=1)
         self.assertEqual(0, len(cache))
         self.assertEqual(1, cache.maxsize)
         self.assertEqual(0, cache.currsize)
@@ -13,8 +13,8 @@ class CacheTestMixin(object):
         self.assertEqual(1, cache.getsizeof(0))
         self.assertTrue(repr(cache).startswith(cache.__class__.__name__))
 
-    def test_insert(self):
-        cache = self.make_cache(maxsize=2)
+    def test_cache_insert(self):
+        cache = self.cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))
@@ -31,8 +31,8 @@ class CacheTestMixin(object):
         self.assertEqual(4, cache[4])
         self.assertTrue(1 in cache or 2 in cache or 3 in cache)
 
-    def test_update(self):
-        cache = self.make_cache(maxsize=2)
+    def test_cache_update(self):
+        cache = self.cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))
@@ -49,8 +49,8 @@ class CacheTestMixin(object):
         self.assertEqual('a', cache[1])
         self.assertEqual('b', cache[2])
 
-    def test_delete(self):
-        cache = self.make_cache(maxsize=2)
+    def test_cache_delete(self):
+        cache = self.cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))
@@ -67,8 +67,8 @@ class CacheTestMixin(object):
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
 
-    def test_pop(self):
-        cache = self.make_cache(maxsize=2)
+    def test_cache_pop(self):
+        cache = self.cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, cache.pop(2))
@@ -87,8 +87,8 @@ class CacheTestMixin(object):
         self.assertEqual(None, cache.pop(1, None))
         self.assertEqual(None, cache.pop(0, None))
 
-    def test_popitem(self):
-        cache = self.make_cache(maxsize=2)
+    def test_cache_popitem(self):
+        cache = self.cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertIn(cache.pop(1), {1: 1, 2: 2})
@@ -99,8 +99,8 @@ class CacheTestMixin(object):
         with self.assertRaises(KeyError):
             cache.popitem()
 
-    def test_getsizeof(self):
-        cache = self.make_cache(maxsize=3, getsizeof=lambda x: x)
+    def test_cache_getsizeof(self):
+        cache = self.cache(maxsize=3, getsizeof=lambda x: x)
         self.assertEqual(3, cache.maxsize)
         self.assertEqual(0, cache.currsize)
         self.assertEqual(1, cache.getsizeof(1))
@@ -143,3 +143,34 @@ class CacheTestMixin(object):
         self.assertEqual(1, len(cache))
         self.assertEqual(3, cache.currsize)
         self.assertEqual(3, cache[3])
+
+
+class DecoratorTestMixin(object):
+
+    def decorator(self, maxsize, typed=False, lock=None):
+        raise NotImplementedError
+
+    def test_decorator(self):
+        cached = self.decorator(maxsize=2)(lambda n: n)
+
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 1, 2, 1))
+        self.assertEqual(cached(1.0), 1.0)
+        self.assertEqual(cached.cache_info(), (2, 1, 2, 1))
+
+        cached.cache_clear()
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (2, 2, 2, 1))
+
+    def test_typed_decorator(self):
+        cached = self.decorator(maxsize=2, typed=True)(lambda n: n)
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 1, 2, 1))
+        self.assertEqual(cached(1.0), 1.0)
+        self.assertEqual(cached.cache_info(), (1, 2, 2, 2))
+        self.assertEqual(cached(1.0), 1.0)
+        self.assertEqual(cached.cache_info(), (2, 2, 2, 2))

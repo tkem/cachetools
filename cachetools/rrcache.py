@@ -11,21 +11,31 @@ class RRCache(Cache):
     This class randomly selects candidate items and discards them to
     make space when necessary.
 
+    By default, items are selected from the list of cache keys using
+    :func:`random.choice`.  The optional argument `choice` may specify
+    an alternative function that returns an arbitrary element from a
+    non-empty sequence.
+
     """
+
+    def __init__(self, maxsize, choice=random.choice, getsizeof=None):
+        Cache.__init__(self, maxsize, getsizeof=getsizeof)
+        self.__choice = choice
 
     def popitem(self):
         """Remove and return a random `(key, value)` pair."""
         try:
-            key = random.choice(list(self))
+            key = self.__choice(list(self))
         except IndexError:
             raise KeyError('cache is empty')
         return (key, self.pop(key))
 
 
-def rr_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+def rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None,
+             lock=RLock):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Random Replacement (RR)
     algorithm.
 
     """
-    return cachedfunc(RRCache(maxsize, getsizeof), typed, lock)
+    return cachedfunc(RRCache(maxsize, choice, getsizeof), typed, lock)

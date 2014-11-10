@@ -6,5 +6,5 @@ from cachetools import Cache
 
 class CacheTest(unittest.TestCase, CacheTestMixin):
 
-    def make_cache(self, maxsize, getsizeof=None):
-        return Cache(maxsize, getsizeof)
+    def cache(self, maxsize, getsizeof=None):
+        return Cache(maxsize, getsizeof=getsizeof)

@@ -1,6 +1,8 @@
 0.7.0 UNRELEASED
 ----------------
 
+- Add `choice` argument to ``RRCache`` constructor.
+
 - Move ``TTLCache.ExpiredError`` to module level.
 
 - Refactor ``LRUCache``, ``TTLCache``.

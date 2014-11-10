@@ -1,42 +1,38 @@
 import unittest
+import random
 
-from . import CacheTestMixin
+from . import CacheTestMixin, DecoratorTestMixin
 from cachetools import RRCache, rr_cache
 
 
-@rr_cache(maxsize=2)
-def cached(n):
-    return n
+class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
+    def cache(self, maxsize, choice=random.choice, getsizeof=None):
+        return RRCache(maxsize, choice=choice, getsizeof=getsizeof)
 
-@rr_cache(maxsize=2, typed=True, lock=None)
-def cached_typed(n):
-    return n
+    def decorator(self, maxsize, choice=random.choice, typed=False, lock=None):
+        return rr_cache(maxsize, choice=choice, typed=typed, lock=lock)
 
+    def test_choice(self):
+        cache = self.cache(maxsize=2, choice=min)
 
-class RRCacheTest(unittest.TestCase, CacheTestMixin):
+        cache[1] = 1
+        cache[2] = 2
+        cache[3] = 3
 
-    def make_cache(self, maxsize, getsizeof=None):
-        return RRCache(maxsize, getsizeof)
+        self.assertEqual(2, len(cache))
+        self.assertEqual(2, cache[2])
+        self.assertEqual(3, cache[3])
+        self.assertNotIn(1, cache)
 
-    def test_decorator(self):
-        self.assertEqual(cached(1), 1)
-        self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
-        self.assertEqual(cached(1), 1)
-        self.assertEqual(cached.cache_info(), (1, 1, 2, 1))
-        self.assertEqual(cached(1.0), 1.0)
-        self.assertEqual(cached.cache_info(), (2, 1, 2, 1))
+        cache[0] = 0
+        self.assertEqual(2, len(cache))
+        self.assertEqual(0, cache[0])
+        self.assertEqual(3, cache[3])
+        self.assertNotIn(2, cache)
 
-        cached.cache_clear()
-        self.assertEqual(cached(1), 1)
-        self.assertEqual(cached.cache_info(), (2, 2, 2, 1))
-
-    def test_typed_decorator(self):
-        self.assertEqual(cached_typed(1), 1)
-        self.assertEqual(cached_typed.cache_info(), (0, 1, 2, 1))
-        self.assertEqual(cached_typed(1), 1)
-        self.assertEqual(cached_typed.cache_info(), (1, 1, 2, 1))
-        self.assertEqual(cached_typed(1.0), 1.0)
-        self.assertEqual(cached_typed.cache_info(), (1, 2, 2, 2))
-        self.assertEqual(cached_typed(1.0), 1.0)
-        self.assertEqual(cached_typed.cache_info(), (2, 2, 2, 2))
+        cache[4] = 4
+        self.assertEqual(2, len(cache))
+        self.assertEqual(3, cache[3])
+        self.assertEqual(4, cache[4])
+        self.assertNotIn(0, cache)

@@ -1,26 +1,19 @@
 import unittest
 
-from . import CacheTestMixin
+from . import CacheTestMixin, DecoratorTestMixin
 from cachetools import LFUCache, lfu_cache
 
 
-@lfu_cache(maxsize=2)
-def cached(n):
-    return n
+class LFUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
-
-@lfu_cache(maxsize=2, typed=True, lock=None)
-def cached_typed(n):
-    return n
-
-
-class LFUCacheTest(unittest.TestCase, CacheTestMixin):
-
-    def make_cache(self, maxsize, getsizeof=None):
+    def cache(self, maxsize, getsizeof=None):
         return LFUCache(maxsize, getsizeof)
 
-    def test_lfu_insert(self):
-        cache = self.make_cache(maxsize=2)
+    def decorator(self, maxsize, typed=False, lock=None):
+        return lfu_cache(maxsize, typed=typed, lock=lock)
+
+    def test_lfu(self):
+        cache = self.cache(maxsize=2)
 
         cache[1] = 1
         cache[1]
@@ -38,7 +31,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[1], 1)
 
     def test_lfu_getsizeof(self):
-        cache = self.make_cache(maxsize=3, getsizeof=lambda x: x)
+        cache = self.cache(maxsize=3, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2
@@ -58,25 +51,3 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
             cache[4] = 4
         self.assertEqual(len(cache), 1)
         self.assertEqual(cache[3], 3)
-
-    def test_decorator(self):
-        self.assertEqual(cached(1), 1)
-        self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
-        self.assertEqual(cached(1), 1)
-        self.assertEqual(cached.cache_info(), (1, 1, 2, 1))
-        self.assertEqual(cached(1.0), 1.0)
-        self.assertEqual(cached.cache_info(), (2, 1, 2, 1))
-
-        cached.cache_clear()
-        self.assertEqual(cached(1), 1)
-        self.assertEqual(cached.cache_info(), (2, 2, 2, 1))
-
-    def test_typed_decorator(self):
-        self.assertEqual(cached_typed(1), 1)
-        self.assertEqual(cached_typed.cache_info(), (0, 1, 2, 1))
-        self.assertEqual(cached_typed(1), 1)
-        self.assertEqual(cached_typed.cache_info(), (1, 1, 2, 1))
-        self.assertEqual(cached_typed(1.0), 1.0)
-        self.assertEqual(cached_typed.cache_info(), (1, 2, 2, 2))
-        self.assertEqual(cached_typed(1.0), 1.0)
-        self.assertEqual(cached_typed.cache_info(), (2, 2, 2, 2))
