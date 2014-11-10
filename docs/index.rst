@@ -66,13 +66,14 @@ of one argument used to retrieve the size of an item's value.
    :members:
 
 .. autoclass:: TTLCache
-   :members: ExpiredError, timer, ttl
+   :members:
+   :exclude-members: ExpiredError
 
    Note that a cache item may expire at *any* time, so iterating over
-   the items of a :class:`TTLCache` may raise
-   :class:`TTLCache.ExpiredError` unexpectedly::
+   the items of a :class:`TTLCache` may raise :exc:`ExpiredError`
+   unexpectedly::
 
-      from cachetools import TTLCache
+      from cachetools import TTLCache, ExpiredError
       import time
 
       cache = TTLCache(maxsize=100, ttl=1)
@@ -82,13 +83,8 @@ of one argument used to retrieve the size of an item's value.
       for key in cache:
           try:
               print(cache[key])
-          except TTLCache.ExpiredError:
+          except ExpiredError:
               print('Key %r has expired' % key)
-
-   .. automethod:: expire(time=None)
-
-      If `time` is not :const:`None`, remove all items whose
-      time-to-live would have expired by `time`.
 
 
 Function Decorators
@@ -187,6 +183,12 @@ Method Decorators
 
      peps = CachedPEPs(cachesize=10)
      print("PEP #1: %s" % peps.get(1))
+
+
+Exception Classes
+------------------------------------------------------------------------
+
+.. autoexception:: ExpiredError
 
 
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable

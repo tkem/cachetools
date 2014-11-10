@@ -1,7 +1,7 @@
 import unittest
 
 from . import CacheTestMixin
-from cachetools import TTLCache, ttl_cache
+from cachetools import ExpiredError, TTLCache, ttl_cache
 
 
 @ttl_cache(maxsize=2)
@@ -62,12 +62,12 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = 1
         self.assertEqual(1, cache[1])
         cache.timer.inc()
-        with self.assertRaises(TTLCache.ExpiredError):
+        with self.assertRaises(ExpiredError):
             cache[1]
         cache[2] = 2
         self.assertEqual(2, cache[2])
         cache.timer.inc()
-        with self.assertRaises(TTLCache.ExpiredError):
+        with self.assertRaises(ExpiredError):
             cache[2]
         cache[3] = 3
         self.assertEqual(3, cache[3])
@@ -94,7 +94,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache[(1, 2, 3)] = 42
         self.assertEqual(42, cache[(1, 2, 3)])
         cache.timer.inc()
-        with self.assertRaises(TTLCache.ExpiredError):
+        with self.assertRaises(ExpiredError):
             cache[(1, 2, 3)]
         cache.expire()
         self.assertNotIn((1, 2, 3), cache)

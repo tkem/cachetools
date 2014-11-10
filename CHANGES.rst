@@ -1,6 +1,8 @@
 0.7.0 UNRELEASED
 ----------------
 
+- Move ``TTLCache.ExpiredError`` to module level.
+
 - Refactor ``LRUCache``, ``TTLCache``.
 
 - Remove ``NullContext`` implementation based on ``ExitStack``.
