@@ -1,18 +1,15 @@
 import collections
-import contextlib  # noqa
 import functools
 
-try:
-    from contextlib import ExitStack as NullContext  # Python 3.3
-except ImportError:
-    class NullContext:
-        def __enter__(self):
-            pass
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
-
 CacheInfo = collections.namedtuple('CacheInfo', 'hits misses maxsize currsize')
+
+
+class NullContext:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
 
 nullcontext = NullContext()
 

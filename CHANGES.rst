@@ -1,7 +1,9 @@
 0.7.0 UNRELEASED
 ----------------
 
-- Move `Changes` to `CHANGES.rst`.
+- Remove ``NullContext`` implementation based on ``ExitStack``.
+
+- Rename `Changes` to `CHANGES.rst`.
 
 
 0.6.0 2014-10-13
