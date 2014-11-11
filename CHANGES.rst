@@ -3,13 +3,11 @@
 
 - Add `choice` argument to ``RRCache`` constructor.
 
-- Move ``TTLCache.ExpiredError`` to module level.
+- Deprecate ``TTLCache.ExpiredError``.
 
 - Refactor ``LRUCache``, ``TTLCache``.
 
-- Remove ``NullContext`` implementation based on ``ExitStack``.
-
-- Rename `Changes` to `CHANGES.rst`.
+- Use custom ``NullContext`` implementation.
 
 
 0.6.0 2014-10-13

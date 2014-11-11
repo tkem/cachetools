@@ -18,6 +18,7 @@ including a variant of the Python 3 Standard Library
    >>> cache['second']
    2
    >>> cache['fourth'] = 4
+   >>> cache
    LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
 
 

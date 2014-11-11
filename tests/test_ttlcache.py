@@ -1,7 +1,7 @@
 import unittest
 
 from . import CacheTestMixin, DecoratorTestMixin
-from cachetools import ExpiredError, TTLCache, ttl_cache
+from cachetools import TTLCache, ttl_cache
 
 
 class Timer:
@@ -80,12 +80,12 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         cache[1] = 1
         self.assertEqual(1, cache[1])
         cache.timer.tick()
-        with self.assertRaises(ExpiredError):
+        with self.assertRaises(KeyError):
             cache[1]
         cache[2] = 2
         self.assertEqual(2, cache[2])
         cache.timer.tick()
-        with self.assertRaises(ExpiredError):
+        with self.assertRaises(KeyError):
             cache[2]
         cache[3] = 3
         self.assertEqual(3, cache[3])
@@ -112,7 +112,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         cache[(1, 2, 3)] = 42
         self.assertEqual(42, cache[(1, 2, 3)])
         cache.timer.tick()
-        with self.assertRaises(ExpiredError):
+        with self.assertRaises(KeyError):
             cache[(1, 2, 3)]
         cache.expire()
         self.assertNotIn((1, 2, 3), cache)

@@ -1,6 +1,5 @@
 from .cache import Cache
 from .decorators import cachedfunc
-from .errors import ExpiredError
 from .lock import RLock
 
 import time
@@ -33,7 +32,8 @@ class TTLCache(Cache):
     that expire because they have exceeded their time-to-live will be
     removed.  If no expired items are there to remove, the least
     recently used items will be discarded first to make space when
-    necessary.
+    necessary.  Trying to access an expired item will raise a
+    :exc:`KeyError`.
 
     By default, the time-to-live is specified in seconds, and the
     standard :func:`time.time` function is used to retrieve the
@@ -42,7 +42,7 @@ class TTLCache(Cache):
 
     """
 
-    ExpiredError = ExpiredError  # deprecated
+    ExpiredError = KeyError  # deprecated
 
     def __init__(self, maxsize, ttl, timer=time.time, getsizeof=None):
         if getsizeof is None:
@@ -68,7 +68,7 @@ class TTLCache(Cache):
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         link = cache_getitem(self, key)
         if link.expire < self.__timer():
-            raise ExpiredError(key)
+            raise KeyError(key)
         next = link.lru_next
         prev = link.lru_prev
         prev.lru_next = next

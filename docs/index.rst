@@ -20,6 +20,7 @@ including a variant of the Python 3 Standard Library
    >>> cache['second']
    2
    >>> cache['fourth'] = 4
+   >>> cache
    LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
@@ -70,10 +71,10 @@ of one argument used to retrieve the size of an item's value.
    :exclude-members: ExpiredError
 
    Note that a cache item may expire at *any* time, so iterating over
-   the items of a :class:`TTLCache` may raise :exc:`ExpiredError`
+   the items of a :class:`TTLCache` may raise :exc:`KeyError`
    unexpectedly::
 
-      from cachetools import TTLCache, ExpiredError
+      from cachetools import TTLCache
       import time
 
       cache = TTLCache(maxsize=100, ttl=1)
@@ -83,7 +84,7 @@ of one argument used to retrieve the size of an item's value.
       for key in cache:
           try:
               print(cache[key])
-          except ExpiredError:
+          except KeyError:
               print('Key %r has expired' % key)
 
 
@@ -183,12 +184,6 @@ Method Decorators
 
      peps = CachedPEPs(cachesize=10)
      print("PEP #1: %s" % peps.get(1))
-
-
-Exception Classes
-------------------------------------------------------------------------
-
-.. autoexception:: ExpiredError
 
 
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
