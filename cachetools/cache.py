@@ -1,6 +1,10 @@
 import collections
 
 
+def one(value):
+    return 1
+
+
 class Cache(collections.MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class.
 
@@ -20,7 +24,7 @@ class Cache(collections.MutableMapping):
     def __init__(self, maxsize, getsizeof=None):
         self.__mapping = dict()
         self.__maxsize = maxsize
-        self.__getsizeof = getsizeof or self.__one
+        self.__getsizeof = getsizeof or one
         self.__currsize = 0
 
     def __repr__(self):
@@ -72,6 +76,6 @@ class Cache(collections.MutableMapping):
         """Return the size of a cache element."""
         return self.__getsizeof(value)
 
-    @staticmethod
-    def __one(value):
-        return 1
+    def _getitemsize(self, key):
+        # TODO: decide on interface, make public
+        return self.__mapping[key][1]

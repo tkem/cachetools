@@ -23,31 +23,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
     def decorator(self, maxsize, ttl=0, typed=False, lock=None):
         return ttl_cache(maxsize, ttl, timer=Timer(), typed=typed, lock=lock)
 
-    def test_ttl(self):
-        cache = self.cache(maxsize=2, ttl=2)
-        self.assertEqual(cache.ttl, 2)
-
-        cache[1] = 1
-
-        self.assertEqual(1, len(cache))
-        self.assertEqual(1, cache[1])
-
-        cache.timer.tick()
-        cache[2] = 2
-
-        self.assertEqual(2, len(cache))
-        self.assertEqual(1, cache[1])
-        self.assertEqual(2, cache[2])
-
-        cache.timer.tick()
-        cache[1]
-        cache[3] = 3
-
-        self.assertEqual(2, len(cache))
-        self.assertEqual(1, cache[1])
-        self.assertNotIn(2, cache)
-        self.assertEqual(3, cache[3])
-
     def test_lru(self):
         cache = self.cache(maxsize=2)
 
@@ -56,63 +31,137 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         cache[3] = 3
 
         self.assertEqual(len(cache), 2)
+        self.assertNotIn(1, cache)
         self.assertEqual(cache[2], 2)
         self.assertEqual(cache[3], 3)
-        self.assertNotIn(1, cache)
 
         cache[2]
         cache[4] = 4
         self.assertEqual(len(cache), 2)
+        self.assertNotIn(1, cache)
         self.assertEqual(cache[2], 2)
-        self.assertEqual(cache[4], 4)
         self.assertNotIn(3, cache)
+        self.assertEqual(cache[4], 4)
 
         cache[5] = 5
         self.assertEqual(len(cache), 2)
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertNotIn(3, cache)
         self.assertEqual(cache[4], 4)
         self.assertEqual(cache[5], 5)
-        self.assertNotIn(2, cache)
 
-    def test_expire(self):
-        cache = self.cache(maxsize=3, ttl=0)
-        self.assertEqual(cache.ttl, 0)
+    def test_ttl(self):
+        cache = self.cache(maxsize=2, ttl=1)
+        self.assertEqual(1, cache.ttl)
 
         cache[1] = 1
+        self.assertEqual({1}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
         self.assertEqual(1, cache[1])
+
         cache.timer.tick()
-        with self.assertRaises(KeyError):
-            cache[1]
+        self.assertEqual({1}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
+        self.assertEqual(1, cache[1])
+
         cache[2] = 2
+        self.assertEqual({1, 2}, set(cache))
+        self.assertEqual(2, len(cache))
+        self.assertEqual(2, cache.currsize)
+        self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
+
         cache.timer.tick()
-        with self.assertRaises(KeyError):
-            cache[2]
-        cache[3] = 3
-        self.assertEqual(3, cache[3])
-
-        cache.expire(1)
+        self.assertEqual({2}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
         self.assertNotIn(1, cache)
+        self.assertEqual(2, cache[2])
+
+        cache[3] = 3
+        self.assertEqual({2, 3}, set(cache))
+        self.assertEqual(2, len(cache))
+        self.assertEqual(2, cache.currsize)
+        self.assertNotIn(1, cache)
+        self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire(2)
+        cache.timer.tick()
+        self.assertEqual({3}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertEqual(3, cache[3])
 
         cache.timer.tick()
-        cache.expire()
+        self.assertEqual(set(), set(cache))
         self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertNotIn(3, cache)
+
+    def test_expire(self):
+        cache = self.cache(maxsize=3, ttl=2)
+        self.assertEqual(2, cache.ttl)
+
+        cache[1] = 1
+        cache.timer.tick()
+        cache[2] = 2
+        cache.timer.tick()
+        cache[3] = 3
+        self.assertEqual(2, cache.timer())
+
+        self.assertEqual({1, 2, 3}, set(cache))
+        self.assertEqual(3, len(cache))
+        self.assertEqual(3, cache.currsize)
+        self.assertEqual(1, cache[1])
+        self.assertEqual(2, cache[2])
+        self.assertEqual(3, cache[3])
+
+        cache.expire()
+        self.assertEqual({1, 2, 3}, set(cache))
+        self.assertEqual(3, len(cache))
+        self.assertEqual(3, cache.currsize)
+        self.assertEqual(1, cache[1])
+        self.assertEqual(2, cache[2])
+        self.assertEqual(3, cache[3])
+
+        cache.expire(3)
+        self.assertEqual({2, 3}, set(cache))
+        self.assertEqual(2, len(cache))
+        self.assertEqual(2, cache.currsize)
+        self.assertNotIn(1, cache)
+        self.assertEqual(2, cache[2])
+        self.assertEqual(3, cache[3])
+
+        cache.expire(4)
+        self.assertEqual({3}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertEqual(3, cache[3])
+
+        cache.expire(5)
+        self.assertEqual(set(), set(cache))
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
     def test_tuple_key(self):
         cache = self.cache(maxsize=1, ttl=0)
+        self.assertEqual(0, cache.ttl)
 
         cache[(1, 2, 3)] = 42
         self.assertEqual(42, cache[(1, 2, 3)])
         cache.timer.tick()
         with self.assertRaises(KeyError):
             cache[(1, 2, 3)]
-        cache.expire()
         self.assertNotIn((1, 2, 3), cache)

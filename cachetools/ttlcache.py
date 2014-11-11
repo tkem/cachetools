@@ -26,7 +26,7 @@ class Link(object):
 
 
 class TTLCache(Cache):
-    """Cache implementation with per-item time-to-live (TTL) value.
+    """LRU Cache implementation with per-item time-to-live (TTL) value.
 
     This class associates a time-to-live value with each item.  Items
     that expire because they have exceeded their time-to-live will be
@@ -110,6 +110,25 @@ class TTLCache(Cache):
         link.unlink()
         self.expire()
 
+    def __iter__(self):
+        timer = self.__timer
+        root = self.__root
+        curr = root.ttl_next
+        while curr is not root:
+            if not (curr.expire < timer()):
+                yield curr.key
+            curr = curr.ttl_next
+
+    def __len__(self, cache_len=Cache.__len__):
+        expired = 0
+        time = self.__timer()
+        root = self.__root
+        head = root.ttl_next
+        while head is not root and head.expire < time:
+            expired += 1
+            head = head.ttl_next
+        return cache_len(self) - expired
+
     def expire(self, time=None):
         """Remove expired items from the cache.
 
@@ -138,6 +157,18 @@ class TTLCache(Cache):
         Cache.__delitem__(self, key)
         link.unlink()
         return (key, link.value)
+
+    @property
+    def currsize(self):
+        getsize = Cache._getitemsize  # TODO: decide on final interface
+        expired = 0
+        time = self.__timer()
+        root = self.__root
+        head = root.ttl_next
+        while head is not root and head.expire < time:
+            expired += getsize(self, head.key)
+            head = head.ttl_next
+        return super(TTLCache, self).currsize - expired
 
     @property
     def timer(self):
