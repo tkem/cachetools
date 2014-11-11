@@ -1,13 +1,14 @@
 0.7.0 UNRELEASED
 ----------------
 
-- Add `choice` argument to ``RRCache`` constructor.
-
 - Deprecate ``TTLCache.ExpiredError``.
 
-- Refactor ``LRUCache``, ``TTLCache``.
+- Add `choice` argument to ``RRCache`` constructor.
 
-- Use custom ``NullContext`` implementation.
+- Refactor ``LFUCache``, ``LRUCache`` and ``TTLCache``.
+
+- Always use custom ``NullContext`` implementation for unsynchronized
+  function decorators.
 
 
 0.6.0 2014-10-13
