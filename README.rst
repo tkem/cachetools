@@ -2,8 +2,8 @@ cachetools
 ========================================================================
 
 This module provides various memoizing collections and decorators,
-including a variant of the Python 3 Standard Library
-``functools.lru_cache`` function decorator.
+including a variant of the Python 3 Standard Library `@lru_cache`_
+function decorator.
 
 .. code-block:: pycon
 
@@ -76,7 +76,7 @@ Copyright (c) 2014 Thomas Kemmer.
 Licensed under the `MIT License`_.
 
 
-.. _functools.lru_cache: http://docs.python.org/3.4/library/functools.html#functools.lru_cache
+.. _@lru_cache: http://docs.python.org/3/library/functools.html#functools.lru_cache
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
 .. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms

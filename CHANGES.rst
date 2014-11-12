@@ -1,4 +1,4 @@
-0.7.0 UNRELEASED
+0.7.0 2014-11-12
 ----------------
 
 - Deprecate ``TTLCache.ExpiredError``.
@@ -7,7 +7,7 @@
 
 - Refactor ``LFUCache``, ``LRUCache`` and ``TTLCache``.
 
-- Always use custom ``NullContext`` implementation for unsynchronized
+- Use custom ``NullContext`` implementation for unsynchronized
   function decorators.
 
 

@@ -4,8 +4,8 @@
 .. module:: cachetools
 
 This module provides various memoizing collections and decorators,
-including a variant of the Python 3 Standard Library
-:func:`functools.lru_cache` function decorator.
+including a variant of the Python 3 Standard Library `@lru_cache`_
+function decorator.
 
 .. code-block:: pycon
 
@@ -57,10 +57,10 @@ of one argument used to retrieve the size of an item's value.
 .. autoclass:: Cache
    :members:
 
-.. autoclass:: LRUCache
+.. autoclass:: LFUCache
    :members:
 
-.. autoclass:: LFUCache
+.. autoclass:: LRUCache
    :members:
 
 .. autoclass:: RRCache
@@ -77,11 +77,11 @@ of one argument used to retrieve the size of an item's value.
       from cachetools import TTLCache
       import time
 
-      cache = TTLCache(maxsize=100, ttl=1)
+      cache = TTLCache(maxsize=100, ttl=1.0)
       cache.update({1: 1, 2: 2, 3: 3})
-      time.sleep(1)
 
       for key in cache:
+          time.sleep(0.5)
           try:
               print(cache[key])
           except KeyError:
@@ -93,11 +93,27 @@ Function Decorators
 
 This module provides several memoizing function decorators compatible
 with -- though not necessarily as efficient as -- the Python 3
-Standard Library :func:`functools.lru_cache` decorator.
+Standard Library :func:`functools.lru_cache` decorator::
 
-In addition to a `maxsize` parameter, all decorators feature optional
-arguments, which should be specified as keyword arguments for
-compatibility with future extensions:
+    import cachetools
+    import urllib.request
+
+    @cachetools.lru_cache(maxsize=32)
+    def get_pep(num):
+        """Retrieve text of a Python Enhancement Proposal"""
+        url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+        with urllib.request.urlopen(url) as s:
+            return s.read()
+
+    for n in 8, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
+        try:
+            print(n, len(get_pep(n)))
+        except urllib.error.HTTPError:
+            print(n, 'Not Found')
+    print(get_pep.cache_info())
+
+In addition to a `maxsize` parameter, all decorators feature some
+optional keyword arguments:
 
 - `typed`, if is set to :const:`True`, will cause function arguments
   of different types to be cached separately.
@@ -120,12 +136,6 @@ documentation for details.
 Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
 :const:`None` is not supported.
 
-.. decorator:: rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None, lock=threading.RLock)
-
-   Decorator that wraps a function with a memoizing callable that
-   saves up to `maxsize` results based on a Random Replacement (RR)
-   algorithm.
-
 .. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
    Decorator that wraps a function with a memoizing callable that
@@ -136,6 +146,12 @@ Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
+   algorithm.
+
+.. decorator:: rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None, lock=threading.RLock)
+
+   Decorator that wraps a function with a memoizing callable that
+   saves up to `maxsize` results based on a Random Replacement (RR)
    algorithm.
 
 .. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False, getsizeof=None, lock=threading.RLock)
@@ -172,20 +188,21 @@ Method Decorators
 
      class CachedPEPs(object):
 
-       def __init__(self, cachesize):
-         self.cache = LRUCache(maxsize=cachesize)
+         def __init__(self, cachesize):
+             self.cache = LRUCache(maxsize=cachesize)
 
-       @cachedmethod(operator.attrgetter('cache'))
-       def get(self, num):
-         """Retrieve text of a Python Enhancement Proposal"""
-         url = 'http://www.python.org/dev/peps/pep-%04d/' % num
-         with urllib.request.urlopen(url) as s:
-           return s.read()
+         @cachedmethod(operator.attrgetter('cache'))
+         def get(self, num):
+             """Retrieve text of a Python Enhancement Proposal"""
+             url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+             with urllib.request.urlopen(url) as s:
+                 return s.read()
 
      peps = CachedPEPs(cachesize=10)
      print("PEP #1: %s" % peps.get(1))
 
 
+.. _@lru_cache: http://docs.python.org/3/library/functools.html#functools.lru_cache
 .. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
 .. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
