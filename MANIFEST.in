@@ -1,5 +1,3 @@
-include .coveragerc
-include .travis.yml
 include CHANGES.rst
 include LICENSE
 include MANIFEST.in
