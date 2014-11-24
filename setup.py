@@ -1,20 +1,21 @@
+import os.path, codecs, re
+
 from setuptools import setup
 
 
-def get_version(filename):
-    import re
-    content = open(filename).read()
-    metadata = dict(re.findall("__([a-z]+)__ = '([^']+)'", content))
-    return metadata['version']
+with codecs.open(os.path.join(os.path.dirname(__file__), 'cachetools', '__init__.py'),
+                 encoding='utf8') as f:
+    metadata = dict(re.findall(r"__([a-z]+)__ = '([^']+)", f.read()))
+
 
 setup(
     name='cachetools',
-    version=get_version('cachetools/__init__.py'),
+    version=metadata['version'],
     author='Thomas Kemmer',
     author_email='tkemmer@computer.org',
     url='https://github.com/tkem/cachetools',
     license='MIT',
-    description='Extensible memoizing collections and decorators',  # noqa
+    description='Extensible memoizing collections and decorators',
     long_description=open('README.rst').read(),
     keywords='cache caching LRU LFU TTL',
     classifiers=[

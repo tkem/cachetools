@@ -1,13 +1,12 @@
 language: python
 python:
-  - 2.7
-  - 3.2
-  - 3.3
-  - 3.4
+- 2.7
+- 3.2
+- 3.3
+- 3.4
 install:
-  - pip install .
-  - pip install coverage coveralls
+- pip install . coverage coveralls
 script:
-  - nosetests --with-coverage --cover-package=cachetools
+- python setup.py nosetests
 after_success:
-  - coveralls
+- coveralls
