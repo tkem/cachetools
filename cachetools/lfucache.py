@@ -14,8 +14,8 @@ class LFUCache(Cache):
 
     """
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof=getsizeof)
+    def __init__(self, maxsize, missing=None, getsizeof=None):
+        Cache.__init__(self, maxsize, missing=missing, getsizeof=getsizeof)
         self.__counter = collections.Counter()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
@@ -34,7 +34,7 @@ class LFUCache(Cache):
     def popitem(self):
         """Remove and return the `(key, value)` pair least frequently used."""
         try:
-            key, _ = min(self.__counter.items(), key=operator.itemgetter(1))
+            key = min(self.__counter.items(), key=operator.itemgetter(1))[0]
         except ValueError:
             raise KeyError('cache is empty')
         return key, self.pop(key)

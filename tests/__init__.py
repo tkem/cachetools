@@ -1,6 +1,6 @@
 class CacheTestMixin(object):
 
-    def cache(self, maxsize, getsizeof=None):
+    def cache(self, maxsize, missing=None, getsizeof=None):
         raise NotImplementedError
 
     def test_cache_defaults(self):
@@ -67,6 +67,12 @@ class CacheTestMixin(object):
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
 
+        with self.assertRaises(KeyError):
+            del cache[1]
+        self.assertEqual(0, len(cache))
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+
     def test_cache_pop(self):
         cache = self.cache(maxsize=2)
 
@@ -98,6 +104,58 @@ class CacheTestMixin(object):
 
         with self.assertRaises(KeyError):
             cache.popitem()
+
+    def test_cache_missing(self):
+        cache = self.cache(maxsize=2, missing=lambda x: x)
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(1, cache[1])
+        self.assertEqual(2, cache[2])
+        self.assertEqual(2, len(cache))
+        self.assertTrue(1 in cache and 2 in cache)
+
+        self.assertEqual(3, cache[3])
+        self.assertEqual(2, len(cache))
+        self.assertTrue(3 in cache)
+        self.assertTrue(1 in cache or 2 in cache)
+        self.assertTrue(1 not in cache or 2 not in cache)
+
+        self.assertEqual(4, cache[4])
+        self.assertEqual(2, len(cache))
+        self.assertTrue(4 in cache)
+        self.assertTrue(1 in cache or 2 in cache or 3 in cache)
+
+        # verify __missing__() is *not* called for any operations
+        # besides __getitem__()
+
+        self.assertEqual(4, cache.get(4))
+        self.assertEqual(None, cache.get(5))
+        self.assertEqual(5 * 5, cache.get(5, 5 * 5))
+        self.assertEqual(2, len(cache))
+
+        self.assertEqual(4, cache.pop(4))
+        with self.assertRaises(KeyError):
+            cache.pop(5)
+        self.assertEqual(None, cache.pop(5, None))
+        self.assertEqual(5 * 5, cache.pop(5, 5 * 5))
+        self.assertEqual(1, len(cache))
+
+        cache.clear()
+        cache[1] = 1 + 1
+        self.assertEqual(1 + 1, cache.setdefault(1))
+        self.assertEqual(1 + 1, cache.setdefault(1, 1))
+        self.assertEqual(1 + 1, cache[1])
+        self.assertEqual(2 + 2, cache.setdefault(2, 2 + 2))
+        self.assertEqual(2 + 2, cache.setdefault(2, None))
+        self.assertEqual(2 + 2, cache.setdefault(2))
+        self.assertEqual(2 + 2, cache[2])
+        self.assertEqual(2, len(cache))
+        self.assertTrue(1 in cache and 2 in cache)
+        self.assertEqual(None, cache.setdefault(3))
+        self.assertEqual(2, len(cache))
+        self.assertTrue(3 in cache)
+        self.assertTrue(1 in cache or 2 in cache)
+        self.assertTrue(1 not in cache or 2 not in cache)
 
     def test_cache_getsizeof(self):
         cache = self.cache(maxsize=3, getsizeof=lambda x: x)

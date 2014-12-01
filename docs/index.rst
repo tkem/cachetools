@@ -24,11 +24,11 @@ function decorator.
    LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
-fixed maximum size.  When the cache is full, i.e. the size of the
-cache would exceed its maximum size, the cache must choose which
-item(s) to discard based on a suitable `cache algorithm`_.  A cache's
-size is the sum of the size of its items, and an item's size in
-general is a property or function of its value, e.g. the result of
+fixed maximum size.  When the cache is full, i.e. by adding another
+item the cache would exceed its maximum size, the cache must choose
+which item(s) to discard based on a suitable `cache algorithm`_.  A
+cache's size is the sum of the size of its items, and an item's size
+in general is a property or function of its value, e.g. the result of
 :func:`sys.getsizeof`, or :func:`len` for string and sequence values.
 
 This module provides multiple cache implementations based on different
@@ -46,11 +46,39 @@ different cache algorithms.  All these classes derive from class
 :attr:`maxsize` and :attr:`currsize` to retrieve the maximum and
 current size of the cache.
 
+All cache classes accept an optional `missing` keyword argument in
+their constructor, which can be used to provide a default or factory
+function.  If a key `key` is not present, the ``cache[key]`` operation
+calls :meth:`Cache.__missing__`, which in turn calls `missing` with
+`key` as argument.  The cache will then store the object returned from
+`missing(key)` as the new cache value for `key`, possibly discarding
+other items if the cache is full.  This may be used to easily provide
+caching for existing single-argument functions, for example::
+
+    from cachetools import LRUCache
+    import urllib.request
+
+    def get_pep(num):
+        """Retrieve text of a Python Enhancement Proposal"""
+        url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+        with urllib.request.urlopen(url) as s:
+            return s.read()
+
+    cache = LRUCache(maxsize=4, missing=get_pep)
+
+    for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
+        try:
+            print(n, len(cache[n]))
+        except urllib.error.HTTPError:
+            print(n, 'Not Found')
+    print(sorted(cache.keys()))
+
+
 :class:`Cache` also features a :meth:`getsizeof` method, which returns
 the size of a given item.  The default implementation of
 :meth:`getsizeof` returns :const:`1` irrespective of its `value`
 argument, making the cache's size equal to the number of its items, or
-`len(cache)`.  For convenience, all cache classes accept an optional
+``len(cache)``.  For convenience, all cache classes accept an optional
 named constructor parameter `getsizeof`, which may specify a function
 of one argument used to retrieve the size of an item's value.
 
@@ -98,7 +126,7 @@ Standard Library :func:`functools.lru_cache` decorator::
     import cachetools
     import urllib.request
 
-    @cachetools.lru_cache(maxsize=32)
+    @cachetools.lru_cache(maxsize=4)
     def get_pep(num):
         """Retrieve text of a Python Enhancement Proposal"""
         url = 'http://www.python.org/dev/peps/pep-%04d/' % num

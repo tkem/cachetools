@@ -44,11 +44,11 @@ class TTLCache(Cache):
 
     ExpiredError = KeyError  # deprecated
 
-    def __init__(self, maxsize, ttl, timer=time.time, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=time.time, missing=None, getsizeof=None):
         if getsizeof is None:
-            Cache.__init__(self, maxsize)
+            Cache.__init__(self, maxsize, missing=missing)
         else:
-            Cache.__init__(self, maxsize, lambda e: getsizeof(e.value))
+            Cache.__init__(self, maxsize, missing=missing, getsizeof=lambda e: getsizeof(e.value))
             self.getsizeof = getsizeof
         self.__root = root = Link()
         root.ttl_prev = root.ttl_next = root
@@ -65,10 +65,12 @@ class TTLCache(Cache):
             self.currsize,
         )
 
-    def __getitem__(self, key, cache_getitem=Cache.__getitem__):
+    def __getitem__(self, key,
+                    cache_getitem=Cache.__getitem__,
+                    cache_missing=Cache.__missing__):
         link = cache_getitem(self, key)
         if link.expire < self.__timer():
-            raise KeyError(key)
+            return cache_missing(self, key).value
         next = link.lru_next
         prev = link.lru_prev
         prev.lru_next = next
@@ -79,13 +81,14 @@ class TTLCache(Cache):
         return link.value
 
     def __setitem__(self, key, value,
+                    cache_contains=Cache.__contains__,
                     cache_getitem=Cache.__getitem__,
                     cache_setitem=Cache.__setitem__):
         time = self.__timer()
         self.expire(time)
-        try:
+        if cache_contains(self, key):
             oldlink = cache_getitem(self, key)
-        except KeyError:
+        else:
             oldlink = None
         link = Link()
         link.key = key
@@ -94,8 +97,7 @@ class TTLCache(Cache):
         cache_setitem(self, key, link)
         if oldlink:
             oldlink.unlink()
-        root = self.__root
-        link.ttl_next = root
+        link.ttl_next = root = self.__root
         link.ttl_prev = tail = root.ttl_prev
         tail.ttl_next = root.ttl_prev = link
         link.lru_next = root
@@ -103,12 +105,25 @@ class TTLCache(Cache):
         tail.lru_next = root.lru_prev = link
 
     def __delitem__(self, key,
+                    cache_contains=Cache.__contains__,
                     cache_getitem=Cache.__getitem__,
                     cache_delitem=Cache.__delitem__):
+        if not cache_contains(self, key):
+            raise KeyError(key)
         link = cache_getitem(self, key)
         cache_delitem(self, key)
         link.unlink()
         self.expire()
+
+    def __contains__(self, key,
+                     cache_contains=Cache.__contains__,
+                     cache_getitem=Cache.__getitem__):
+        if not cache_contains(self, key):
+            return False
+        elif cache_getitem(self, key).expire < self.__timer():
+            return False
+        else:
+            return True
 
     def __iter__(self):
         timer = self.__timer

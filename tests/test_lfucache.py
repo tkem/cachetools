@@ -6,8 +6,8 @@ from cachetools import LFUCache, lfu_cache
 
 class LFUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
-    def cache(self, maxsize, getsizeof=None):
-        return LFUCache(maxsize, getsizeof)
+    def cache(self, maxsize, missing=None, getsizeof=None):
+        return LFUCache(maxsize, missing=missing, getsizeof=getsizeof)
 
     def decorator(self, maxsize, typed=False, lock=None):
         return lfu_cache(maxsize, typed=typed, lock=lock)

@@ -6,8 +6,8 @@ from cachetools import LRUCache, lru_cache
 
 class LRUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
-    def cache(self, maxsize, getsizeof=None):
-        return LRUCache(maxsize, getsizeof)
+    def cache(self, maxsize, missing=None, getsizeof=None):
+        return LRUCache(maxsize, missing=missing, getsizeof=getsizeof)
 
     def decorator(self, maxsize, typed=False, lock=None):
         return lru_cache(maxsize, typed=typed, lock=lock)

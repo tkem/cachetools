@@ -17,8 +17,8 @@ class Timer:
 
 class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
-    def cache(self, maxsize, ttl=0, getsizeof=None):
-        return TTLCache(maxsize, ttl, timer=Timer(), getsizeof=getsizeof)
+    def cache(self, maxsize, ttl=0, missing=None, getsizeof=None):
+        return TTLCache(maxsize, ttl, timer=Timer(), missing=missing, getsizeof=getsizeof)
 
     def decorator(self, maxsize, ttl=0, typed=False, lock=None):
         return ttl_cache(maxsize, ttl, timer=Timer(), typed=typed, lock=lock)

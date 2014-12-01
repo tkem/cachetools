@@ -22,12 +22,12 @@ class LRUCache(Cache):
 
     """
 
-    def __init__(self, maxsize, getsizeof=None):
+    def __init__(self, maxsize, missing=None, getsizeof=None):
         if getsizeof is not None:
-            Cache.__init__(self, maxsize, lambda link: getsizeof(link.value))
+            Cache.__init__(self, maxsize, missing=missing, getsizeof=lambda link: getsizeof(link.value))
             self.getsizeof = getsizeof
         else:
-            Cache.__init__(self, maxsize)
+            Cache.__init__(self, maxsize, missing=missing)
         self.__root = root = Link()
         root.prev = root.next = root
 
@@ -52,11 +52,12 @@ class LRUCache(Cache):
         return link.value
 
     def __setitem__(self, key, value,
+                    cache_contains=Cache.__contains__,
                     cache_getitem=Cache.__getitem__,
                     cache_setitem=Cache.__setitem__):
-        try:
+        if cache_contains(self, key):
             oldlink = cache_getitem(self, key)
-        except KeyError:
+        else:
             oldlink = None
         link = Link()
         link.key = key
@@ -69,8 +70,11 @@ class LRUCache(Cache):
         tail.next = root.prev = link
 
     def __delitem__(self, key,
+                    cache_contains=Cache.__contains__,
                     cache_getitem=Cache.__getitem__,
                     cache_delitem=Cache.__delitem__):
+        if not cache_contains(self, key):
+            raise KeyError(key)
         link = cache_getitem(self, key)
         cache_delitem(self, key)
         link.unlink()

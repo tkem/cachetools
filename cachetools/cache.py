@@ -21,11 +21,12 @@ class Cache(collections.MutableMapping):
 
     """
 
-    def __init__(self, maxsize, getsizeof=None):
-        self.__mapping = dict()
-        self.__maxsize = maxsize
-        self.__getsizeof = getsizeof or one
+    def __init__(self, maxsize, missing=None, getsizeof=None):
+        self.__data = dict()
         self.__currsize = 0
+        self.__maxsize = maxsize
+        self.__missing = missing
+        self.__getsizeof = getsizeof or one
 
     def __repr__(self):
         return '%s(%r, maxsize=%d, currsize=%d)' % (
@@ -36,31 +37,48 @@ class Cache(collections.MutableMapping):
         )
 
     def __getitem__(self, key):
-        return self.__mapping[key][0]
+        try:
+            return self.__data[key][0]
+        except KeyError:
+            return self.__missing__(key)
 
     def __setitem__(self, key, value):
-        mapping = self.__mapping
+        data = self.__data
         maxsize = self.__maxsize
         size = self.__getsizeof(value)
         if size > maxsize:
             raise ValueError('value too large')
-        if key not in mapping or mapping[key][1] < size:
+        if key not in data or data[key][1] < size:
             while self.__currsize + size > maxsize:
                 self.popitem()
-        if key in mapping:
-            self.__currsize -= mapping[key][1]
-        mapping[key] = (value, size)
-        self.__currsize += size
+        if key in data:
+            diffsize = size - data[key][1]
+        else:
+            diffsize = size
+        data[key] = (value, size)
+        self.__currsize += diffsize
 
     def __delitem__(self, key):
-        _, size = self.__mapping.pop(key)
+        _, size = self.__data.pop(key)
         self.__currsize -= size
 
+    def __contains__(self, key):
+        return key in self.__data
+
+    def __missing__(self, key):
+        missing = self.__missing
+        if missing:
+            # return value as stored in data!
+            self.__setitem__(key, missing(key))
+            return self.__data[key][0]
+        else:
+            raise KeyError(key)
+
     def __iter__(self):
-        return iter(self.__mapping)
+        return iter(self.__data)
 
     def __len__(self):
-        return len(self.__mapping)
+        return len(self.__data)
 
     @property
     def maxsize(self):
@@ -78,4 +96,29 @@ class Cache(collections.MutableMapping):
 
     def _getitemsize(self, key):
         # TODO: decide on interface, make public
-        return self.__mapping[key][1]
+        return self.__data[key][1]
+
+    # collections.MutableMapping mixin methods do not handle __missing__
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key]
+        else:
+            return default
+
+    __marker = object()
+
+    def pop(self, key, default=__marker):
+        if key in self:
+            value = self[key]
+            del self[key]
+            return value
+        elif default is self.__marker:
+            raise KeyError(key)
+        else:
+            return default
+
+    def setdefault(self, key, default=None):
+        if key not in self:
+            self[key] = default
+        return self[key]
