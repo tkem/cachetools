@@ -47,11 +47,11 @@ different cache algorithms.  All these classes derive from class
 current size of the cache.
 
 All cache classes accept an optional `missing` keyword argument in
-their constructor, which can be used to provide a default or factory
+their constructor, which can be used to provide a default factory
 function.  If a key `key` is not present, the ``cache[key]`` operation
 calls :meth:`Cache.__missing__`, which in turn calls `missing` with
 `key` as argument.  The cache will then store the object returned from
-`missing(key)` as the new cache value for `key`, possibly discarding
+``missing(key)`` as the new cache value for `key`, possibly discarding
 other items if the cache is full.  This may be used to easily provide
 caching for existing single-argument functions, for example::
 
@@ -119,9 +119,8 @@ of one argument used to retrieve the size of an item's value.
 Function Decorators
 ------------------------------------------------------------------------
 
-This module provides several memoizing function decorators compatible
-with -- though not necessarily as efficient as -- the Python 3
-Standard Library :func:`functools.lru_cache` decorator::
+This module provides several memoizing function decorators similar to
+the Python 3 Standard Library :func:`functools.lru_cache` decorator::
 
     import cachetools
     import urllib.request
@@ -140,8 +139,8 @@ Standard Library :func:`functools.lru_cache` decorator::
             print(n, 'Not Found')
     print(get_pep.cache_info())
 
-In addition to a `maxsize` parameter, all decorators feature some
-optional keyword arguments:
+In addition to a `maxsize` parameter, all decorators provide the
+following optional keyword arguments:
 
 - `typed`, if is set to :const:`True`, will cause function arguments
   of different types to be cached separately.
@@ -161,8 +160,10 @@ The wrapped function is instrumented with :func:`cache_info` and
 performance and clear the cache.  See the :func:`functools.lru_cache`
 documentation for details.
 
-Note that unlike :func:`functools.lru_cache`, setting `maxsize` to
-:const:`None` is not supported.
+Like for :func:`functools.lru_cache`, the positional and keyword
+arguments to the function must be hashable.  Note that unlike
+:func:`functools.lru_cache`, setting `maxsize` to :const:`None` is not
+supported.
 
 .. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 
