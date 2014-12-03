@@ -7,6 +7,8 @@
 
 - Add ``Cache.__missing__()``.
 
+- Feature freeze for `v1.0`.
+
 
 0.7.1 2014-11-22
 ----------------
