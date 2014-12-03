@@ -175,13 +175,12 @@ class TTLCache(Cache):
 
     @property
     def currsize(self):
-        getsize = Cache._getitemsize  # TODO: decide on final interface
         expired = 0
         time = self.__timer()
         root = self.__root
         head = root.ttl_next
         while head is not root and head.expire < time:
-            expired += getsize(self, head.key)
+            expired += self.getsize(head.key)
             head = head.ttl_next
         return super(TTLCache, self).currsize - expired
 

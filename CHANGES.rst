@@ -4,6 +4,8 @@
 
 - Add ``Cache.__missing__()``.
 
+- Add ``Cache.getsize()``.
+
 
 0.7.1 2014-11-22
 ----------------

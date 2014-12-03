@@ -90,13 +90,13 @@ class Cache(collections.MutableMapping):
         """Return the current size of the cache."""
         return self.__currsize
 
+    def getsize(self, key):
+        """Return the size of the cache item with key `key`."""
+        return self.__data[key][1]
+
     def getsizeof(self, value):
         """Return the size of a cache element."""
         return self.__getsizeof(value)
-
-    def _getitemsize(self, key):
-        # TODO: decide on interface, make public
-        return self.__data[key][1]
 
     # collections.MutableMapping mixin methods do not handle __missing__
 
