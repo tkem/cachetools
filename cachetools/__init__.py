@@ -9,9 +9,9 @@ from .ttl import TTLCache, ttl_cache
 
 __all__ = (
     'Cache',
-    'cachedmethod'
+    'cachedmethod',
     'LFUCache', 'LRUCache', 'RRCache', 'TTLCache',
     'lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache',
 )
 
-__version__ = '0.8.0alpha'
+__version__ = '0.8.0'

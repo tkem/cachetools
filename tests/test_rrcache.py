@@ -7,8 +7,10 @@ from cachetools import RRCache, rr_cache
 
 class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
-    def cache(self, maxsize, choice=random.choice, missing=None, getsizeof=None):
-        return RRCache(maxsize, choice=choice, missing=missing, getsizeof=getsizeof)
+    def cache(self, maxsize, choice=random.choice, missing=None,
+              getsizeof=None):
+        return RRCache(maxsize, choice=choice, missing=missing,
+                       getsizeof=getsizeof)
 
     def decorator(self, maxsize, choice=random.choice, typed=False, lock=None):
         return rr_cache(maxsize, choice=choice, typed=typed, lock=lock)

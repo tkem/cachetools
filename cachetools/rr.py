@@ -18,7 +18,8 @@ class RRCache(Cache):
 
     """
 
-    def __init__(self, maxsize, choice=random.choice, missing=None, getsizeof=None):
+    def __init__(self, maxsize, choice=random.choice, missing=None,
+                 getsizeof=None):
         Cache.__init__(self, maxsize, missing=missing, getsizeof=getsizeof)
         self.__choice = choice
 

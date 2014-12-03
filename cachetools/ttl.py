@@ -44,12 +44,14 @@ class TTLCache(Cache):
 
     ExpiredError = KeyError  # deprecated
 
-    def __init__(self, maxsize, ttl, timer=time.time, missing=None, getsizeof=None):
-        if getsizeof is None:
-            Cache.__init__(self, maxsize, missing=missing)
-        else:
-            Cache.__init__(self, maxsize, missing=missing, getsizeof=lambda e: getsizeof(e.value))
+    def __init__(self, maxsize, ttl, timer=time.time, missing=None,
+                 getsizeof=None):
+        if getsizeof is not None:
+            linksize = lambda link: getsizeof(link.value)
+            Cache.__init__(self, maxsize, missing=missing, getsizeof=linksize)
             self.getsizeof = getsizeof
+        else:
+            Cache.__init__(self, maxsize, missing=missing)
         self.__root = root = Link()
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
