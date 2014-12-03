@@ -1,10 +1,11 @@
 0.8.0 UNRELEASED
-
 ----------------
 
 - Add ``Cache.__missing__()``.
 
 - Add ``Cache.getsize()``.
+
+- Ignore ``ValueError`` from cache insertion in decorators.
 
 
 0.7.1 2014-11-22

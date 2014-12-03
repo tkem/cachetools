@@ -60,3 +60,13 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 2)
         self.assertEqual(cached.get(1.0), 3)
         self.assertEqual(cached.get(1.0), 4)
+
+    def test_decorator_toolarge(self):
+        cached = Cached(LRUCache(maxsize=0))
+        self.assertEqual(cached.cache, cached.get.cache(cached))
+
+        self.assertEqual(cached.get(0), 0)
+        self.assertEqual(cached.get(1), 1)
+        self.assertEqual(cached.get(1), 2)
+        self.assertEqual(cached.get(1.0), 3)
+        self.assertEqual(cached.get(1.0), 4)

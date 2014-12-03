@@ -224,6 +224,7 @@ class DecoratorTestMixin(object):
 
     def test_typed_decorator(self):
         cached = self.decorator(maxsize=2, typed=True)(lambda n: n)
+
         self.assertEqual(cached(1), 1)
         self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
         self.assertEqual(cached(1), 1)
@@ -232,3 +233,13 @@ class DecoratorTestMixin(object):
         self.assertEqual(cached.cache_info(), (1, 2, 2, 2))
         self.assertEqual(cached(1.0), 1.0)
         self.assertEqual(cached.cache_info(), (2, 2, 2, 2))
+
+    def test_nocache_decorator(self):
+        cached = self.decorator(maxsize=0)(lambda n: n)
+
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 1, 0, 0))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 2, 0, 0))
+        self.assertEqual(cached(1.0), 1.0)
+        self.assertEqual(cached.cache_info(), (0, 3, 0, 0))

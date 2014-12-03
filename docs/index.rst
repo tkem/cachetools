@@ -161,7 +161,7 @@ The wrapped function is instrumented with :func:`cache_info` and
 performance and clear the cache.  See the :func:`functools.lru_cache`
 documentation for details.
 
-Unlike :func:`functools.lru_cache`, setting `maxsize` to zero or
+Note that unlike :func:`functools.lru_cache`, setting `maxsize` to
 :const:`None` is not supported.
 
 .. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)

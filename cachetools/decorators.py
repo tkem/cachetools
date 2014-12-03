@@ -43,7 +43,10 @@ def cachedfunc(cache, typed=False, lock=None):
                     stats[1] += 1
             result = func(*args, **kwargs)
             with context:
-                cache[key] = result
+                try:
+                    cache[key] = result
+                except ValueError:
+                    pass  # value too large
             return result
 
         def cache_info():
@@ -82,7 +85,10 @@ def cachedmethod(cache, typed=False):
             except KeyError:
                 pass
             result = method(self, *args, **kwargs)
-            mapping[key] = result
+            try:
+                mapping[key] = result
+            except ValueError:
+                pass  # value too large
             return result
 
         wrapper.cache = cache
