@@ -8,10 +8,13 @@ import time
 class Link(object):
 
     __slots__ = (
-        'key', 'value', 'expire',
+        'key', 'value', 'expire', 'size',
         'ttl_prev', 'ttl_next',
         'lru_prev', 'lru_next'
     )
+
+    def getsize(self):
+        return self.size
 
     def unlink(self):
         ttl_next = self.ttl_next
@@ -42,16 +45,13 @@ class TTLCache(Cache):
 
     """
 
-    ExpiredError = KeyError  # deprecated
-
     def __init__(self, maxsize, ttl, timer=time.time, missing=None,
                  getsizeof=None):
         if getsizeof is not None:
-            linksize = lambda link: getsizeof(link.value)
-            Cache.__init__(self, maxsize, missing=missing, getsizeof=linksize)
+            Cache.__init__(self, maxsize, missing, Link.getsize)
             self.getsizeof = getsizeof
         else:
-            Cache.__init__(self, maxsize, missing=missing)
+            Cache.__init__(self, maxsize, missing)
         self.__root = root = Link()
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
@@ -96,6 +96,7 @@ class TTLCache(Cache):
         link.key = key
         link.value = value
         link.expire = time + self.__ttl
+        link.size = self.getsizeof(value)
         cache_setitem(self, key, link)
         if oldlink:
             oldlink.unlink()
@@ -182,7 +183,7 @@ class TTLCache(Cache):
         root = self.__root
         head = root.ttl_next
         while head is not root and head.expire < time:
-            expired += self.getsize(head.key)
+            expired += head.size
             head = head.ttl_next
         return super(TTLCache, self).currsize - expired
 

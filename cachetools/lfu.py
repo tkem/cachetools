@@ -15,7 +15,7 @@ class LFUCache(Cache):
     """
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
-        Cache.__init__(self, maxsize, missing=missing, getsizeof=getsizeof)
+        Cache.__init__(self, maxsize, missing, getsizeof)
         self.__counter = collections.Counter()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):

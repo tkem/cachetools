@@ -84,6 +84,11 @@ of one argument used to retrieve the size of an item's value.
 
 .. autoclass:: Cache
    :members:
+   :exclude-members: getsize
+
+   .. method:: getsize
+
+      .. deprecated:: 0.8.1
 
 .. autoclass:: LFUCache
    :members:

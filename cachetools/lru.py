@@ -24,11 +24,11 @@ class LRUCache(Cache):
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
         if getsizeof is not None:
-            linksize = lambda link: getsizeof(link.value)
-            Cache.__init__(self, maxsize, missing=missing, getsizeof=linksize)
+            getlinksize = lambda link: getsizeof(link.value)
+            Cache.__init__(self, maxsize, missing, getlinksize)
             self.getsizeof = getsizeof
         else:
-            Cache.__init__(self, maxsize, missing=missing)
+            Cache.__init__(self, maxsize, missing)
         self.__root = root = Link()
         root.prev = root.next = root
 

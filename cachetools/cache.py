@@ -91,7 +91,8 @@ class Cache(collections.MutableMapping):
         return self.__currsize
 
     def getsize(self, key):
-        """Return the size of the cache item with key `key`."""
+        import warnings
+        warnings.warn("Cache.getsize is deprecated", DeprecationWarning)
         return self.__data[key][1]
 
     def getsizeof(self, value):
