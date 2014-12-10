@@ -2,6 +2,7 @@ from .cache import Cache
 from .decorators import cachedfunc
 from .lock import RLock
 
+import functools
 import time
 
 
@@ -28,6 +29,32 @@ class Link(object):
         lru_next.lru_prev = lru_prev
 
 
+class NestedTimer(object):
+
+    def __init__(self, timer):
+        self.__timer = timer
+        self.__nesting = 0
+
+    def __enter__(self):
+        if self.__nesting == 0:
+            self.__time = self.__timer()
+        self.__nesting += 1
+        return self.__time
+
+    def __exit__(self, *exc):
+        self.__nesting -= 1
+
+    def __call__(self):
+        if self.__nesting == 0:
+            return self.__timer()
+        else:
+            return self.__time
+
+    def __getattr__(self, name):
+        # FIXME: for unittests timer.tick()
+        return getattr(self.__timer, name)
+
+
 class TTLCache(Cache):
     """LRU Cache implementation with per-item time-to-live (TTL) value.
 
@@ -52,10 +79,10 @@ class TTLCache(Cache):
             self.getsizeof = getsizeof
         else:
             Cache.__init__(self, maxsize, missing)
+        self.__timer = NestedTimer(timer)
         self.__root = root = Link()
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
-        self.__timer = timer
         self.__ttl = ttl
 
     def __repr__(self, cache_getitem=Cache.__getitem__):
@@ -70,81 +97,85 @@ class TTLCache(Cache):
     def __getitem__(self, key,
                     cache_getitem=Cache.__getitem__,
                     cache_missing=Cache.__missing__):
-        link = cache_getitem(self, key)
-        if link.expire < self.__timer():
-            return cache_missing(self, key).value
-        next = link.lru_next
-        prev = link.lru_prev
-        prev.lru_next = next
-        next.lru_prev = prev
-        link.lru_next = root = self.__root
-        link.lru_prev = tail = root.lru_prev
-        tail.lru_next = root.lru_prev = link
-        return link.value
+        with self.__timer as time:
+            link = cache_getitem(self, key)
+            if link.expire < time:
+                return cache_missing(self, key).value
+            next = link.lru_next
+            prev = link.lru_prev
+            prev.lru_next = next
+            next.lru_prev = prev
+            link.lru_next = root = self.__root
+            link.lru_prev = tail = root.lru_prev
+            tail.lru_next = root.lru_prev = link
+            return link.value
 
     def __setitem__(self, key, value,
                     cache_contains=Cache.__contains__,
                     cache_getitem=Cache.__getitem__,
                     cache_setitem=Cache.__setitem__):
-        time = self.__timer()
-        self.expire(time)
-        if cache_contains(self, key):
-            oldlink = cache_getitem(self, key)
-        else:
-            oldlink = None
-        link = Link()
-        link.key = key
-        link.value = value
-        link.expire = time + self.__ttl
-        link.size = self.getsizeof(value)
-        cache_setitem(self, key, link)
-        if oldlink:
-            oldlink.unlink()
-        link.ttl_next = root = self.__root
-        link.ttl_prev = tail = root.ttl_prev
-        tail.ttl_next = root.ttl_prev = link
-        link.lru_next = root
-        link.lru_prev = tail = root.lru_prev
-        tail.lru_next = root.lru_prev = link
+        with self.__timer as time:
+            self.expire(time)
+            if cache_contains(self, key):
+                oldlink = cache_getitem(self, key)
+            else:
+                oldlink = None
+            link = Link()
+            link.key = key
+            link.value = value
+            link.expire = time + self.__ttl
+            link.size = self.getsizeof(value)
+            cache_setitem(self, key, link)
+            if oldlink:
+                oldlink.unlink()
+            link.ttl_next = root = self.__root
+            link.ttl_prev = tail = root.ttl_prev
+            tail.ttl_next = root.ttl_prev = link
+            link.lru_next = root
+            link.lru_prev = tail = root.lru_prev
+            tail.lru_next = root.lru_prev = link
 
     def __delitem__(self, key,
                     cache_contains=Cache.__contains__,
                     cache_getitem=Cache.__getitem__,
                     cache_delitem=Cache.__delitem__):
-        if not cache_contains(self, key):
-            raise KeyError(key)
-        link = cache_getitem(self, key)
-        cache_delitem(self, key)
-        link.unlink()
-        self.expire()
+        with self.__timer as time:
+            self.expire(time)
+            if not cache_contains(self, key):
+                raise KeyError(key)
+            link = cache_getitem(self, key)
+            cache_delitem(self, key)
+            link.unlink()
 
     def __contains__(self, key,
                      cache_contains=Cache.__contains__,
                      cache_getitem=Cache.__getitem__):
-        if not cache_contains(self, key):
-            return False
-        elif cache_getitem(self, key).expire < self.__timer():
-            return False
-        else:
-            return True
+        with self.__timer as time:
+            if not cache_contains(self, key):
+                return False
+            elif cache_getitem(self, key).expire < time:
+                return False
+            else:
+                return True
 
     def __iter__(self):
         timer = self.__timer
         root = self.__root
         curr = root.ttl_next
         while curr is not root:
-            if not (curr.expire < timer()):
-                yield curr.key
+            with timer as time:
+                if not (curr.expire < time):
+                    yield curr.key
             curr = curr.ttl_next
 
     def __len__(self, cache_len=Cache.__len__):
-        expired = 0
-        time = self.__timer()
         root = self.__root
         head = root.ttl_next
-        while head is not root and head.expire < time:
-            expired += 1
-            head = head.ttl_next
+        expired = 0
+        with self.__timer as time:
+            while head is not root and head.expire < time:
+                expired += 1
+                head = head.ttl_next
         return cache_len(self) - expired
 
     def expire(self, time=None):
@@ -167,24 +198,26 @@ class TTLCache(Cache):
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used."""
-        root = self.__root
-        link = root.lru_next
-        if link is root:
-            raise KeyError('cache is empty')
-        key = link.key
-        Cache.__delitem__(self, key)
-        link.unlink()
-        return (key, link.value)
+        with self.__timer as time:
+            self.expire(time)
+            root = self.__root
+            link = root.lru_next
+            if link is root:
+                raise KeyError('cache is empty')
+            key = link.key
+            Cache.__delitem__(self, key)
+            link.unlink()
+            return (key, link.value)
 
     @property
     def currsize(self):
-        expired = 0
-        time = self.__timer()
         root = self.__root
         head = root.ttl_next
-        while head is not root and head.expire < time:
-            expired += head.size
-            head = head.ttl_next
+        expired = 0
+        with self.__timer as time:
+            while head is not root and head.expire < time:
+                expired += head.size
+                head = head.ttl_next
         return super(TTLCache, self).currsize - expired
 
     @property
@@ -196,6 +229,18 @@ class TTLCache(Cache):
     def ttl(self):
         """Return the time-to-live of the cache."""
         return self.__ttl
+
+    # mixin methods
+
+    def __nested(method):
+        def wrapper(self, *args, **kwargs):
+            with self.__timer:
+                return method(self, *args, **kwargs)
+        return functools.update_wrapper(wrapper, method)
+
+    get = __nested(Cache.get)
+    pop = __nested(Cache.pop)
+    setdefault = __nested(Cache.setdefault)
 
 
 def ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False,

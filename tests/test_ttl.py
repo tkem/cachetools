@@ -5,14 +5,17 @@ from cachetools import TTLCache, ttl_cache
 
 
 class Timer:
-    def __init__(self):
-        self.__time = 0
+    def __init__(self, auto=False):
+        self.auto = auto
+        self.time = 0
 
     def __call__(self):
-        return self.__time
+        if self.auto:
+            self.time += 1
+        return self.time
 
     def tick(self):
-        self.__time += 1
+        self.time += 1
 
 
 class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
@@ -106,6 +109,11 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
+        with self.assertRaises(KeyError):
+            del cache[1]
+        with self.assertRaises(KeyError):
+            cache.pop(2)
+
     def test_expire(self):
         cache = self.cache(maxsize=3, ttl=2)
         self.assertEqual(2, cache.ttl)
@@ -155,6 +163,17 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
+
+    def test_atomic(self):
+        cache = TTLCache(maxsize=1, ttl=1, timer=Timer(auto=True))
+        cache[1] = 1
+        self.assertEqual(1, cache[1])
+        cache[1] = 1
+        self.assertEqual(1, cache.get(1))
+        cache[1] = 1
+        self.assertEqual(1, cache.pop(1))
+        cache[1] = 1
+        self.assertEqual(1, cache.setdefault(1))
 
     def test_tuple_key(self):
         cache = self.cache(maxsize=1, ttl=0)

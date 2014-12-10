@@ -101,24 +101,6 @@ of one argument used to retrieve the size of an item's value.
 
 .. autoclass:: TTLCache
    :members:
-   :exclude-members: ExpiredError
-
-   Note that a cache item may expire at *any* time, so iterating over
-   the items of a :class:`TTLCache` may raise :exc:`KeyError`
-   unexpectedly::
-
-      from cachetools import TTLCache
-      import time
-
-      cache = TTLCache(maxsize=100, ttl=1.0)
-      cache.update({1: 1, 2: 2, 3: 3})
-
-      for key in cache:
-          time.sleep(0.5)
-          try:
-              print(cache[key])
-          except KeyError:
-              print('Key %r has expired' % key)
 
 
 Function Decorators

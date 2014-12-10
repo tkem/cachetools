@@ -14,4 +14,4 @@ __all__ = (
     'lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache',
 )
 
-__version__ = '0.8.1'
+__version__ = '0.8.2'
