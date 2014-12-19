@@ -57,6 +57,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
     def test_ttl(self):
         cache = self.cache(maxsize=2, ttl=1)
+        self.assertEqual(0, cache.timer())
         self.assertEqual(1, cache.ttl)
 
         cache[1] = 1
@@ -116,6 +117,8 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
     def test_expire(self):
         cache = self.cache(maxsize=3, ttl=2)
+        with cache.timer as time:
+            self.assertEqual(time, cache.timer())
         self.assertEqual(2, cache.ttl)
 
         cache[1] = 1

@@ -26,10 +26,12 @@ function decorator.
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
 fixed maximum size.  When the cache is full, i.e. by adding another
 item the cache would exceed its maximum size, the cache must choose
-which item(s) to discard based on a suitable `cache algorithm`_.  A
-cache's size is the sum of the size of its items, and an item's size
-in general is a property or function of its value, e.g. the result of
-:func:`sys.getsizeof`, or :func:`len` for string and sequence values.
+which item(s) to discard based on a suitable `cache algorithm`_.  In
+general, a cache's size is the total size of its items, and an item's
+size is a property or function of its value, e.g. the result of
+``sys.getsizeof(value)``.  For the trivial but common case that each
+item counts as :const:`1`, irrespective of its value, a cache's size
+is equal to the number of its items, or ``len(cache)``.
 
 This module provides multiple cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
@@ -47,13 +49,13 @@ different cache algorithms.  All these classes derive from class
 current size of the cache.
 
 All cache classes accept an optional `missing` keyword argument in
-their constructor, which can be used to provide a default factory
-function.  If a key `key` is not present, the ``cache[key]`` operation
-calls :meth:`Cache.__missing__`, which in turn calls `missing` with
-`key` as argument.  The cache will then store the object returned from
-``missing(key)`` as the new cache value for `key`, possibly discarding
-other items if the cache is full.  This may be used to easily provide
-caching for existing single-argument functions, for example::
+their constructor, which can be used to provide a default *factory
+function*.  If the key `key` is not present, the ``cache[key]``
+operation calls :meth:`Cache.__missing__`, which in turn calls
+`missing` with `key` as its sole argument.  The cache will then store
+the object returned from ``missing(key)`` as the new cache value for
+`key`, possibly discarding other items if the cache is full.  This may
+be used provide memoization for existing single-argument functions::
 
     from cachetools import LRUCache
     import urllib.request
@@ -75,32 +77,76 @@ caching for existing single-argument functions, for example::
 
 
 :class:`Cache` also features a :meth:`getsizeof` method, which returns
-the size of a given item.  The default implementation of
-:meth:`getsizeof` returns :const:`1` irrespective of its `value`
-argument, making the cache's size equal to the number of its items, or
+the size of a given `value`.  The default implementation of
+:meth:`getsizeof` returns :const:`1` irrespective of its argument,
+making the cache's size equal to the number of its items, or
 ``len(cache)``.  For convenience, all cache classes accept an optional
 named constructor parameter `getsizeof`, which may specify a function
 of one argument used to retrieve the size of an item's value.
 
 .. autoclass:: Cache
    :members:
-   :exclude-members: getsize
 
-   .. method:: getsize
-
-      .. deprecated:: 0.8.1
+   This class discards arbitrary items using :meth:`popitem` to make
+   space when necessary.  Derived classes may override :meth:`popitem`
+   to implement specific caching strategies.  If a subclass has to
+   keep track of item access, insertion or deletion, it may
+   additionally need to override :meth:`__getitem__`,
+   :meth:`__setitem__` and :meth:`__delitem__`.  If a subclass wants
+   to store meta data with its values, i.e. the `value` argument
+   passed to :meth:`Cache.__setitem__` is different from what the
+   derived class's :meth:`__setitem__` received, it will probably need
+   to override :meth:`getsizeof`, too.
 
 .. autoclass:: LFUCache
    :members:
 
+   This class counts how often an item is retrieved, and discards the
+   items used least often to make space when necessary.
+
 .. autoclass:: LRUCache
    :members:
 
-.. autoclass:: RRCache
+   This class discards the least recently used items first to make
+   space when necessary.
+
+.. autoclass:: RRCache(maxsize, choice=random.choice, missing=None, getsizeof=None)
    :members:
 
-.. autoclass:: TTLCache
+   This class randomly selects candidate items and discards them to
+   make space when necessary.
+
+   By default, items are selected from the list of cache keys using
+   :func:`random.choice`.  The optional argument `choice` may specify
+   an alternative function that returns an arbitrary element from a
+   non-empty sequence.
+
+.. autoclass:: TTLCache(maxsize, ttl, timer=time.time, missing=None, getsizeof=None)
    :members:
+   :exclude-members: expire
+
+   This class associates a time-to-live value with each item.  Items
+   that expire because they have exceeded their time-to-live will be
+   removed automatically.  If no expired items are there to remove,
+   the least recently used items will be discarded first to make space
+   when necessary.  Trying to access an expired item will raise a
+   :exc:`KeyError`.
+
+   By default, the time-to-live is specified in seconds, and the
+   :func:`time.time` function is used to retrieve the current time.  A
+   custom `timer` function can be supplied if needed.
+
+   .. automethod:: expire(self, time=None)
+
+      Since expired items will be "physically" removed from a cache
+      only at the next mutating operation, e.g. :meth:`__setitem__` or
+      :meth:`__delitem__`, to avoid changing the underlying dictionary
+      while iterating over it, expired items may still claim memory
+      although they are no longer accessible.  Calling this method
+      removes all items whose time-to-live would have expired by
+      `time`, so garbage collection is free to reuse their memory.  If
+      `time` is :const:`None`, this removes all items that have
+      expired by the current value returned by :attr:`timer`.
 
 
 Function Decorators
@@ -147,10 +193,10 @@ The wrapped function is instrumented with :func:`cache_info` and
 performance and clear the cache.  See the :func:`functools.lru_cache`
 documentation for details.
 
-Like for :func:`functools.lru_cache`, the positional and keyword
-arguments to the function must be hashable.  Note that unlike
-:func:`functools.lru_cache`, setting `maxsize` to :const:`None` is not
-supported.
+Like with :func:`functools.lru_cache`, the positional and keyword
+arguments to the underlying function must be hashable.  Note that
+unlike :func:`functools.lru_cache`, setting `maxsize` to :const:`None`
+is not supported.
 
 .. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
 

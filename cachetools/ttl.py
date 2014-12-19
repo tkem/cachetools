@@ -1,9 +1,9 @@
+import functools
+import time
+
 from .cache import Cache
 from .decorators import cachedfunc
 from .lock import RLock
-
-import functools
-import time
 
 
 class Link(object):
@@ -56,21 +56,7 @@ class NestedTimer(object):
 
 
 class TTLCache(Cache):
-    """LRU Cache implementation with per-item time-to-live (TTL) value.
-
-    This class associates a time-to-live value with each item.  Items
-    that expire because they have exceeded their time-to-live will be
-    removed.  If no expired items are there to remove, the least
-    recently used items will be discarded first to make space when
-    necessary.  Trying to access an expired item will raise a
-    :exc:`KeyError`.
-
-    By default, the time-to-live is specified in seconds, and the
-    standard :func:`time.time` function is used to retrieve the
-    current time.  A custom `timer` function can be supplied if
-    needed.
-
-    """
+    """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
     def __init__(self, maxsize, ttl, timer=time.time, missing=None,
                  getsizeof=None):
@@ -179,12 +165,7 @@ class TTLCache(Cache):
         return cache_len(self) - expired
 
     def expire(self, time=None):
-        """Remove expired items from the cache.
-
-        If `time` is not :const:`None`, remove all items whose
-        time-to-live would have expired by `time`.
-
-        """
+        """Remove expired items from the cache."""
         if time is None:
             time = self.__timer()
         root = self.__root
@@ -197,7 +178,10 @@ class TTLCache(Cache):
             head = next
 
     def popitem(self):
-        """Remove and return the `(key, value)` pair least recently used."""
+        """Remove and return the `(key, value)` pair least recently used that
+        has not already expired.
+
+        """
         with self.__timer as time:
             self.expire(time)
             root = self.__root
@@ -222,12 +206,12 @@ class TTLCache(Cache):
 
     @property
     def timer(self):
-        """Return the timer used by the cache."""
+        """The timer function used by the cache."""
         return self.__timer
 
     @property
     def ttl(self):
-        """Return the time-to-live of the cache."""
+        """The time-to-live value of the cache's items."""
         return self.__ttl
 
     # mixin methods

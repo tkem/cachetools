@@ -6,20 +6,7 @@ def one(value):
 
 
 class Cache(collections.MutableMapping):
-    """Mutable mapping to serve as a simple cache or cache base class.
-
-    This class discards arbitrary items using :meth:`popitem` to make
-    space when necessary.  Derived classes may override
-    :meth:`popitem` to implement specific caching strategies.  If a
-    subclass has to keep track of item access, insertion or deletion,
-    it may additionally need to override :meth:`__getitem__`,
-    :meth:`__setitem__` and :meth:`__delitem__`.  If a subclass has to
-    keep meta data with its values, i.e. the `value` argument passed
-    to :meth:`Cache.__setitem__` is different from what a user would
-    regard as the cache's value, it will probably want to override
-    :meth:`getsizeof`, too.
-
-    """
+    """Mutable mapping to serve as a simple cache or cache base class."""
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
         self.__data = dict()
@@ -82,21 +69,16 @@ class Cache(collections.MutableMapping):
 
     @property
     def maxsize(self):
-        """Return the maximum size of the cache."""
+        """The maximum size of the cache."""
         return self.__maxsize
 
     @property
     def currsize(self):
-        """Return the current size of the cache."""
+        """The current size of the cache."""
         return self.__currsize
 
-    def getsize(self, key):
-        import warnings
-        warnings.warn("Cache.getsize is deprecated", DeprecationWarning)
-        return self.__data[key][1]
-
     def getsizeof(self, value):
-        """Return the size of a cache element."""
+        """Return the size of a cache element's value."""
         return self.__getsizeof(value)
 
     # collections.MutableMapping mixin methods do not handle __missing__

@@ -15,12 +15,7 @@ class Link(object):
 
 
 class LRUCache(Cache):
-    """Least Recently Used (LRU) cache implementation.
-
-    This class discards the least recently used items first to make
-    space when necessary.
-
-    """
+    """Least Recently Used (LRU) cache implementation."""
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
         if getsizeof is not None:

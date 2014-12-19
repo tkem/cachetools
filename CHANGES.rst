@@ -3,6 +3,8 @@
 
 - Provide ``RRCache.choice`` property.
 
+- Improve documentation.
+
 
 0.8.2 2014-12-15
 ----------------

@@ -1,22 +1,12 @@
+import random
+
 from .cache import Cache
 from .decorators import cachedfunc
 from .lock import RLock
 
-import random
-
 
 class RRCache(Cache):
-    """Random Replacement (RR) cache implementation.
-
-    This class randomly selects candidate items and discards them to
-    make space when necessary.
-
-    By default, items are selected from the list of cache keys using
-    :func:`random.choice`.  The optional argument `choice` may specify
-    an alternative function that returns an arbitrary element from a
-    non-empty sequence.
-
-    """
+    """Random Replacement (RR) cache implementation."""
 
     def __init__(self, maxsize, choice=random.choice, missing=None,
                  getsizeof=None):
@@ -33,7 +23,7 @@ class RRCache(Cache):
 
     @property
     def choice(self):
-        """Return the `choice` function used by the cache."""
+        """The `choice` function used by the cache."""
         return self.__choice
 
 

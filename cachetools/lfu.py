@@ -1,18 +1,13 @@
+import collections
+import operator
+
 from .cache import Cache
 from .decorators import cachedfunc
 from .lock import RLock
 
-import collections
-import operator
-
 
 class LFUCache(Cache):
-    """Least Frequently Used (LFU) cache implementation.
-
-    This class counts how often an item is retrieved, and discards the
-    items used least often to make space when necessary.
-
-    """
+    """Least Frequently Used (LFU) cache implementation."""
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
         Cache.__init__(self, maxsize, missing, getsizeof)
