@@ -55,7 +55,7 @@ operation calls :meth:`Cache.__missing__`, which in turn calls
 `missing` with `key` as its sole argument.  The cache will then store
 the object returned from ``missing(key)`` as the new cache value for
 `key`, possibly discarding other items if the cache is full.  This may
-be used provide memoization for existing single-argument functions::
+be used to provide memoization for existing single-argument functions::
 
     from cachetools import LRUCache
     import urllib.request
