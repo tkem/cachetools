@@ -21,14 +21,15 @@ function decorator.
    >>> cache
    LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
 
-
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
-fixed maximum size.  When the cache is full, i.e. the size of the
-cache would exceed its maximum size, the cache must choose which
-item(s) to discard based on a suitable `cache algorithm`_.  A cache's
-size is the sum of the size of its items, and an item's size in
-general is a property or function of its value, e.g. the result of
-``sys.getsizeof``, or ``len`` for string and sequence values.
+fixed maximum size.  When the cache is full, i.e. by adding another
+item the cache would exceed its maximum size, the cache must choose
+which item(s) to discard based on a suitable `cache algorithm`_.  In
+general, a cache's size is the total size of its items, and an item's
+size is a property or function of its value, e.g. the result of
+``sys.getsizeof(value)``.  For the trivial but common case that each
+item counts as ``1``, irrespective of its value, a cache's size is
+equal to the number of its items, or ``len(cache)``.
 
 This module provides multiple cache implementations based on different
 cache algorithms, as well as decorators for easily memoizing function
