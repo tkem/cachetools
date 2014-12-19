@@ -31,6 +31,11 @@ class RRCache(Cache):
             raise KeyError('cache is empty')
         return (key, self.pop(key))
 
+    @property
+    def choice(self):
+        """Return the `choice` function used by the cache."""
+        return self.__choice
+
 
 def rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None,
              lock=RLock):

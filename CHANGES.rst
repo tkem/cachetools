@@ -1,6 +1,8 @@
 1.0.0 UNRELEASED
 ----------------
 
+- Provide ``RRCache.choice`` property.
+
 
 0.8.2 2014-12-15
 ----------------

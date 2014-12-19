@@ -17,6 +17,7 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
     def test_choice(self):
         cache = self.cache(maxsize=2, choice=min)
+        self.assertEqual(min, cache.choice)
 
         cache[1] = 1
         cache[2] = 2
