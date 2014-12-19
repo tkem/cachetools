@@ -17,9 +17,9 @@ setup(
     license='MIT',
     description='Extensible memoizing collections and decorators',
     long_description=open('README.rst').read(),
-    keywords='cache caching LRU LFU TTL',
+    keywords='cache caching memoizing memoization LRU LFU TTL',
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Other Environment',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
