@@ -44,9 +44,11 @@ Cache Implementations
 This module provides several classes implementing caches using
 different cache algorithms.  All these classes derive from class
 :class:`Cache`, which in turn derives from
-:class:`collections.MutableMapping`, providing additional properties
-:attr:`maxsize` and :attr:`currsize` to retrieve the maximum and
-current size of the cache.
+:class:`collections.MutableMapping`, and provide :attr:`maxsize` and
+:attr:`currsize` properties to retrieve the maximum and current size
+of the cache.  When a cache is full, :meth:`setitem` calls
+:meth:`popitem` repeatedly until there is enough room for the item to
+be added.
 
 All cache classes accept an optional `missing` keyword argument in
 their constructor, which can be used to provide a default *factory
