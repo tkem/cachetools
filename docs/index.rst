@@ -235,11 +235,15 @@ Method Decorators
    instance or class.  If `cache(self)` returns :const:`None`, the
    original underlying method is called directly and the result is not
    cached.  The `cache` function is also available as the wrapped
-   function's :attr:`cache` attribute.
+   function's :attr:`cache` attribute.  Multiple methods of an object
+   or class may share the same cache object, but it is the user's
+   responsibility to handle concurrent cache access in a
+   multi-threaded environment.
 
-   Multiple methods of an object or class may share the same cache
-   object, but it is the user's responsibility to handle concurrent
-   cache access in a multi-threaded environment.
+   Note that the objects returned from `cache` are not required to be
+   instances of the cache implementations provided by this module.
+   :func:`cachedmethod` should work with any mutable mapping type, be
+   it plain :class:`dict` or :class:`weakref.WeakValueDictionary`.
 
    One advantage of this decorator over the similar function
    decorators is that cache properties such as `maxsize` can be set at
