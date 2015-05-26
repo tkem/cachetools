@@ -91,6 +91,28 @@ def cachedmethod(cache, typed=False):
                 pass  # value too large
             return result
 
+        def cache_invalidate(self, *args, **kwargs):
+            mapping = wrapper.cache(self)
+            if mapping is None:
+                return
+            key = makekey((method,) + args, kwargs)
+            try:
+                del mapping[key]
+            except KeyError:
+                pass
+
+        def cache_set(self, value, *args, **kwargs):
+            mapping = wrapper.cache(self)
+            if mapping is None:
+                return
+            key = makekey((method,) + args, kwargs)
+            try:
+                mapping[key] = value
+            except ValueError:
+                pass # value too large
+
+        wrapper.cache_set = cache_set
+        wrapper.cache_invalidate = cache_invalidate
         wrapper.cache = cache
         return functools.update_wrapper(wrapper, method)
 
