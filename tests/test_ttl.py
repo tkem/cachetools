@@ -1,7 +1,8 @@
 import unittest
 
-from . import CacheTestMixin, DecoratorTestMixin
 from cachetools import TTLCache, ttl_cache
+
+from . import CacheTestMixin, DecoratorTestMixin
 
 
 class Timer:

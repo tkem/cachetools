@@ -1,6 +1,4 @@
 from .cache import Cache
-from .decorators import cachedfunc
-from .lock import RLock
 
 
 class Link(object):
@@ -85,12 +83,3 @@ class LRUCache(Cache):
         Cache.__delitem__(self, key)
         link.unlink()
         return (key, link.value)
-
-
-def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
-    """Decorator to wrap a function with a memoizing callable that saves
-    up to `maxsize` results based on a Least Recently Used (LRU)
-    algorithm.
-
-    """
-    return cachedfunc(LRUCache(maxsize, getsizeof), typed, lock)

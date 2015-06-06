@@ -1,8 +1,9 @@
-import unittest
 import random
+import unittest
+
+from cachetools import RRCache, rr_cache
 
 from . import CacheTestMixin, DecoratorTestMixin
-from cachetools import RRCache, rr_cache
 
 
 class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):

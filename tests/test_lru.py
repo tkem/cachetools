@@ -1,7 +1,8 @@
 import unittest
 
-from . import CacheTestMixin, DecoratorTestMixin
 from cachetools import LRUCache, lru_cache
+
+from . import CacheTestMixin, DecoratorTestMixin
 
 
 class LRUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):

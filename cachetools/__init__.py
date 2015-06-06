@@ -1,11 +1,12 @@
 """Extensible memoizing collections and decorators"""
 
 from .cache import Cache
-from .decorators import cachedmethod
-from .lfu import LFUCache, lfu_cache
-from .lru import LRUCache, lru_cache
-from .rr import RRCache, rr_cache
-from .ttl import TTLCache, ttl_cache
+from .func import lfu_cache, lru_cache, rr_cache, ttl_cache
+from .lfu import LFUCache
+from .lru import LRUCache
+from .method import cachedmethod
+from .rr import RRCache
+from .ttl import TTLCache
 
 __all__ = (
     'Cache',

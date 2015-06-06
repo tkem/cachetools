@@ -1,8 +1,6 @@
 import random
 
 from .cache import Cache
-from .decorators import cachedfunc
-from .lock import RLock
 
 
 class RRCache(Cache):
@@ -25,13 +23,3 @@ class RRCache(Cache):
     def choice(self):
         """The `choice` function used by the cache."""
         return self.__choice
-
-
-def rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None,
-             lock=RLock):
-    """Decorator to wrap a function with a memoizing callable that saves
-    up to `maxsize` results based on a Random Replacement (RR)
-    algorithm.
-
-    """
-    return cachedfunc(RRCache(maxsize, choice, getsizeof), typed, lock)

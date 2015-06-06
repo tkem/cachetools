@@ -1,10 +1,6 @@
 import collections
 
 
-def one(value):
-    return 1
-
-
 class Cache(collections.MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
@@ -13,7 +9,7 @@ class Cache(collections.MutableMapping):
         self.__currsize = 0
         self.__maxsize = maxsize
         self.__missing = missing
-        self.__getsizeof = getsizeof or one
+        self.__getsizeof = getsizeof or (lambda x: 1)
 
     def __repr__(self):
         return '%s(%r, maxsize=%d, currsize=%d)' % (

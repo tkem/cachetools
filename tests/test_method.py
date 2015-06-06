@@ -1,5 +1,5 @@
-import unittest
 import operator
+import unittest
 
 from cachetools import LRUCache, cachedmethod
 

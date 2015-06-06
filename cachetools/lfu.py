@@ -2,8 +2,6 @@ import collections
 import operator
 
 from .cache import Cache
-from .decorators import cachedfunc
-from .lock import RLock
 
 
 class LFUCache(Cache):
@@ -33,12 +31,3 @@ class LFUCache(Cache):
         except ValueError:
             raise KeyError('cache is empty')
         return key, self.pop(key)
-
-
-def lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
-    """Decorator to wrap a function with a memoizing callable that saves
-    up to `maxsize` results based on a Least Frequently Used (LFU)
-    algorithm.
-
-    """
-    return cachedfunc(LFUCache(maxsize, getsizeof), typed, lock)

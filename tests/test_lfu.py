@@ -1,7 +1,8 @@
 import unittest
 
-from . import CacheTestMixin, DecoratorTestMixin
 from cachetools import LFUCache, lfu_cache
+
+from . import CacheTestMixin, DecoratorTestMixin
 
 
 class LFUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
