@@ -1,3 +1,14 @@
+1.0.1 2015-06-06
+----------------
+
+- Code cleanup for improved PEP 8 conformance.
+
+- Add documentation and unit tests for using ``@cachedmethod`` with
+  generic mutable mappings.
+
+- Improve documentation.
+
+
 1.0.0 2014-12-19
 ----------------
 
