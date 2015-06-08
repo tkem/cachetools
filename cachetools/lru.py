@@ -16,14 +16,19 @@ class LRUCache(Cache):
     """Least Recently Used (LRU) cache implementation."""
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
+        self.__getsizeoflink = None
         if getsizeof is not None:
-            getlinksize = lambda link: getsizeof(link.value)
-            Cache.__init__(self, maxsize, missing, getlinksize)
-            self.getsizeof = getsizeof
+            Cache.__init__(self, maxsize, missing, lambda link: getsizeof(link.value))
+            self.__getsizeoflink = getsizeof
         else:
             Cache.__init__(self, maxsize, missing)
         self.__root = root = Link()
         root.prev = root.next = root
+
+    def getsizeof(self, value):
+        if self.__getsizeoflink:
+            return self.__getsizeoflink(value)
+        return Cache.getsizeof(self, value)
 
     def __repr__(self, cache_getitem=Cache.__getitem__):
         # prevent item reordering

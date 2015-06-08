@@ -9,7 +9,7 @@ class Cache(collections.MutableMapping):
         self.__currsize = 0
         self.__maxsize = maxsize
         self.__missing = missing
-        self.__getsizeof = getsizeof or (lambda x: 1)
+        self.__getsizeof = getsizeof
 
     def __repr__(self):
         return '%s(%r, maxsize=%d, currsize=%d)' % (
@@ -28,7 +28,7 @@ class Cache(collections.MutableMapping):
     def __setitem__(self, key, value):
         data = self.__data
         maxsize = self.__maxsize
-        size = self.__getsizeof(value)
+        size = 1 if self.__getsizeof is None else self.__getsizeof(value)
         if size > maxsize:
             raise ValueError('value too large')
         if key not in data or data[key][1] < size:
@@ -75,7 +75,9 @@ class Cache(collections.MutableMapping):
 
     def getsizeof(self, value):
         """Return the size of a cache element's value."""
-        return self.__getsizeof(value)
+        if self.__getsizeof:
+            return self.__getsizeof(value)
+        return 1
 
     # collections.MutableMapping mixin methods do not handle __missing__
 

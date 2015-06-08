@@ -189,3 +189,19 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         with self.assertRaises(KeyError):
             cache[(1, 2, 3)]
         self.assertNotIn((1, 2, 3), cache)
+
+    def test_ttl_pickle(self):
+        import pickle
+
+        cache = self.cache(maxsize=3)
+        unpickled = pickle.loads(pickle.dumps(cache, -1))
+        self.assertIsNotNone(unpickled)
+        self.assertEquals(0, len(unpickled))
+
+        cache[1] = 1
+        cache[2] = 2
+        unpickled = pickle.loads(pickle.dumps(cache, -1))
+        self.assertIsNotNone(unpickled)
+        self.assertEquals(2, len(unpickled))
+        self.assertEquals(1, unpickled[1])
+        self.assertEquals(2, unpickled[2])
