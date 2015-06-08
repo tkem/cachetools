@@ -52,3 +52,19 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
             cache[4] = 4
         self.assertEqual(len(cache), 1)
         self.assertEqual(cache[3], 3)
+
+    def test_lfu_pickle(self):
+        import pickle
+
+        cache = self.cache(maxsize=3)
+        unpickled = pickle.loads(pickle.dumps(cache, -1))
+        self.assertIsNotNone(unpickled)
+        self.assertEquals(0, len(unpickled))
+
+        cache[1] = 1
+        cache[2] = 2
+        unpickled = pickle.loads(pickle.dumps(cache, -1))
+        self.assertIsNotNone(unpickled)
+        self.assertEquals(2, len(unpickled))
+        self.assertEquals(1, unpickled[1])
+        self.assertEquals(2, unpickled[2])

@@ -40,3 +40,12 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
         self.assertEqual(3, cache[3])
         self.assertEqual(4, cache[4])
         self.assertNotIn(0, cache)
+
+    def test_rr_pickle(self):
+        import pickle
+
+        cache = self.cache(maxsize=3)
+        with self.assertRaises(pickle.PicklingError):
+            # The cache's random choice function cannot be pickled.
+            # Try dill instead.
+            pickle.dumps(cache, -1)

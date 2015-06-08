@@ -50,6 +50,9 @@ class NestedTimer(object):
 
     def __getattr__(self, name):
         # FIXME: for unittests timer.tick()
+        if name == '__setstate__':
+            # For pickling: without this we see infinite recursion.
+            return None
         return getattr(self.__timer, name)
 
 
