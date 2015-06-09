@@ -8,8 +8,10 @@ class Cache(collections.MutableMapping):
         self.__data = dict()
         self.__currsize = 0
         self.__maxsize = maxsize
-        self.__missing = missing
-        self.__getsizeof = getsizeof or (lambda x: 1)
+        if missing:
+            self.__missing = missing
+        if getsizeof:
+            self.__getsizeof = getsizeof
 
     def __repr__(self):
         return '%s(%r, maxsize=%d, currsize=%d)' % (
@@ -49,19 +51,23 @@ class Cache(collections.MutableMapping):
         return key in self.__data
 
     def __missing__(self, key):
-        missing = self.__missing
-        if missing:
-            # return value as stored in data!
-            self.__setitem__(key, missing(key))
-            return self.__data[key][0]
-        else:
-            raise KeyError(key)
+        self.__setitem__(key, self.__missing(key))
+        # return value as stored in data
+        return self.__data[key][0]
 
     def __iter__(self):
         return iter(self.__data)
 
     def __len__(self):
         return len(self.__data)
+
+    @staticmethod
+    def __getsizeof(value):
+        return 1
+
+    @staticmethod
+    def __missing(key):
+        raise KeyError(key)
 
     @property
     def maxsize(self):
