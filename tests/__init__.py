@@ -202,6 +202,30 @@ class CacheTestMixin(object):
         self.assertEqual(3, cache.currsize)
         self.assertEqual(3, cache[3])
 
+    def test_cache_pickle(self):
+        import pickle
+        import sys
+
+        cache = self.cache(maxsize=2)
+        cache.update({1: 1, 2: 2})
+        if sys.version_info < (3, 0):
+            cache = pickle.loads(pickle.dumps(cache, -1))
+        else:
+            cache = pickle.loads(pickle.dumps(cache))
+        self.assertEqual(2, len(cache))
+        self.assertEqual(1, cache[1])
+        self.assertEqual(2, cache[2])
+
+        cache[3] = 3
+        self.assertEqual(2, len(cache))
+        self.assertEqual(3, cache[3])
+        self.assertTrue(1 in cache or 2 in cache)
+
+        cache[4] = 4
+        self.assertEqual(2, len(cache))
+        self.assertEqual(4, cache[4])
+        self.assertTrue(1 in cache or 2 in cache or 3 in cache)
+
 
 class DecoratorTestMixin(object):
 

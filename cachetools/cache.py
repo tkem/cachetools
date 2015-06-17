@@ -30,7 +30,7 @@ class Cache(collections.MutableMapping):
     def __setitem__(self, key, value):
         data = self.__data
         maxsize = self.__maxsize
-        size = self.__getsizeof(value)
+        size = self.getsizeof(value)
         if size > maxsize:
             raise ValueError('value too large')
         if key not in data or data[key][1] < size:

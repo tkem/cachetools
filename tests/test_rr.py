@@ -6,10 +6,14 @@ from cachetools import RRCache, rr_cache
 from . import CacheTestMixin, DecoratorTestMixin
 
 
+# random.choice cannot be pickled...
+def choice(seq):
+    return random.choice(seq)
+
+
 class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
 
-    def cache(self, maxsize, choice=random.choice, missing=None,
-              getsizeof=None):
+    def cache(self, maxsize, choice=choice, missing=None, getsizeof=None):
         return RRCache(maxsize, choice=choice, missing=missing,
                        getsizeof=getsizeof)
 

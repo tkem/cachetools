@@ -1,7 +1,7 @@
 from .cache import Cache
 
 
-class Link(object):
+class _Link(object):
 
     __slots__ = 'key', 'value', 'prev', 'next'
 
@@ -16,13 +16,8 @@ class LRUCache(Cache):
     """Least Recently Used (LRU) cache implementation."""
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
-        if getsizeof is not None:
-            getlinksize = lambda link: getsizeof(link.value)
-            Cache.__init__(self, maxsize, missing, getlinksize)
-            self.getsizeof = getsizeof
-        else:
-            Cache.__init__(self, maxsize, missing)
-        self.__root = root = Link()
+        Cache.__init__(self, maxsize, missing, getsizeof)
+        root = self.__root = _Link()
         root.prev = root.next = root
 
     def __repr__(self, cache_getitem=Cache.__getitem__):
@@ -53,7 +48,7 @@ class LRUCache(Cache):
             oldlink = cache_getitem(self, key)
         else:
             oldlink = None
-        link = Link()
+        link = _Link()
         link.key = key
         link.value = value
         cache_setitem(self, key, link)
@@ -72,6 +67,13 @@ class LRUCache(Cache):
         link = cache_getitem(self, key)
         cache_delitem(self, key)
         link.unlink()
+
+    def getsizeof(self, value):
+        """Return the size of a cache element's value."""
+        if isinstance(value, _Link):
+            return Cache.getsizeof(self, value.value)
+        else:
+            return Cache.getsizeof(self, value)
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used."""
