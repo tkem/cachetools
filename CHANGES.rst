@@ -1,3 +1,12 @@
+1.0.2 2015-06-18
+----------------
+
+- Allow simple cache instances to be pickled.
+
+- Refactor ``Cache.getsizeof`` and ``Cache.missing`` default
+  implementation.
+
+
 1.0.1 2015-06-06
 ----------------
 
