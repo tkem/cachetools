@@ -1,121 +1,140 @@
+"""`functools.lru_cache` compatible memoizing function decorators"""
+
 import collections
 import functools
 import random
 import time
-
-from .lfu import LFUCache
-from .lru import LRUCache
-from .rr import RRCache
-from .ttl import TTLCache
+import warnings
 
 try:
     from threading import RLock
 except ImportError:
     from dummy_threading import RLock
 
+from .decorators import cachekey
+
+__all__ = ('lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache')
+
+
+class _NLock:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *exc):
+        pass
 
 _CacheInfo = collections.namedtuple('CacheInfo', [
     'hits', 'misses', 'maxsize', 'currsize'
 ])
 
-
-class _NullContext:
-    def __enter__(self):
-        pass
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        pass
+_marker = object()
 
 
-_nullcontext = _NullContext()
+def _deprecated(message, level=2):
+    warnings.warn('%s is deprecated' % message, DeprecationWarning, level)
 
 
-def _makekey_untyped(args, kwargs):
-    return (args, tuple(sorted(kwargs.items())))
-
-
-def _makekey_typed(args, kwargs):
-    key = _makekey_untyped(args, kwargs)
+def _typedkey(*args, **kwargs):
+    key = cachekey(*args, **kwargs)
     key += tuple(type(v) for v in args)
     key += tuple(type(v) for _, v in sorted(kwargs.items()))
     return key
 
 
-def _cachedfunc(cache, typed=False, lock=None):
-    makekey = _makekey_typed if typed else _makekey_untyped
-    context = lock() if lock else _nullcontext
-
+def _cache(cache, typed=False, context=_marker):
     def decorator(func):
+        key = _typedkey if typed else cachekey
+        if context is _marker:
+            lock = RLock()
+        elif context is None:
+            lock = _NLock()
+        else:
+            lock = context()
         stats = [0, 0]
 
-        def wrapper(*args, **kwargs):
-            key = makekey(args, kwargs)
-            with context:
-                try:
-                    result = cache[key]
-                    stats[0] += 1
-                    return result
-                except KeyError:
-                    stats[1] += 1
-            result = func(*args, **kwargs)
-            with context:
-                try:
-                    cache[key] = result
-                except ValueError:
-                    pass  # value too large
-            return result
-
         def cache_info():
-            with context:
+            with lock:
                 hits, misses = stats
                 maxsize = cache.maxsize
                 currsize = cache.currsize
             return _CacheInfo(hits, misses, maxsize, currsize)
 
         def cache_clear():
-            with context:
-                stats[:] = [0, 0]
-                cache.clear()
+            with lock:
+                try:
+                    cache.clear()
+                finally:
+                    stats[:] = [0, 0]
 
+        def wrapper(*args, **kwargs):
+            k = key(*args, **kwargs)
+            with lock:
+                try:
+                    v = cache[k]
+                    stats[0] += 1
+                    return v
+                except KeyError:
+                    stats[1] += 1
+            v = func(*args, **kwargs)
+            try:
+                with lock:
+                    cache[k] = v
+            except ValueError:
+                pass  # value too large
+            return v
+        functools.update_wrapper(wrapper, func)
+        if not hasattr(wrapper, '__wrapped__'):
+            wrapper.__wrapped__ = func  # Python < 3.2
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
-        return functools.update_wrapper(wrapper, func)
-
+        return wrapper
     return decorator
 
 
-def lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+def lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=_marker):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Frequently Used (LFU)
     algorithm.
 
     """
-    return _cachedfunc(LFUCache(maxsize, getsizeof), typed, lock)
+    from .lfu import LFUCache
+    if lock is not _marker:
+        _deprecated("Passing 'lock' to lfu_cache()", 3)
+    return _cache(LFUCache(maxsize, getsizeof), typed, lock)
 
 
-def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=RLock):
+def lru_cache(maxsize=128, typed=False, getsizeof=None, lock=_marker):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm.
 
     """
-    return _cachedfunc(LRUCache(maxsize, getsizeof), typed, lock)
+    from .lru import LRUCache
+    if lock is not _marker:
+        _deprecated("Passing 'lock' to lru_cache()", 3)
+    return _cache(LRUCache(maxsize, getsizeof), typed, lock)
 
 
 def rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None,
-             lock=RLock):
+             lock=_marker):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Random Replacement (RR)
     algorithm.
 
     """
-    return _cachedfunc(RRCache(maxsize, choice, getsizeof), typed, lock)
+    from .rr import RRCache
+    if lock is not _marker:
+        _deprecated("Passing 'lock' to rr_cache()", 3)
+    return _cache(RRCache(maxsize, choice, getsizeof), typed, lock)
 
 
 def ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False,
-              getsizeof=None, lock=RLock):
+              getsizeof=None, lock=_marker):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm with a per-item time-to-live (TTL) value.
     """
-    return _cachedfunc(TTLCache(maxsize, ttl, timer, getsizeof), typed, lock)
+    from .ttl import TTLCache
+    if lock is not _marker:
+        _deprecated("Passing 'lock' to ttl_cache()", 3)
+    return _cache(TTLCache(maxsize, ttl, timer, getsizeof), typed, lock)
