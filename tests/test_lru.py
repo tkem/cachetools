@@ -1,17 +1,14 @@
 import unittest
 
-from cachetools import LRUCache, lru_cache
+from cachetools import LRUCache
 
-from . import CacheTestMixin, DecoratorTestMixin
+from . import CacheTestMixin
 
 
-class LRUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
+class LRUCacheTest(unittest.TestCase, CacheTestMixin):
 
     def cache(self, maxsize, missing=None, getsizeof=None):
         return LRUCache(maxsize, missing=missing, getsizeof=getsizeof)
-
-    def decorator(self, maxsize, typed=False, lock=None):
-        return lru_cache(maxsize, typed=typed, lock=lock)
 
     def test_lru(self):
         cache = self.cache(maxsize=2)

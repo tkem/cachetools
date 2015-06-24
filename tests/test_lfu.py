@@ -1,17 +1,14 @@
 import unittest
 
-from cachetools import LFUCache, lfu_cache
+from cachetools import LFUCache
 
-from . import CacheTestMixin, DecoratorTestMixin
+from . import CacheTestMixin
 
 
-class LFUCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
+class LFUCacheTest(unittest.TestCase, CacheTestMixin):
 
     def cache(self, maxsize, missing=None, getsizeof=None):
         return LFUCache(maxsize, missing=missing, getsizeof=getsizeof)
-
-    def decorator(self, maxsize, typed=False, lock=None):
-        return lfu_cache(maxsize, typed=typed, lock=lock)
 
     def test_lfu(self):
         cache = self.cache(maxsize=2)

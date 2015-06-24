@@ -1,8 +1,8 @@
 import unittest
 
-from cachetools import TTLCache, ttl_cache
+from cachetools import TTLCache
 
-from . import CacheTestMixin, DecoratorTestMixin
+from . import CacheTestMixin
 
 
 class Timer:
@@ -19,14 +19,11 @@ class Timer:
         self.time += 1
 
 
-class TTLCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
+class TTLCacheTest(unittest.TestCase, CacheTestMixin):
 
     def cache(self, maxsize, ttl=0, missing=None, getsizeof=None):
         return TTLCache(maxsize, ttl, timer=Timer(), missing=missing,
                         getsizeof=getsizeof)
-
-    def decorator(self, maxsize, ttl=0, typed=False, lock=None):
-        return ttl_cache(maxsize, ttl, timer=Timer(), typed=typed, lock=lock)
 
     def test_lru(self):
         cache = self.cache(maxsize=2)

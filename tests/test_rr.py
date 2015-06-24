@@ -1,9 +1,9 @@
 import random
 import unittest
 
-from cachetools import RRCache, rr_cache
+from cachetools import RRCache
 
-from . import CacheTestMixin, DecoratorTestMixin
+from . import CacheTestMixin
 
 
 # random.choice cannot be pickled...
@@ -11,14 +11,11 @@ def choice(seq):
     return random.choice(seq)
 
 
-class RRCacheTest(unittest.TestCase, CacheTestMixin, DecoratorTestMixin):
+class RRCacheTest(unittest.TestCase, CacheTestMixin):
 
     def cache(self, maxsize, choice=choice, missing=None, getsizeof=None):
         return RRCache(maxsize, choice=choice, missing=missing,
                        getsizeof=getsizeof)
-
-    def decorator(self, maxsize, choice=random.choice, typed=False, lock=None):
-        return rr_cache(maxsize, choice=choice, typed=typed, lock=lock)
 
     def test_choice(self):
         cache = self.cache(maxsize=2, choice=min)

@@ -74,6 +74,7 @@ def _cachedfunc(cache, typed=False, lock=None):
 
         def cache_clear():
             with context:
+                stats[:] = [0, 0]
                 cache.clear()
 
         wrapper.cache_info = cache_info
