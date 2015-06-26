@@ -1,3 +1,9 @@
+1.0.3 2015-06-26
+----------------
+
+- Clear cache statistics when calling ``clear_cache()``.
+
+
 1.0.2 2015-06-18
 ----------------
 
