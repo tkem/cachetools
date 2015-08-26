@@ -1,7 +1,7 @@
 import collections
 import operator
 
-from .cache import Cache
+from .base import Cache
 
 
 class LFUCache(Cache):

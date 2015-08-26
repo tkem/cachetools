@@ -11,7 +11,7 @@ try:
 except ImportError:
     from dummy_threading import RLock
 
-from .decorators import cachekey
+from .keys import hashkey, typedkey
 
 __all__ = ('lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache')
 
@@ -34,16 +34,9 @@ def _deprecated(message, level=2):
     warnings.warn('%s is deprecated' % message, DeprecationWarning, level)
 
 
-def _typedkey(*args, **kwargs):
-    key = cachekey(*args, **kwargs)
-    key += tuple(type(v) for v in args)
-    key += tuple(type(v) for _, v in sorted(kwargs.items()))
-    return key
-
-
 def _cache(cache, typed=False, context=_marker):
     def decorator(func):
-        key = _typedkey if typed else cachekey
+        key = typedkey if typed else hashkey
         if context is _marker:
             lock = RLock()
         elif context is None:

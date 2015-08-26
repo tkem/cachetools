@@ -1,7 +1,7 @@
 import functools
 import time
 
-from .cache import Cache
+from .base import Cache
 
 
 class _Link(object):

@@ -251,15 +251,15 @@ class DecoratorTestMixin(object):
 
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(len(cache), 1)
-        self.assertIn(cachetools.cachekey(0), cache)
-        self.assertNotIn(cachetools.cachekey(1), cache)
-        self.assertNotIn(cachetools.cachekey(1.0), cache)
+        self.assertIn(cachetools.hashkey(0), cache)
+        self.assertNotIn(cachetools.hashkey(1), cache)
+        self.assertNotIn(cachetools.hashkey(1.0), cache)
 
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(len(cache), 2)
-        self.assertIn(cachetools.cachekey(0), cache)
-        self.assertIn(cachetools.cachekey(1), cache)
-        self.assertIn(cachetools.cachekey(1.0), cache)
+        self.assertIn(cachetools.hashkey(0), cache)
+        self.assertIn(cachetools.hashkey(1), cache)
+        self.assertIn(cachetools.hashkey(1.0), cache)
 
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(len(cache), 2)
@@ -274,7 +274,7 @@ class DecoratorTestMixin(object):
         cache = self.cache(3)
 
         def typedkey(*args, **kwargs):
-            key = cachetools.cachekey(*args, **kwargs)
+            key = cachetools.hashkey(*args, **kwargs)
             key += tuple(type(v) for v in args)
             key += tuple(type(v) for _, v in sorted(kwargs.items()))
             return key
