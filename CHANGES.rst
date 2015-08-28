@@ -1,3 +1,24 @@
+1.1.0 2015-08-28
+----------------
+
+- Add ``@cached`` function decorator.
+
+- Add ``hashkey`` and ``typedkey`` fuctions.
+
+- Add `key` and `lock` arguments to ``@cachedmethod``.
+
+- Set ``__wrapped__`` attributes for Python versions < 3.2.
+
+- Move ``functools`` compatible decorators to ``cachetools.func``.
+
+- Deprecate ``@cachedmethod`` `typed` argument.
+
+- Deprecate `cache` attribute for ``@cachedmethod`` wrappers.
+
+- Deprecate `getsizeof` and `lock` arguments for `cachetools.func`
+  decorator.
+
+
 1.0.3 2015-06-26
 ----------------
 
