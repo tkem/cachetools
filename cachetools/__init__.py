@@ -1,4 +1,4 @@
-"""Extensible memoizing collections and decorators"""
+"""Extensible memoizing collections and decorators."""
 
 import functools
 import warnings
@@ -13,7 +13,7 @@ from .ttl import TTLCache
 
 __all__ = (
     'Cache', 'LFUCache', 'LRUCache', 'RRCache', 'TTLCache',
-    'cache', 'cachedmethod', 'hashkey', 'typedkey',
+    'cached', 'cachedmethod', 'hashkey', 'typedkey',
     # make cachetools.func.* available for backwards compatibility
     'lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache',
 )
@@ -22,8 +22,16 @@ __version__ = '1.0.3'
 
 _default = []  # evaluates to False
 
+if hasattr(functools.update_wrapper(lambda f: f(), lambda: 42), '__wrapped__'):
+    _update_wrapper = functools.update_wrapper
+else:
+    def _update_wrapper(wrapper, wrapped):
+        functools.update_wrapper(wrapper, wrapped)
+        wrapper.__wrapped__ = wrapped
+        return wrapper
 
-def cache(cache, key=hashkey, lock=None):
+
+def cached(cache, key=hashkey, lock=None):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
@@ -60,16 +68,13 @@ def cache(cache, key=hashkey, lock=None):
                 except ValueError:
                     pass  # value too large
                 return v
-        functools.update_wrapper(wrapper, func)
-        if not hasattr(wrapper, '__wrapped__'):
-            wrapper.__wrapped__ = func  # Python < 3.2
-        return wrapper
+        return _update_wrapper(wrapper, func)
     return decorator
 
 
 def cachedmethod(cache, key=_default, lock=None, typed=_default):
     """Decorator to wrap a class or instance method with a memoizing
-    callable that saves results in a (possibly shared) cache.
+    callable that saves results in a cache.
 
     """
     if key is not _default and not callable(key):
@@ -107,21 +112,20 @@ def cachedmethod(cache, key=_default, lock=None, typed=_default):
                     return method(self, *args, **kwargs)
                 k = makekey(self, *args, **kwargs)
                 try:
-                    with lock:
+                    with lock(self):
                         return c[k]
                 except KeyError:
                     pass  # key not found
                 v = method(self, *args, **kwargs)
                 try:
-                    with lock:
+                    with lock(self):
                         c[k] = v
                 except ValueError:
                     pass  # value too large
                 return v
-        functools.update_wrapper(wrapper, method)
-        if not hasattr(wrapper, '__wrapped__'):
-            wrapper.__wrapped__ = method  # Python < 3.2
+        _update_wrapper(wrapper, method)
 
+        # deprecated wrapper attribute
         def getter(self):
             warnings.warn('%s.cache is deprecated' % method.__name__,
                           DeprecationWarning, 2)

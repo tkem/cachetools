@@ -2,7 +2,7 @@ cachetools
 ========================================================================
 
 This module provides various memoizing collections and decorators,
-including a variant of the Python 3 Standard Library `@lru_cache`_
+including variants of the Python 3 Standard Library `@lru_cache`_
 function decorator.
 
 .. code-block:: pycon
@@ -28,12 +28,12 @@ which item(s) to discard based on a suitable `cache algorithm`_.  In
 general, a cache's size is the total size of its items, and an item's
 size is a property or function of its value, e.g. the result of
 ``sys.getsizeof(value)``.  For the trivial but common case that each
-item counts as ``1``, irrespective of its value, a cache's size is
-equal to the number of its items, or ``len(cache)``.
+item counts as ``1``, a cache's size is equal to the number of its
+items, or ``len(cache)``.
 
-This module provides multiple cache implementations based on different
-cache algorithms, as well as decorators for easily memoizing function
-and method calls.
+The `cachetools` module implements multiple cache classes based on
+different caching algorithms, as well as decorators for easily
+memoizing function and method calls.
 
 
 Installation

@@ -6,8 +6,6 @@ from cachetools import LRUCache, cachedmethod
 
 class Cached(object):
 
-    count = 0
-
     def __init__(self, cache, count=0):
         self.cache = cache
         self.count = count
@@ -23,6 +21,23 @@ class Cached(object):
         count = self.count
         self.count += 1
         return count
+
+
+class Locked(object):
+
+    def __init__(self, cache):
+        self.cache = cache
+        self.count = 0
+
+    @cachedmethod(operator.attrgetter('cache'), lock=lambda self: self)
+    def get(self, value):
+        return self.count
+
+    def __enter__(self):
+        self.count += 1
+
+    def __exit__(self, *exc):
+        pass
 
 
 class CachedMethodTest(unittest.TestCase):
@@ -107,7 +122,7 @@ class CachedMethodTest(unittest.TestCase):
             def __add__(self, other):
                 return Int(fractions.Fraction.__add__(self, other))
 
-        cached = Cached(weakref.WeakValueDictionary(), Int(0))
+        cached = Cached(weakref.WeakValueDictionary(), count=Int(0))
         self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
@@ -125,3 +140,23 @@ class CachedMethodTest(unittest.TestCase):
 
         cached.cache.clear()
         self.assertEqual(cached.get(1), 5)
+
+    def test_locked_dict(self):
+        cached = Locked({})
+        self.assertEqual(cached.cache, cached.get.cache(cached))
+
+        self.assertEqual(cached.get(0), 1)
+        self.assertEqual(cached.get(1), 3)
+        self.assertEqual(cached.get(1), 3)
+        self.assertEqual(cached.get(1.0), 3)
+        self.assertEqual(cached.get(2.0), 7)
+
+    def test_nocache(self):
+        cached = Locked(None)
+        self.assertEqual(None, cached.get.cache(cached))
+
+        self.assertEqual(cached.get(0), 0)
+        self.assertEqual(cached.get(1), 0)
+        self.assertEqual(cached.get(1), 0)
+        self.assertEqual(cached.get(1.0), 0)
+        self.assertEqual(cached.get(1.0), 0)

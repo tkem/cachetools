@@ -19,11 +19,15 @@ class _HashedSequence(tuple):
 
 
 def hashkey(*args, **kwargs):
+    """Return a cache key for the specified hashable arguments."""
+
     # TODO: profile flattened tuple w/marker object(s)
     return _HashedSequence((args, tuple(sorted(kwargs.items()))))
 
 
 def typedkey(*args, **kwargs):
+    """Return a typed cache key for the specified hashable arguments."""
+
     key = hashkey(*args, **kwargs)
     key += tuple(type(v) for v in args)
     key += tuple(type(v) for _, v in sorted(kwargs.items()))

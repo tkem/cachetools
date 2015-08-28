@@ -244,7 +244,7 @@ class DecoratorTestMixin(object):
 
     def test_decorator(self):
         cache = self.cache(2)
-        wrapper = cachetools.cache(cache)(self.func)
+        wrapper = cachetools.cached(cache)(self.func)
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper.__wrapped__, self.func)
@@ -278,7 +278,7 @@ class DecoratorTestMixin(object):
             key += tuple(type(v) for v in args)
             key += tuple(type(v) for _, v in sorted(kwargs.items()))
             return key
-        wrapper = cachetools.cache(cache, key=typedkey)(self.func)
+        wrapper = cachetools.cached(cache, key=typedkey)(self.func)
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper.__wrapped__, self.func)
@@ -319,7 +319,7 @@ class DecoratorTestMixin(object):
                 pass
 
         cache = self.cache(2)
-        wrapper = cachetools.cache(cache, lock=Lock())(self.func)
+        wrapper = cachetools.cached(cache, lock=Lock())(self.func)
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper.__wrapped__, self.func)

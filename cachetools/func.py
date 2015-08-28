@@ -1,4 +1,4 @@
-"""`functools.lru_cache` compatible memoizing function decorators"""
+"""`functools.lru_cache` compatible memoizing function decorators."""
 
 import collections
 import functools
