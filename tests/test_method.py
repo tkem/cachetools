@@ -151,7 +151,7 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1.0), 3)
         self.assertEqual(cached.get(2.0), 7)
 
-    def test_nocache(self):
+    def test_locked_nocache(self):
         cached = Locked(None)
         self.assertEqual(None, cached.get.cache(cached))
 
