@@ -1,28 +1,32 @@
 __all__ = ('hashkey', 'typedkey')
 
 
-class _HashedSequence(tuple):
+class _HashedTuple(tuple):
 
-    # nonempty __slots__ not supported for subtype of 'tuple'
+    __hashvalue = None
 
-    def __init__(self, iterable):
-        self.__hash = tuple.__hash__(self)
+    def __hash__(self, hash=tuple.__hash__):
+        hashvalue = self.__hashvalue
+        if hashvalue is None:
+            self.__hashvalue = hashvalue = hash(self)
+        return hashvalue
 
-    def __hash__(self):
-        return self.__hash
+    def __add__(self, other, add=tuple.__add__):
+        return _HashedTuple(add(self, other))
 
-    def __add__(self, other):
-        return _HashedSequence(tuple.__add__(self, other))
+    def __radd__(self, other, add=tuple.__add__):
+        return _HashedTuple(add(other, self))
 
-    def __radd__(self, other):
-        return _HashedSequence(tuple.__add__(other, self))
+_kwmark = (object(),)
 
 
 def hashkey(*args, **kwargs):
     """Return a cache key for the specified hashable arguments."""
 
-    # TODO: profile flattened tuple w/marker object(s)
-    return _HashedSequence((args, tuple(sorted(kwargs.items()))))
+    if kwargs:
+        return _HashedTuple(args + sum(sorted(kwargs.items()), _kwmark))
+    else:
+        return _HashedTuple(args)
 
 
 def typedkey(*args, **kwargs):

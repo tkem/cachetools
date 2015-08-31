@@ -309,8 +309,8 @@ The following functions can be used as key functions with the
 
 .. autofunction:: hashkey
 
-   Returns a :class:`tuple` instance suitable as a cache key, provided
-   the positional and keywords arguments are hashable.
+   This function returns a :class:`tuple` instance suitable as a cache
+   key, provided the positional and keywords arguments are hashable.
 
    .. versionadded:: 1.1
 
@@ -322,6 +322,28 @@ The following functions can be used as key functions with the
    results.
 
    .. versionadded:: 1.1
+
+These functions can also be helpful when implementing custom key
+functions for handling some non-hashable arguments.  For example,
+calling the following function with a custom `env` argument will raise
+a :class:`TypeError`, since :class:`dict` is not hashable::
+
+  @cached(LRUCache(maxsize=128)
+  def foo(x, y, z, env={}):
+      pass
+
+However, if `env` always holds only hashable values itself, a custom
+key function can be written that handles the `env` keyword argument
+specially::
+
+  def envkey(*args, env={}, **kwargs):
+      key = hashkey(*args, **kwargs)
+      key += tuple(env.items())
+      return key
+
+This can then be used in the decorator declaration::
+
+  @cached(LRUCache(maxsize=128), key=envkey)
 
 
 :mod:`cachetools.func` --- :func:`functools.lru_cache` compatible decorators
