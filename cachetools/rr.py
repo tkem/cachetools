@@ -7,8 +7,8 @@ class RRCache(Cache):
     """Random Replacement (RR) cache implementation."""
 
     def __init__(self, maxsize, choice=random.choice, missing=None,
-                 getsizeof=None):
-        Cache.__init__(self, maxsize, missing, getsizeof)
+                 getsizeof=None, callback=None):
+        Cache.__init__(self, maxsize, missing, getsizeof, callback)
         self.__choice = choice
 
     def popitem(self):

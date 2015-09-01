@@ -4,10 +4,11 @@ import collections
 class Cache(collections.MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
-    def __init__(self, maxsize, missing=None, getsizeof=None):
+    def __init__(self, maxsize, missing=None, getsizeof=None, callback=None):
         self.__data = dict()
         self.__currsize = 0
         self.__maxsize = maxsize
+        self.callback = callback
         if missing:
             self.__missing = missing
         if getsizeof:
@@ -35,7 +36,9 @@ class Cache(collections.MutableMapping):
             raise ValueError('value too large')
         if key not in data or data[key][1] < size:
             while self.__currsize + size > maxsize:
-                self.popitem()
+                pkey, pvalue = self.popitem()
+                if self.callback is not None:
+                    self.callback(pkey, pvalue)
         if key in data:
             diffsize = size - data[key][1]
         else:

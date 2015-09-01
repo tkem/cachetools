@@ -15,8 +15,8 @@ class _Link(object):
 class LRUCache(Cache):
     """Least Recently Used (LRU) cache implementation."""
 
-    def __init__(self, maxsize, missing=None, getsizeof=None):
-        Cache.__init__(self, maxsize, missing, getsizeof)
+    def __init__(self, maxsize, missing=None, getsizeof=None, callback=None):
+        Cache.__init__(self, maxsize, missing, getsizeof, callback)
         root = self.__root = _Link()
         root.prev = root.next = root
 
