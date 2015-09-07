@@ -1,7 +1,8 @@
 import operator
 import unittest
+import warnings
 
-from cachetools import LRUCache, cachedmethod
+from cachetools import LRUCache, cachedmethod, typedkey
 
 
 class Cached(object):
@@ -16,7 +17,7 @@ class Cached(object):
         self.count += 1
         return count
 
-    @cachedmethod(operator.attrgetter('cache'), typed=True)
+    @cachedmethod(operator.attrgetter('cache'), key=typedkey)
     def get_typed(self, value):
         count = self.count
         self.count += 1
@@ -160,3 +161,31 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 0)
         self.assertEqual(cached.get(1.0), 0)
         self.assertEqual(cached.get(1.0), 0)
+
+    def test_locked_nospace(self):
+        cached = Locked(LRUCache(maxsize=0))
+        self.assertEqual(cached.cache, cached.get.cache(cached))
+
+        self.assertEqual(cached.get(0), 1)
+        self.assertEqual(cached.get(1), 3)
+        self.assertEqual(cached.get(1), 5)
+        self.assertEqual(cached.get(1.0), 7)
+        self.assertEqual(cached.get(1.0), 9)
+
+    def test_typed_deprecated(self):
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cachedmethod(lambda self: None, None)(lambda self: None)
+            self.assertIs(w[-1].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cachedmethod(lambda self: None, False)(lambda self: None)
+            self.assertIs(w[-1].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cachedmethod(lambda self: None, True)(lambda self: None)
+            self.assertIs(w[-1].category, DeprecationWarning)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cachedmethod(lambda self: None, typed=None)(lambda self: None)
+            self.assertIs(w[-1].category, DeprecationWarning)
