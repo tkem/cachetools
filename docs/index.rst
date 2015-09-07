@@ -282,6 +282,13 @@ often called with the same arguments::
      peps = CachedPEPs(cachesize=10)
      print("PEP #1: %s" % peps.get(1))
 
+   For backwards compatibility, the default key function used by
+   :func:`cachedmethod` will generate distinct keys for different
+   methods to ease using a shared cache with multiple methods.  This
+   has been deprecated, and relying on this feature is strongly
+   discouraged.  When using a shared cache, distinct key functions
+   should be used, as with the :func:`cached` decorator.
+
    .. versionadded:: 1.1
 
       The optional `key` and `lock` parameters.
@@ -294,6 +301,11 @@ often called with the same arguments::
    .. deprecated:: 1.1
 
       The `typed` argument.  Use ``key=typedkey`` instead.
+
+   .. deprecated:: 1.1
+
+      When using a shared cached for multiple methods, distinct key
+      function should be used.
 
    .. deprecated:: 1.1
 
