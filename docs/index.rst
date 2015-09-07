@@ -17,9 +17,9 @@ size is a property or function of its value, e.g. the result of
 item counts as :const:`1`, a cache's size is equal to the number of
 its items, or ``len(cache)``.
 
-The :mod:`cachetools` module implements multiple cache classes based
-on different caching algorithms, as well as decorators for easily
-memoizing function and method calls.
+Multiple cache classes based on different caching algorithms are
+implemented, and decorators for easily memoizing function and method
+calls are provided, too.
 
 .. versionchanged:: 1.1
 
@@ -166,36 +166,36 @@ often called with the same arguments::
    function arguments and return values.  Note that `cache` need not
    be an instance of the cache implementations provided by the
    :mod:`cachetools` module.  :func:`cached` will work with any
-   mutable mapping type, for example plain :class:`dict` or
+   mutable mapping type, including plain :class:`dict` and
    :class:`weakref.WeakValueDictionary`.
 
-   `key` will be called with the same positional and keyword arguments
-   as the wrapped function itself, and has to return a suitable cache
-   key object.  Since caches are implemented as dictionaries, the
-   object returned by `key` must be hashable.  The default is to call
-   :func:`hashkey`.
+   `key` specifies a functions that will be called with the same
+   positional and keyword arguments as the wrapped function itself,
+   and which has to return a suitable cache key.  Since caches are
+   mappings, the object returned by `key` must be hashable.  The
+   default is to call :func:`hashkey`.
 
    If `lock` is not :const:`None`, it must specify an object
    implementing the `context manager`_ protocol.  Any access to the
    cache will then be nested in a ``with lock:`` statement.  This can
-   be used for synchronizing thread access by providing a
+   be used for synchronizing thread access to the cache by providing a
    :class:`threading.RLock` instance, for example.
 
    .. note::
 
       The `lock` context manager is used only to guard access to the
       cache object.  The underlying wrapped function will be called
-      outside the :keyword:`with` statement.
+      outside the `with` statement, and must be thread-safe by itself.
 
    The original underlying function is accessible through the
    :attr:`__wrapped__` attribute of the memoizing wrapper function.
-   This can be useful for introspection or for bypassing the cache.
+   This can be used for introspection or for bypassing the cache.
 
-   To perform operations on the cache object directly, for example to
-   clear the cache during runtime, the cache can simply be assigned to
-   a variable.  When a `lock` object is used, any access to the cache
-   from outside the function wrapper should also be performed within
-   an appropriate :keyword:`with` statement::
+   To perform operations on the cache object, for example to clear the
+   cache during runtime, the cache should be assigned to a variable.
+   When a `lock` object is used, any access to the cache from outside
+   the function wrapper should also be performed within an appropriate
+   `with` statement::
 
      from threading import RLock
      from cachetools import cached, LRUCache
@@ -223,11 +223,11 @@ often called with the same arguments::
 
      @cached(cache, key=partial(hashkey, 'foo'))
      def foo(n):
-     return n + n
+         return n + n
 
      @cached(cache, key=partial(hashkey, 'bar'))
      def bar(n):
-     return n * n
+         return n * n
 
      foo(42)
      bar(42)
@@ -242,9 +242,9 @@ often called with the same arguments::
 
    The main difference between this and the :func:`cached` function
    decorator is that `cache` and `lock` are not passed objects, but
-   functions.  Both will be called with :const:`self` as their sole
-   argument to retrieve the cache or lock object for the method's
-   respective instance or class.
+   functions.  Both will be called with :const:`self` (or :const:`cls`
+   for class methods) as their sole argument to retrieve the cache or
+   lock object for the method's respective instance or class.
 
    .. note::
 
@@ -288,7 +288,8 @@ often called with the same arguments::
 
    .. versionchanged:: 1.1
 
-      The :attr:`__wrapped__` attribute is now set in Python 2, too.
+      The :attr:`__wrapped__` attribute is now set when running Python
+      2.7, too.
 
    .. deprecated:: 1.1
 
@@ -325,8 +326,8 @@ The following functions can be used as key functions with the
 
 These functions can also be helpful when implementing custom key
 functions for handling some non-hashable arguments.  For example,
-calling the following function with a custom `env` argument will raise
-a :class:`TypeError`, since :class:`dict` is not hashable::
+calling the following function with a dictionary as its `env` argument
+will raise a :class:`TypeError`, since :class:`dict` is not hashable::
 
   @cached(LRUCache(maxsize=128)
   def foo(x, y, z, env={}):
@@ -341,7 +342,8 @@ specially::
       key += tuple(env.items())
       return key
 
-This can then be used in the decorator declaration::
+The :func:`envkey` function can then be used in decorator declarations
+like this::
 
   @cached(LRUCache(maxsize=128), key=envkey)
 
@@ -432,7 +434,7 @@ optional keyword arguments:
 
 
 .. _@lru_cache: http://docs.python.org/3/library/functools.html#functools.lru_cache
-.. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
-.. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
 .. _context manager: http://docs.python.org/dev/glossary.html#term-context-manager
+.. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
+.. _mutable: http://docs.python.org/dev/glossary.html#term-mutable

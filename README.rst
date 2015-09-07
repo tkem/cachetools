@@ -31,9 +31,9 @@ size is a property or function of its value, e.g. the result of
 item counts as ``1``, a cache's size is equal to the number of its
 items, or ``len(cache)``.
 
-The `cachetools` module implements multiple cache classes based on
-different caching algorithms, as well as decorators for easily
-memoizing function and method calls.
+Multiple cache classes based on different caching algorithms are
+implemented, and decorators for easily memoizing function and method
+calls are provided, too.
 
 
 Installation
