@@ -68,8 +68,8 @@ class TTLCache(Cache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
     def __init__(self, maxsize, ttl, timer=time.time, missing=None,
-                 getsizeof=None):
-        Cache.__init__(self, maxsize, missing, getsizeof)
+                 getsizeof=None, callback=None):
+        Cache.__init__(self, maxsize, missing, getsizeof, callback)
         root = self.__root = _Link()
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
