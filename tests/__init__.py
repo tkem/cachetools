@@ -207,11 +207,9 @@ class CacheTestMixin(object):
 
         source = self.cache(maxsize=2)
         source.update({1: 1, 2: 2})
-        string = pickle.dumps(source)
 
-        cache = pickle.loads(string)
-        self.assertEqual(string, pickle.dumps(cache))
-        self.assertEqual(source, cache)  # iteration may change stringrep
+        cache = pickle.loads(pickle.dumps(source))
+        self.assertEqual(source, cache)
 
         self.assertEqual(2, len(cache))
         self.assertEqual(1, cache[1])
@@ -237,9 +235,6 @@ class CacheTestMixin(object):
         for n in [0, 1, sys.getrecursionlimit() * 2]:
             source = self.cache(maxsize=n)
             source.update((i, i) for i in range(n))
-            string = pickle.dumps(source)
-
-            cache = pickle.loads(string)
+            cache = pickle.loads(pickle.dumps(source))
             self.assertEqual(n, len(cache))
-            self.assertEqual(string, pickle.dumps(cache))
             self.assertEqual(source, cache)
