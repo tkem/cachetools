@@ -5,6 +5,15 @@ class _Link(object):
 
     __slots__ = 'key', 'value', 'prev', 'next'
 
+    def __getstate__(self):
+        if hasattr(self, 'key'):
+            return (self.key, self.value)
+        else:
+            return None
+
+    def __setstate__(self, state):
+        self.key, self.value = state
+
     def unlink(self):
         next = self.next
         prev = self.prev
@@ -67,6 +76,24 @@ class LRUCache(Cache):
         link = cache_getitem(self, key)
         cache_delitem(self, key)
         link.unlink()
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        root = self.__root
+        links = state['__links'] = [root]
+        link = root.next
+        while link is not root:
+            links.append(link)
+            link = link.next
+        return state
+
+    def __setstate__(self, state):
+        links = state.pop('__links')
+        count = len(links)
+        for index, link in enumerate(links):
+            link.prev = links[index - 1]
+            link.next = links[(index + 1) % count]
+        self.__dict__.update(state)
 
     def getsizeof(self, value):
         """Return the size of a cache element's value."""

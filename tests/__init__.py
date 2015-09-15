@@ -204,14 +204,15 @@ class CacheTestMixin(object):
 
     def test_cache_pickle(self):
         import pickle
-        import sys
 
-        cache = self.cache(maxsize=2)
-        cache.update({1: 1, 2: 2})
-        if sys.version_info < (3, 0):
-            cache = pickle.loads(pickle.dumps(cache, -1))
-        else:
-            cache = pickle.loads(pickle.dumps(cache))
+        source = self.cache(maxsize=2)
+        source.update({1: 1, 2: 2})
+        string = pickle.dumps(source)
+
+        cache = pickle.loads(string)
+        self.assertEqual(string, pickle.dumps(cache))
+        self.assertEqual(source, cache)  # iteration may change stringrep
+
         self.assertEqual(2, len(cache))
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
@@ -225,3 +226,20 @@ class CacheTestMixin(object):
         self.assertEqual(2, len(cache))
         self.assertEqual(4, cache[4])
         self.assertTrue(1 in cache or 2 in cache or 3 in cache)
+
+        self.assertEqual(cache, pickle.loads(pickle.dumps(cache)))
+
+    def test_cache_pickle_maxsize(self):
+        import pickle
+        import sys
+
+        # test empty cache, single element, large cache (recursion limit)
+        for n in [0, 1, sys.getrecursionlimit() * 2]:
+            source = self.cache(maxsize=n)
+            source.update((i, i) for i in range(n))
+            string = pickle.dumps(source)
+
+            cache = pickle.loads(string)
+            self.assertEqual(n, len(cache))
+            self.assertEqual(string, pickle.dumps(cache))
+            self.assertEqual(source, cache)

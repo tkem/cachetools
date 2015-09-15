@@ -1,3 +1,9 @@
+v1.1.2 (2015-09-15)
+-------------------
+
+- Fix pickling of large ``LRUCache`` and ``TTLCache`` instances.
+
+
 v1.1.1 (2015-09-07)
 -------------------
 

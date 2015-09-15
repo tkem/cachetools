@@ -12,6 +12,15 @@ class _Link(object):
         'lru_prev', 'lru_next'
     )
 
+    def __getstate__(self):
+        if hasattr(self, 'key'):
+            return (self.key, self.value, self.expire, self.size)
+        else:
+            return None
+
+    def __setstate__(self, state):
+        self.key, self.value, self.expire, self.size = state
+
     def unlink(self):
         ttl_next = self.ttl_next
         ttl_prev = self.ttl_prev
@@ -160,6 +169,25 @@ class TTLCache(Cache):
                 expired += 1
                 head = head.ttl_next
         return cache_len(self) - expired
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        root = self.__root
+        links = state['__links'] = [(root, root)]
+        lru, ttl = root.lru_next, root.ttl_next
+        while lru is not root:
+            links.append((lru, ttl))
+            lru = lru.lru_next
+            ttl = ttl.ttl_next
+        return state
+
+    def __setstate__(self, state):
+        links = state.pop('__links')
+        count = len(links)
+        for index, (lru, ttl) in enumerate(links):
+            lru.lru_prev, ttl.ttl_prev = links[index - 1]
+            lru.lru_next, ttl.ttl_next = links[(index + 1) % count]
+        self.__dict__.update(state)
 
     @property
     def currsize(self):
