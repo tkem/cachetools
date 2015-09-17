@@ -1,6 +1,6 @@
 import random
 
-from .base import Cache
+from .cache import Cache
 
 
 class RRCache(Cache):

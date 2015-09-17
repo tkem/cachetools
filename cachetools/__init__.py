@@ -3,7 +3,7 @@
 import functools
 import warnings
 
-from .base import Cache
+from .cache import Cache
 from .func import lfu_cache, lru_cache, rr_cache, ttl_cache
 from .keys import hashkey, typedkey
 from .lfu import LFUCache

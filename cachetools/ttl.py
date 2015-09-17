@@ -1,25 +1,25 @@
 import functools
 import time
 
-from .base import Cache
+from .cache import Cache
 
 
 class _Link(object):
 
     __slots__ = (
-        'key', 'value', 'expire', 'size',
+        'key', 'expire', 'size',
         'ttl_prev', 'ttl_next',
         'lru_prev', 'lru_next'
     )
 
     def __getstate__(self):
         if hasattr(self, 'key'):
-            return (self.key, self.value, self.expire, self.size)
+            return (self.key, self.expire, self.size)
         else:
             return None
 
     def __setstate__(self, state):
-        self.key, self.value, self.expire, self.size = state
+        self.key, self.expire, self.size = state
 
     def unlink(self):
         ttl_next = self.ttl_next
@@ -73,6 +73,7 @@ class TTLCache(Cache):
         root = self.__root = _Link()
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
+        self.__links = {}
         self.__timer = _NestedTimer(timer)
         self.__ttl = ttl
 
@@ -80,7 +81,7 @@ class TTLCache(Cache):
         # prevent item reordering/expiration
         return '%s(%r, maxsize=%d, currsize=%d)' % (
             self.__class__.__name__,
-            [(key, cache_getitem(self, key).value) for key in self],
+            [(key, cache_getitem(self, key)) for key in self],
             self.maxsize,
             self.currsize,
         )
@@ -89,9 +90,10 @@ class TTLCache(Cache):
                     cache_getitem=Cache.__getitem__,
                     cache_missing=Cache.__missing__):
         with self.__timer as time:
-            link = cache_getitem(self, key)
+            value = cache_getitem(self, key)
+            link = self.__links[key]
             if link.expire < time:
-                return cache_missing(self, key).value
+                return cache_missing(self, key)
             next = link.lru_next
             prev = link.lru_prev
             prev.lru_next = next
@@ -99,27 +101,23 @@ class TTLCache(Cache):
             link.lru_next = root = self.__root
             link.lru_prev = tail = root.lru_prev
             tail.lru_next = root.lru_prev = link
-            return link.value
+            return value
 
     def __setitem__(self, key, value,
-                    cache_contains=Cache.__contains__,
-                    cache_getitem=Cache.__getitem__,
                     cache_setitem=Cache.__setitem__,
                     cache_getsizeof=Cache.getsizeof):
         with self.__timer as time:
             self.expire(time)
-            if cache_contains(self, key):
-                oldlink = cache_getitem(self, key)
+            cache_setitem(self, key, value)
+            try:
+                link = self.__links[key]
+            except KeyError:
+                link = self.__links[key] = _Link()  # TODO: exception safety?
             else:
-                oldlink = None
-            link = _Link()
+                link.unlink()
             link.key = key
-            link.value = value
             link.expire = time + self.__ttl
             link.size = cache_getsizeof(self, value)
-            cache_setitem(self, key, link)
-            if oldlink:
-                oldlink.unlink()
             link.ttl_next = root = self.__root
             link.ttl_prev = tail = root.ttl_prev
             tail.ttl_next = root.ttl_prev = link
@@ -133,19 +131,15 @@ class TTLCache(Cache):
                     cache_delitem=Cache.__delitem__):
         with self.__timer as time:
             self.expire(time)
-            if not cache_contains(self, key):
-                raise KeyError(key)
-            link = cache_getitem(self, key)
             cache_delitem(self, key)
-            link.unlink()
+            self.__links[key].unlink()
+            del self.__links[key]
 
-    def __contains__(self, key,
-                     cache_contains=Cache.__contains__,
-                     cache_getitem=Cache.__getitem__):
+    def __contains__(self, key):
         with self.__timer as time:
-            if not cache_contains(self, key):
+            if key not in self.__links:
                 return False
-            elif cache_getitem(self, key).expire < time:
+            elif self.__links[key].expire < time:
                 return False
             else:
                 return True
@@ -219,16 +213,10 @@ class TTLCache(Cache):
         cache_delitem = Cache.__delitem__
         while head is not root and head.expire < time:
             cache_delitem(self, head.key)
+            del self.__links[head.key]
             next = head.ttl_next
             head.unlink()
             head = next
-
-    def getsizeof(self, value):
-        """Return the size of a cache element's value."""
-        if isinstance(value, _Link):
-            return value.size
-        else:
-            return Cache.getsizeof(self, value)
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used that
@@ -240,11 +228,9 @@ class TTLCache(Cache):
             root = self.__root
             link = root.lru_next
             if link is root:
-                raise KeyError('cache is empty')
+                raise KeyError('cache is empty: %r' % self.__links)
             key = link.key
-            Cache.__delitem__(self, key)
-            link.unlink()
-            return (key, link.value)
+            return (key, self.pop(key))
 
     # mixin methods
 
