@@ -1,3 +1,14 @@
+v1.1.4 (2015-10-24)
+-------------------
+
+- Refactor ``LRUCache`` and ``TTLCache`` implementations.  Note that
+  this will break pickle compatibility with previous versions.
+
+- Document pending removal of deprecated features.
+
+- Minor documentation improvements.
+
+
 v1.1.3 (2015-09-15)
 -------------------
 

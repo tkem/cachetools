@@ -18,7 +18,7 @@ __all__ = (
     'lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache',
 )
 
-__version__ = '1.1.3'
+__version__ = '1.1.4'
 
 _default = []  # evaluates to False
 
