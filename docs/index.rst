@@ -144,7 +144,7 @@ of one argument used to retrieve the size of an item's value.
 Decorators
 ------------------------------------------------------------------------
 
-The :mod:`cachetools` module provides decorators for easily caching
+The :mod:`cachetools` module provides decorators for memoizing
 function and method calls.  This can save time when a function is
 often called with the same arguments::
 
@@ -204,8 +204,8 @@ often called with the same arguments::
      lock = RLock()
 
      @cached(cache, lock=lock)
-     def foo(n):
-         return n + 1  # expensive operation here...
+     def fib(n):
+         return n if n < 2 else fib(n - 1) + fib(n - 2)
 
      # make sure access to cache is synchronized
      with lock:
@@ -221,16 +221,16 @@ often called with the same arguments::
 
      cache = LRUCache(maxsize=100)
 
-     @cached(cache, key=partial(hashkey, 'foo'))
-     def foo(n):
-         return n + n
+     @cached(cache, key=partial(hashkey, 'fib'))
+     def fib(n):
+         return n if n < 2 else fib(n - 1) + fib(n - 2)
 
-     @cached(cache, key=partial(hashkey, 'bar'))
-     def bar(n):
-         return n * n
+     @cached(cache, key=partial(hashkey, 'fac'))
+     def fac(n):
+         return 1 if n == 0 else n * fac(n - 1)
 
-     foo(42)
-     bar(42)
+     print(fib(42))
+     print(fac(42))
      print(cache)
 
    .. versionadded:: 1.1
