@@ -21,6 +21,14 @@ Multiple cache classes based on different caching algorithms are
 implemented, and decorators for easily memoizing function and method
 calls are provided, too.
 
+.. note::
+
+   Several features are now marked as deprecated and will be removed
+   in the next major release, :mod:`cachetools` version 2.0.  If you
+   happen to rely on any of these features, it is highly recommended
+   to specify your module dependencies accordingly, for example
+   ``cachetools ~= 1.1`` when using :mod:`setuptools`.
+
 .. versionchanged:: 1.1
 
    Moved :func:`functools.lru_cache` compatible decorators to the
