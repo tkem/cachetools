@@ -1,3 +1,12 @@
+v1.1.5 (2015-10-25)
+-------------------
+
+- Refactor ``Cache`` base class.  Note that this will break pickle
+  compatibility with previous versions.
+
+- Clean up ``LRUCache`` and ``TTLCache`` implementations.
+
+
 v1.1.4 (2015-10-24)
 -------------------
 
