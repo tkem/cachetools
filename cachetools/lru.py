@@ -14,6 +14,11 @@ class _Link(object):
     def __setstate__(self, state):
         self.key, = state
 
+    def insert(self, next):
+        self.next = next
+        self.prev = prev = next.prev
+        prev.next = next.prev = self
+
     def unlink(self):
         next = self.next
         prev = self.prev
@@ -26,7 +31,7 @@ class LRUCache(Cache):
 
     def __init__(self, maxsize, missing=None, getsizeof=None):
         Cache.__init__(self, maxsize, missing, getsizeof)
-        root = self.__root = _Link()
+        self.__root = root = _Link()
         root.prev = root.next = root
         self.__links = {}
 
@@ -42,13 +47,8 @@ class LRUCache(Cache):
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
         link = self.__links[key]
-        next = link.next
-        prev = link.prev
-        prev.next = next
-        next.prev = prev
-        link.next = root = self.__root
-        link.prev = tail = root.prev
-        tail.next = root.prev = link
+        link.unlink()
+        link.insert(self.__root)
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -56,18 +56,17 @@ class LRUCache(Cache):
         try:
             link = self.__links[key]
         except KeyError:
-            link = self.__links[key] = _Link()  # TODO: exception safety?
+            link = self.__links[key] = _Link()
         else:
             link.unlink()
-        link.key = key  # always update
-        link.next = root = self.__root
-        link.prev = tail = root.prev
-        tail.next = root.prev = link
+        link.key = key
+        link.insert(self.__root)
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
-        self.__links[key].unlink()
-        del self.__links[key]
+        links = self.__links
+        links[key].unlink()
+        del links[key]
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -92,6 +91,6 @@ class LRUCache(Cache):
         root = self.__root
         link = root.next
         if link is root:
-            raise KeyError('cache is empty: %r' % self.__links)
+            raise KeyError('%s is empty' % self.__class__.__name__)
         key = link.key
         return (key, self.pop(key))

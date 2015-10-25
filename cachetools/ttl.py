@@ -21,16 +21,35 @@ class _Link(object):
     def __setstate__(self, state):
         self.key, self.expire, self.size = state
 
-    def unlink(self):
+    def insert_lru(self, next):
+        self.lru_next = next
+        self.lru_prev = prev = next.lru_prev
+        prev.lru_next = next.lru_prev = self
+
+    def insert_ttl(self, next):
+        self.ttl_next = next
+        self.ttl_prev = prev = next.ttl_prev
+        prev.ttl_next = next.ttl_prev = self
+
+    def insert(self, next):
+        self.insert_lru(next)
+        self.insert_ttl(next)
+
+    def unlink_lru(self):
+        lru_next = self.lru_next
+        lru_prev = self.lru_prev
+        lru_prev.lru_next = lru_next
+        lru_next.lru_prev = lru_prev
+
+    def unlink_ttl(self):
         ttl_next = self.ttl_next
         ttl_prev = self.ttl_prev
         ttl_prev.ttl_next = ttl_next
         ttl_next.ttl_prev = ttl_prev
 
-        lru_next = self.lru_next
-        lru_prev = self.lru_prev
-        lru_prev.lru_next = lru_next
-        lru_next.lru_prev = lru_prev
+    def unlink(self):
+        self.unlink_lru()
+        self.unlink_ttl()
 
 
 class _NestedTimer(object):
@@ -70,7 +89,7 @@ class TTLCache(Cache):
     def __init__(self, maxsize, ttl, timer=time.time, missing=None,
                  getsizeof=None):
         Cache.__init__(self, maxsize, missing, getsizeof)
-        root = self.__root = _Link()
+        self.__root = root = _Link()
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
         self.__links = {}
@@ -94,13 +113,8 @@ class TTLCache(Cache):
             link = self.__links[key]
             if link.expire < time:
                 return cache_missing(self, key)
-            next = link.lru_next
-            prev = link.lru_prev
-            prev.lru_next = next
-            next.lru_prev = prev
-            link.lru_next = root = self.__root
-            link.lru_prev = tail = root.lru_prev
-            tail.lru_next = root.lru_prev = link
+            link.unlink_lru()
+            link.insert_lru(self.__root)
             return value
 
     def __setitem__(self, key, value,
@@ -112,28 +126,21 @@ class TTLCache(Cache):
             try:
                 link = self.__links[key]
             except KeyError:
-                link = self.__links[key] = _Link()  # TODO: exception safety?
+                link = self.__links[key] = _Link()
             else:
                 link.unlink()
             link.key = key
             link.expire = time + self.__ttl
             link.size = cache_getsizeof(self, value)
-            link.ttl_next = root = self.__root
-            link.ttl_prev = tail = root.ttl_prev
-            tail.ttl_next = root.ttl_prev = link
-            link.lru_next = root
-            link.lru_prev = tail = root.lru_prev
-            tail.lru_next = root.lru_prev = link
+            link.insert(self.__root)
 
-    def __delitem__(self, key,
-                    cache_contains=Cache.__contains__,
-                    cache_getitem=Cache.__getitem__,
-                    cache_delitem=Cache.__delitem__):
+    def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         with self.__timer as time:
             self.expire(time)
             cache_delitem(self, key)
-            self.__links[key].unlink()
-            del self.__links[key]
+            links = self.__links
+            links[key].unlink()
+            del links[key]
 
     def __contains__(self, key):
         with self.__timer as time:
@@ -210,10 +217,11 @@ class TTLCache(Cache):
             time = self.__timer()
         root = self.__root
         head = root.ttl_next
+        links = self.__links
         cache_delitem = Cache.__delitem__
         while head is not root and head.expire < time:
             cache_delitem(self, head.key)
-            del self.__links[head.key]
+            del links[head.key]
             next = head.ttl_next
             head.unlink()
             head = next
@@ -228,7 +236,7 @@ class TTLCache(Cache):
             root = self.__root
             link = root.lru_next
             if link is root:
-                raise KeyError('cache is empty: %r' % self.__links)
+                raise KeyError('%s is empty' % self.__class__.__name__)
             key = link.key
             return (key, self.pop(key))
 

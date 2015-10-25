@@ -1,17 +1,31 @@
 import collections
 
 
+class _DefaultSize(object):
+    def __getitem__(self, _):
+        return 1
+
+    def __setitem__(self, _, value):
+        assert value == 1
+
+    def pop(self, _):
+        return 1
+
+
 class Cache(collections.MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
+    __size = _DefaultSize()
+
     def __init__(self, maxsize, missing=None, getsizeof=None):
-        self.__data = dict()
-        self.__currsize = 0
-        self.__maxsize = maxsize
         if missing:
             self.__missing = missing
         if getsizeof:
             self.__getsizeof = getsizeof
+            self.__size = dict()
+        self.__data = dict()
+        self.__currsize = 0
+        self.__maxsize = maxsize
 
     def __repr__(self):
         return '%s(%r, maxsize=%d, currsize=%d)' % (
@@ -23,37 +37,38 @@ class Cache(collections.MutableMapping):
 
     def __getitem__(self, key):
         try:
-            return self.__data[key][0]
+            return self.__data[key]
         except KeyError:
             return self.__missing__(key)
 
     def __setitem__(self, key, value):
-        data = self.__data
         maxsize = self.__maxsize
         size = self.getsizeof(value)
         if size > maxsize:
             raise ValueError('value too large')
-        if key not in data or data[key][1] < size:
+        if key not in self.__data or self.__size[key] < size:
             while self.__currsize + size > maxsize:
                 self.popitem()
-        if key in data:
-            diffsize = size - data[key][1]
+        if key in self.__data:
+            diffsize = size - self.__size[key]
         else:
             diffsize = size
-        data[key] = (value, size)
+        self.__data[key] = value
+        self.__size[key] = size
         self.__currsize += diffsize
 
     def __delitem__(self, key):
-        _, size = self.__data.pop(key)
+        size = self.__size.pop(key)
+        del self.__data[key]
         self.__currsize -= size
 
     def __contains__(self, key):
         return key in self.__data
 
     def __missing__(self, key):
-        self.__setitem__(key, self.__missing(key))
-        # return value as stored in data
-        return self.__data[key][0]
+        value = self.__missing(key)
+        self.__setitem__(key, value)
+        return value
 
     def __iter__(self):
         return iter(self.__data)
