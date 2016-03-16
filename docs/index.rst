@@ -177,7 +177,7 @@ often called with the same arguments::
    mutable mapping type, including plain :class:`dict` and
    :class:`weakref.WeakValueDictionary`.
 
-   `key` specifies a functions that will be called with the same
+   `key` specifies a function that will be called with the same
    positional and keyword arguments as the wrapped function itself,
    and which has to return a suitable cache key.  Since caches are
    mappings, the object returned by `key` must be hashable.  The
@@ -349,7 +349,7 @@ functions for handling some non-hashable arguments.  For example,
 calling the following function with a dictionary as its `env` argument
 will raise a :class:`TypeError`, since :class:`dict` is not hashable::
 
-  @cached(LRUCache(maxsize=128)
+  @cached(LRUCache(maxsize=128))
   def foo(x, y, z, env={}):
       pass
 
