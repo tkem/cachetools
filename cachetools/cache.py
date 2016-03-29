@@ -1,4 +1,4 @@
-import collections
+from .abc import DefaultMapping
 
 
 class _DefaultSize(object):
@@ -12,7 +12,7 @@ class _DefaultSize(object):
         return 1
 
 
-class Cache(collections.MutableMapping):
+class Cache(DefaultMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
     __size = _DefaultSize()
@@ -30,7 +30,7 @@ class Cache(collections.MutableMapping):
     def __repr__(self):
         return '%s(%r, maxsize=%d, currsize=%d)' % (
             self.__class__.__name__,
-            list(self.items()),
+            list(self.__data.items()),
             self.__maxsize,
             self.__currsize,
         )
@@ -97,28 +97,3 @@ class Cache(collections.MutableMapping):
     def getsizeof(self, value):
         """Return the size of a cache element's value."""
         return self.__getsizeof(value)
-
-    # collections.MutableMapping mixin methods do not handle __missing__
-
-    def get(self, key, default=None):
-        if key in self:
-            return self[key]
-        else:
-            return default
-
-    __marker = object()
-
-    def pop(self, key, default=__marker):
-        if key in self:
-            value = self[key]
-            del self[key]
-            return value
-        elif default is self.__marker:
-            raise KeyError(key)
-        else:
-            return default
-
-    def setdefault(self, key, default=None):
-        if key not in self:
-            self[key] = default
-        return self[key]

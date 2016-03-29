@@ -11,15 +11,16 @@ class RRCache(Cache):
         Cache.__init__(self, maxsize, missing, getsizeof)
         self.__choice = choice
 
+    @property
+    def choice(self):
+        """The `choice` function used by the cache."""
+        return self.__choice
+
     def popitem(self):
         """Remove and return a random `(key, value)` pair."""
         try:
             key = self.__choice(list(self))
         except IndexError:
-            raise KeyError('cache is empty')
-        return (key, self.pop(key))
-
-    @property
-    def choice(self):
-        """The `choice` function used by the cache."""
-        return self.__choice
+            raise KeyError('%s is empty' % self.__class__.__name__)
+        else:
+            return (key, self.pop(key))

@@ -1,23 +1,25 @@
-import os.path, codecs, re
+from __future__ import unicode_literals
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
-with codecs.open(os.path.join(os.path.dirname(__file__), 'cachetools', '__init__.py'),
-                 encoding='utf8') as f:
-    metadata = dict(re.findall(r"__([a-z]+)__ = '([^']+)", f.read()))
-
+def get_version(filename):
+    from re import findall
+    with open(filename) as f:
+        metadata = dict(findall("__([a-z]+)__ = '([^']+)'", f.read()))
+    return metadata['version']
 
 setup(
     name='cachetools',
-    version=metadata['version'],
-    author='Thomas Kemmer',
-    author_email='tkemmer@computer.org',
+    version=get_version('cachetools/__init__.py'),
     url='https://github.com/tkem/cachetools',
     license='MIT',
+    author='Thomas Kemmer',
+    author_email='tkemmer@computer.org',
     description='Extensible memoizing collections and decorators',
     long_description=open('README.rst').read(),
     keywords='cache caching memoize memoizing memoization LRU LFU TTL',
+    packages=find_packages(exclude=['tests', 'tests.*']),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Other Environment',
@@ -33,7 +35,5 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ],
-    packages=['cachetools'],
-    test_suite='tests'
+    ]
 )

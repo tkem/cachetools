@@ -5,19 +5,11 @@ class _Link(object):
 
     __slots__ = 'key', 'prev', 'next'
 
-    def __getstate__(self):
-        if hasattr(self, 'key'):
-            return (self.key,)
-        else:
-            return None
+    def __init__(self, key=None):
+        self.key = key
 
-    def __setstate__(self, state):
-        self.key, = state
-
-    def insert(self, next):
-        self.next = next
-        self.prev = prev = next.prev
-        prev.next = next.prev = self
+    def __reduce__(self):
+        return (_Link, (self.key,))
 
     def unlink(self):
         next = self.next
@@ -35,20 +27,13 @@ class LRUCache(Cache):
         root.prev = root.next = root
         self.__links = {}
 
-    def __repr__(self, cache_getitem=Cache.__getitem__):
-        # prevent item reordering
-        return '%s(%r, maxsize=%d, currsize=%d)' % (
-            self.__class__.__name__,
-            [(key, cache_getitem(self, key)) for key in self],
-            self.maxsize,
-            self.currsize,
-        )
-
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
         link = self.__links[key]
         link.unlink()
-        link.insert(self.__root)
+        link.next = root = self.__root
+        link.prev = prev = root.prev
+        prev.next = root.prev = link
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -56,17 +41,17 @@ class LRUCache(Cache):
         try:
             link = self.__links[key]
         except KeyError:
-            link = self.__links[key] = _Link()
+            self.__links[key] = link = _Link(key)
         else:
             link.unlink()
-        link.key = key
-        link.insert(self.__root)
+        link.next = root = self.__root
+        link.prev = prev = root.prev
+        prev.next = root.prev = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
-        links = self.__links
-        links[key].unlink()
-        del links[key]
+        link = self.__links.pop(key)
+        link.unlink()
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -92,5 +77,5 @@ class LRUCache(Cache):
         link = root.next
         if link is root:
             raise KeyError('%s is empty' % self.__class__.__name__)
-        key = link.key
-        return (key, self.pop(key))
+        else:
+            return (link.key, self.pop(link.key))

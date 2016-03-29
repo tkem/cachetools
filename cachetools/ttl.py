@@ -52,7 +52,7 @@ class _Link(object):
         self.unlink_ttl()
 
 
-class _NestedTimer(object):
+class _Timer(object):
 
     def __init__(self, timer):
         self.__timer = timer
@@ -93,7 +93,7 @@ class TTLCache(Cache):
         root.ttl_prev = root.ttl_next = root
         root.lru_prev = root.lru_next = root
         self.__links = {}
-        self.__timer = _NestedTimer(timer)
+        self.__timer = _Timer(timer)
         self.__ttl = ttl
 
     def __repr__(self, cache_getitem=Cache.__getitem__):
@@ -138,18 +138,16 @@ class TTLCache(Cache):
         with self.__timer as time:
             self.expire(time)
             cache_delitem(self, key)
-            links = self.__links
-            links[key].unlink()
-            del links[key]
+            link = self.__links.pop(key)
+            link.unlink()
 
     def __contains__(self, key):
-        with self.__timer as time:
-            if key not in self.__links:
-                return False
-            elif self.__links[key].expire < time:
-                return False
-            else:
-                return True
+        try:
+            link = self.__links[key]
+        except KeyError:
+            return False
+        else:
+            return not (link.expire < self.__timer())
 
     def __iter__(self):
         timer = self.__timer
@@ -237,8 +235,8 @@ class TTLCache(Cache):
             link = root.lru_next
             if link is root:
                 raise KeyError('%s is empty' % self.__class__.__name__)
-            key = link.key
-            return (key, self.pop(key))
+            else:
+                return (link.key, self.pop(link.key))
 
     # mixin methods
 
