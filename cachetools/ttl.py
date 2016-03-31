@@ -1,5 +1,4 @@
 import collections
-import functools
 import time
 
 from .cache import Cache
@@ -67,32 +66,35 @@ class TTLCache(Cache):
 
     def __contains__(self, key):
         try:
-            link = self.__links[key]
+            link = self.__links[key]  # no reordering
         except KeyError:
             return False
         else:
             return not (link.expire < self.__timer())
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
-        with self.__timer as time:
-            value = cache_getitem(self, key)
-            self.__links[key] = link = self.__links.pop(key)
-            if link.expire < time:
-                return Cache.__missing__(self, key)  # FIXME
-            else:
-                return value
+        try:
+            link = self.__getlink(key)
+        except KeyError:
+            missing = True
+        else:
+            missing = link.expire < self.__timer()
+        if missing:
+            return self.__missing__(key)
+        else:
+            return cache_getitem(self, key)
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         with self.__timer as time:
             self.expire(time)
             cache_setitem(self, key, value)
-            try:
-                link = self.__links[key]
-            except KeyError:
-                self.__links[key] = link = _Link(key)
-            else:
-                link.unlink()
-            link.expire = time + self.__ttl
+        try:
+            link = self.__getlink(key)
+        except KeyError:
+            self.__links[key] = link = _Link(key)
+        else:
+            link.unlink()
+        link.expire = time + self.__ttl
         link.next = root = self.__root
         link.prev = prev = root.prev
         prev.next = root.prev = link
@@ -101,21 +103,28 @@ class TTLCache(Cache):
         with self.__timer as time:
             self.expire(time)
             cache_delitem(self, key)
-        self.__links.pop(key).unlink()
+        link = self.__links.pop(key)
+        link.unlink()
 
     def __iter__(self):
-        timer = self.__timer
         root = self.__root
         curr = root.next
         while curr is not root:
-            with timer as time:
+            # "freeze" time for iterator access
+            with self.__timer as time:
                 if not (curr.expire < time):
                     yield curr.key
             curr = curr.next
 
-    def __len__(self, cache_len=Cache.__len__):
-        self.expire(time=self.__timer())
-        return cache_len(self)
+    def __len__(self):
+        root = self.__root
+        curr = root.next
+        time = self.__timer()
+        count = len(self.__links)
+        while curr is not root and curr.expire < time:
+            count -= 1
+            curr = curr.next
+        return count
 
     def __repr__(self, cache_repr=Cache.__repr__):
         with self.__timer as time:
@@ -134,8 +143,9 @@ class TTLCache(Cache):
 
     @property
     def currsize(self):
-        self.expire(time=self.__timer())
-        return super(TTLCache, self).currsize
+        with self.__timer as time:
+            self.expire(time)
+            return super(TTLCache, self).currsize
 
     @property
     def timer(self):
@@ -162,6 +172,23 @@ class TTLCache(Cache):
             head.unlink()
             head = next
 
+    def clear(self):
+        with self.__timer as time:
+            self.expire(time)
+            Cache.clear(self)
+
+    def get(self, *args, **kwargs):
+        with self.__timer:
+            return Cache.get(self, *args, **kwargs)
+
+    def pop(self, *args, **kwargs):
+        with self.__timer:
+            return Cache.pop(self, *args, **kwargs)
+
+    def setdefault(self, *args, **kwargs):
+        with self.__timer:
+            return Cache.setdefault(self, *args, **kwargs)
+
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used that
         has not already expired.
@@ -176,14 +203,13 @@ class TTLCache(Cache):
             else:
                 return (key, self.pop(key))
 
-    # mixin methods
-
-    def __nested(method):
-        def wrapper(self, *args, **kwargs):
-            with self.__timer:
-                return method(self, *args, **kwargs)
-        return functools.update_wrapper(wrapper, method)
-
-    get = __nested(Cache.get)
-    pop = __nested(Cache.pop)
-    setdefault = __nested(Cache.setdefault)
+    if hasattr(collections.OrderedDict, 'move_to_end'):
+        def __getlink(self, key):
+            value = self.__links[key]
+            self.__links.move_to_end(key)
+            return value
+    else:
+        def __getlink(self, key):
+            value = self.__links.pop(key)
+            self.__links[key] = value
+            return value

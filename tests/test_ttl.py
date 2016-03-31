@@ -175,6 +175,24 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(1, cache.pop(1))
         cache[1] = 1
         self.assertEqual(1, cache.setdefault(1))
+        cache[1] = 1
+        cache.clear()
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+    def test_missing(self):
+        class DefaultTTLCache(TTLCache):
+            def __missing__(self, key):
+                self[key] = key
+                return key
+
+        cache = DefaultTTLCache(maxsize=1, ttl=1, timer=Timer())
+        self.assertEqual(1, cache[1])
+        self.assertIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertEqual(2, cache[2])
+        self.assertNotIn(1, cache)
+        self.assertIn(2, cache)
 
     def test_tuple_key(self):
         cache = self.cache(maxsize=1, ttl=0)
