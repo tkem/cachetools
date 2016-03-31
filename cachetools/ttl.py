@@ -7,15 +7,14 @@ from .cache import Cache
 
 class _Link(object):
 
-    __slots__ = ('key', 'expire', 'size', 'next', 'prev')
+    __slots__ = ('key', 'expire', 'next', 'prev')
 
-    def __init__(self, key=None, expire=None, size=None):
+    def __init__(self, key=None, expire=None):
         self.key = key
         self.expire = expire
-        self.size = size
 
     def __reduce__(self):
-        return _Link, (self.key, self.expire, self.size)
+        return _Link, (self.key, self.expire)
 
     def unlink(self):
         next = self.next
@@ -38,9 +37,11 @@ class _Timer(object):
 
     def __enter__(self):
         if self.__nesting == 0:
-            self.__time = self.__timer()
+            self.__time = time = self.__timer()
+        else:
+            time = self.__time
         self.__nesting += 1
-        return self.__time
+        return time
 
     def __exit__(self, *exc):
         self.__nesting -= 1
@@ -64,14 +65,13 @@ class TTLCache(Cache):
         self.__timer = _Timer(timer)
         self.__ttl = ttl
 
-    def __repr__(self, cache_getitem=Cache.__getitem__):
-        # prevent item reordering/expiration
-        return '%s(%r, maxsize=%d, currsize=%d)' % (
-            self.__class__.__name__,
-            [(key, cache_getitem(self, key)) for key in self],
-            self.maxsize,
-            self.currsize,
-        )
+    def __contains__(self, key):
+        try:
+            link = self.__links[key]
+        except KeyError:
+            return False
+        else:
+            return not (link.expire < self.__timer())
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         with self.__timer as time:
@@ -93,25 +93,15 @@ class TTLCache(Cache):
             else:
                 link.unlink()
             link.expire = time + self.__ttl
-            link.size = Cache.getsizeof(self, value)
-            link.next = root = self.__root
-            link.prev = prev = root.prev
-            prev.next = root.prev = link
+        link.next = root = self.__root
+        link.prev = prev = root.prev
+        prev.next = root.prev = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         with self.__timer as time:
             self.expire(time)
             cache_delitem(self, key)
-            link = self.__links.pop(key)
-            link.unlink()
-
-    def __contains__(self, key):
-        try:
-            link = self.__links[key]
-        except KeyError:
-            return False
-        else:
-            return not (link.expire < self.__timer())
+        self.__links.pop(key).unlink()
 
     def __iter__(self):
         timer = self.__timer
@@ -124,14 +114,13 @@ class TTLCache(Cache):
             curr = curr.next
 
     def __len__(self, cache_len=Cache.__len__):
-        root = self.__root
-        head = root.next
-        expired = 0
+        self.expire(time=self.__timer())
+        return cache_len(self)
+
+    def __repr__(self, cache_repr=Cache.__repr__):
         with self.__timer as time:
-            while head is not root and head.expire < time:
-                expired += 1
-                head = head.next
-        return cache_len(self) - expired
+            self.expire(time)
+            return cache_repr(self)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -145,14 +134,8 @@ class TTLCache(Cache):
 
     @property
     def currsize(self):
-        root = self.__root
-        head = root.next
-        expired = 0
-        with self.__timer as time:
-            while head is not root and head.expire < time:
-                expired += head.size
-                head = head.next
-        return super(TTLCache, self).currsize - expired
+        self.expire(time=self.__timer())
+        return super(TTLCache, self).currsize
 
     @property
     def timer(self):
