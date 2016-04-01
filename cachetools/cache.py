@@ -67,7 +67,10 @@ class Cache(DefaultMapping):
 
     def __missing__(self, key):
         value = self.__missing(key)
-        self.__setitem__(key, value)
+        try:
+            self.__setitem__(key, value)
+        except ValueError:
+            pass  # value too large
         return value
 
     def __iter__(self):

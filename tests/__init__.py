@@ -157,6 +157,18 @@ class CacheTestMixin(object):
         self.assertTrue(1 in cache or 2 in cache)
         self.assertTrue(1 not in cache or 2 not in cache)
 
+        cache = self.cache(maxsize=2, missing=lambda x: x,
+                           getsizeof=lambda x: x)
+        self.assertEqual(1, cache[1])
+        self.assertIn(1, cache)
+        self.assertEqual(2, cache[2])
+        self.assertNotIn(1, cache)
+        self.assertIn(2, cache)
+        self.assertEqual(3, cache[3])
+        self.assertNotIn(1, cache)
+        self.assertIn(2, cache)
+        self.assertNotIn(3, cache)
+
     def test_cache_getsizeof(self):
         cache = self.cache(maxsize=3, getsizeof=lambda x: x)
         self.assertEqual(3, cache.maxsize)
