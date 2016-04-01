@@ -61,33 +61,28 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = 1
         self.assertEqual({1}, set(cache))
         self.assertEqual(1, len(cache))
-        self.assertEqual(1, cache.currsize)
         self.assertEqual(1, cache[1])
 
         cache.timer.tick()
         self.assertEqual({1}, set(cache))
         self.assertEqual(1, len(cache))
-        self.assertEqual(1, cache.currsize)
         self.assertEqual(1, cache[1])
 
         cache[2] = 2
         self.assertEqual({1, 2}, set(cache))
         self.assertEqual(2, len(cache))
-        self.assertEqual(2, cache.currsize)
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
 
         cache.timer.tick()
         self.assertEqual({2}, set(cache))
         self.assertEqual(1, len(cache))
-        self.assertEqual(1, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertEqual(2, cache[2])
 
         cache[3] = 3
         self.assertEqual({2, 3}, set(cache))
         self.assertEqual(2, len(cache))
-        self.assertEqual(2, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
@@ -95,7 +90,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.timer.tick()
         self.assertEqual({3}, set(cache))
         self.assertEqual(1, len(cache))
-        self.assertEqual(1, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertEqual(3, cache[3])
@@ -103,7 +97,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.timer.tick()
         self.assertEqual(set(), set(cache))
         self.assertEqual(0, len(cache))
-        self.assertEqual(0, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
@@ -112,6 +105,8 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
             del cache[1]
         with self.assertRaises(KeyError):
             cache.pop(2)
+        with self.assertRaises(KeyError):
+            del cache[3]
 
     def test_expire(self):
         cache = self.cache(maxsize=3, ttl=2)
@@ -128,7 +123,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
 
         self.assertEqual({1, 2, 3}, set(cache))
         self.assertEqual(3, len(cache))
-        self.assertEqual(3, cache.currsize)
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
@@ -136,7 +130,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.expire()
         self.assertEqual({1, 2, 3}, set(cache))
         self.assertEqual(3, len(cache))
-        self.assertEqual(3, cache.currsize)
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
@@ -144,7 +137,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.expire(3)
         self.assertEqual({2, 3}, set(cache))
         self.assertEqual(2, len(cache))
-        self.assertEqual(2, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
@@ -152,7 +144,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.expire(4)
         self.assertEqual({3}, set(cache))
         self.assertEqual(1, len(cache))
-        self.assertEqual(1, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertEqual(3, cache[3])
@@ -160,7 +151,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.expire(5)
         self.assertEqual(set(), set(cache))
         self.assertEqual(0, len(cache))
-        self.assertEqual(0, cache.currsize)
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
@@ -178,7 +168,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = 1
         cache.clear()
         self.assertEqual(0, len(cache))
-        self.assertEqual(0, cache.currsize)
 
     def test_missing(self):
         class DefaultTTLCache(TTLCache):

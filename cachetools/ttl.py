@@ -76,10 +76,10 @@ class TTLCache(Cache):
         try:
             link = self.__getlink(key)
         except KeyError:
-            missing = True
+            expired = False
         else:
-            missing = link.expire < self.__timer()
-        if missing:
+            expired = link.expire < self.__timer()
+        if expired:
             return self.__missing__(key)
         else:
             return cache_getitem(self, key)
@@ -100,11 +100,11 @@ class TTLCache(Cache):
         prev.next = root.prev = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
-        with self.__timer as time:
-            self.expire(time)
-            cache_delitem(self, key)
+        cache_delitem(self, key)
         link = self.__links.pop(key)
         link.unlink()
+        if link.expire < self.__timer():
+            raise KeyError(key)
 
     def __iter__(self):
         root = self.__root
@@ -126,11 +126,6 @@ class TTLCache(Cache):
             curr = curr.next
         return count
 
-    def __repr__(self, cache_repr=Cache.__repr__):
-        with self.__timer as time:
-            self.expire(time)
-            return cache_repr(self)
-
     def __setstate__(self, state):
         self.__dict__.update(state)
         root = self.__root
@@ -140,6 +135,11 @@ class TTLCache(Cache):
             link.prev = prev = root.prev
             prev.next = root.prev = link
         self.expire(self.__timer())
+
+    def __repr__(self, cache_repr=Cache.__repr__):
+        with self.__timer as time:
+            self.expire(time)
+            return cache_repr(self)
 
     @property
     def currsize(self):
@@ -162,15 +162,15 @@ class TTLCache(Cache):
         if time is None:
             time = self.__timer()
         root = self.__root
-        head = root.next
+        curr = root.next
         links = self.__links
         cache_delitem = Cache.__delitem__
-        while head is not root and head.expire < time:
-            cache_delitem(self, head.key)
-            del links[head.key]
-            next = head.next
-            head.unlink()
-            head = next
+        while curr is not root and curr.expire < time:
+            cache_delitem(self, curr.key)
+            del links[curr.key]
+            next = curr.next
+            curr.unlink()
+            curr = next
 
     def clear(self):
         with self.__timer as time:
