@@ -1,3 +1,20 @@
+v1.1.6 (2016-04-01)
+-------------------
+
+- Reimplement ``LRUCache`` and ``TTLCache`` using
+  ``collections.OrderedDict``.  Note that this will break pickle
+  compatibility with previous versions.
+
+- Fix ``TTLCache`` not calling ``__missing__()`` of derived classes.
+
+- Handle ``ValueError`` in ``Cache.__missing__()`` for consistency
+  with caching decorators.
+
+- Improve how ``TTLCache`` handles expired items.
+
+- Use ``Counter.most_common()`` for ``LFUCache.popitem()``.
+
+
 v1.1.5 (2015-10-25)
 -------------------
 
