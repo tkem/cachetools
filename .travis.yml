@@ -4,13 +4,12 @@ language: python
 
 python:
 - 2.7
-- 3.2
 - 3.3
 - 3.4
 - 3.5
 
 install:
-- pip install "coverage<4" coveralls tox "virtualenv<14.0.0"
+- pip install coveralls tox
 
 script:
 - tox -e check-manifest,flake8,py
