@@ -28,7 +28,7 @@ class Cache(DefaultMapping):
         self.__maxsize = maxsize
 
     def __repr__(self):
-        return '%s(%r, maxsize=%d, currsize=%d)' % (
+        return '%s(%r, maxsize=%r, currsize=%r)' % (
             self.__class__.__name__,
             list(self.__data.items()),
             self.__maxsize,
