@@ -1,3 +1,15 @@
+v2.0.0 (2016-10-03)
+-------------------
+
+- Drop Python 3.2 support (breaking change).
+
+- Drop support for deprecated features (breaking change).
+
+- Move key functions to separate package (breaking change).
+
+- Accept non-integer ``maxsize`` in ``Cache.__repr__()``.
+
+
 v1.1.6 (2016-04-01)
 -------------------
 
