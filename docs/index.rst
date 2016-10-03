@@ -135,7 +135,7 @@ of one argument used to retrieve the size of an item's value.
       expired by the current value returned by :attr:`timer`.
 
 
-Decorators
+Memoizing decorators
 ------------------------------------------------------------------------
 
 The :mod:`cachetools` module provides decorators for memoizing
@@ -151,7 +151,7 @@ often called with the same arguments::
   for i in range(100):
       print('fib(%d) = %d' % (i, fib(i)))
 
-.. decorator:: cached(cache, key=hashkey, lock=None)
+.. decorator:: cached(cache, key=cachetools.keys.hashkey, lock=None)
 
    Decorator to wrap a function with a memoizing callable that saves
    results in a cache.
@@ -167,7 +167,7 @@ often called with the same arguments::
    positional and keyword arguments as the wrapped function itself,
    and which has to return a suitable cache key.  Since caches are
    mappings, the object returned by `key` must be hashable.  The
-   default is to call :func:`hashkey`.
+   default is to call :func:`cachetools.keys.hashkey`.
 
    If `lock` is not :const:`None`, it must specify an object
    implementing the `context manager`_ protocol.  Any access to the
@@ -227,9 +227,7 @@ often called with the same arguments::
      print(fac(42))
      print(cache)
 
-   .. versionadded:: 1.1
-
-.. decorator:: cachedmethod(cache, key=hashkey, lock=None)
+.. decorator:: cachedmethod(cache, key=cachetools.keys.hashkey, lock=None)
 
    Decorator to wrap a class or instance method with a memoizing
    callable that saves results in a (possibly shared) cache.
@@ -272,11 +270,13 @@ often called with the same arguments::
      print("PEP #1: %s" % peps.get(1))
 
 
-Key functions
-------------------------------------------------------------------------
+:mod:`cachetools.keys` --- Key functions for memoizing decorators
+============================================================================
 
-The following functions can be used as key functions with the
-:func:`cached` and :func:`cachedmethod` decorators:
+.. module:: cachetools.keys
+
+This module provides several functions that can be used as key
+functions with the :func:`cached` and :func:`cachedmethod` decorators:
 
 .. autofunction:: hashkey
 

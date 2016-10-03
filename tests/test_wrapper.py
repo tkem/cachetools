@@ -1,6 +1,7 @@
 import unittest
 
 import cachetools
+import cachetools.keys
 
 
 class DecoratorTestMixin(object):
@@ -24,15 +25,15 @@ class DecoratorTestMixin(object):
 
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(len(cache), 1)
-        self.assertIn(cachetools.hashkey(0), cache)
-        self.assertNotIn(cachetools.hashkey(1), cache)
-        self.assertNotIn(cachetools.hashkey(1.0), cache)
+        self.assertIn(cachetools.keys.hashkey(0), cache)
+        self.assertNotIn(cachetools.keys.hashkey(1), cache)
+        self.assertNotIn(cachetools.keys.hashkey(1.0), cache)
 
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(len(cache), 2)
-        self.assertIn(cachetools.hashkey(0), cache)
-        self.assertIn(cachetools.hashkey(1), cache)
-        self.assertIn(cachetools.hashkey(1.0), cache)
+        self.assertIn(cachetools.keys.hashkey(0), cache)
+        self.assertIn(cachetools.keys.hashkey(1), cache)
+        self.assertIn(cachetools.keys.hashkey(1.0), cache)
 
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(len(cache), 2)
@@ -45,37 +46,32 @@ class DecoratorTestMixin(object):
 
     def test_decorator_typed(self):
         cache = self.cache(3)
-
-        def typedkey(*args, **kwargs):
-            key = cachetools.hashkey(*args, **kwargs)
-            key += tuple(type(v) for v in args)
-            key += tuple(type(v) for _, v in sorted(kwargs.items()))
-            return key
-        wrapper = cachetools.cached(cache, key=typedkey)(self.func)
+        key = cachetools.keys.typedkey
+        wrapper = cachetools.cached(cache, key=key)(self.func)
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper.__wrapped__, self.func)
 
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(len(cache), 1)
-        self.assertIn(typedkey(0), cache)
-        self.assertNotIn(typedkey(1), cache)
-        self.assertNotIn(typedkey(1.0), cache)
+        self.assertIn(cachetools.keys.typedkey(0), cache)
+        self.assertNotIn(cachetools.keys.typedkey(1), cache)
+        self.assertNotIn(cachetools.keys.typedkey(1.0), cache)
 
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(len(cache), 2)
-        self.assertIn(typedkey(0), cache)
-        self.assertIn(typedkey(1), cache)
-        self.assertNotIn(typedkey(1.0), cache)
+        self.assertIn(cachetools.keys.typedkey(0), cache)
+        self.assertIn(cachetools.keys.typedkey(1), cache)
+        self.assertNotIn(cachetools.keys.typedkey(1.0), cache)
 
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(len(cache), 2)
 
         self.assertEqual(wrapper(1.0), 2)
         self.assertEqual(len(cache), 3)
-        self.assertIn(typedkey(0), cache)
-        self.assertIn(typedkey(1), cache)
-        self.assertIn(typedkey(1.0), cache)
+        self.assertIn(cachetools.keys.typedkey(0), cache)
+        self.assertIn(cachetools.keys.typedkey(1), cache)
+        self.assertIn(cachetools.keys.typedkey(1.0), cache)
 
         self.assertEqual(wrapper(1.0), 2)
         self.assertEqual(len(cache), 3)

@@ -1,11 +1,11 @@
 import unittest
 
-import cachetools
+import cachetools.keys
 
 
 class CacheKeysTest(unittest.TestCase):
 
-    def test_hashkey(self, key=cachetools.hashkey):
+    def test_hashkey(self, key=cachetools.keys.hashkey):
         self.assertEqual(key(), key())
         self.assertEqual(hash(key()), hash(key()))
         self.assertEqual(key(1, 2, 3), key(1, 2, 3))
@@ -22,7 +22,7 @@ class CacheKeysTest(unittest.TestCase):
         self.assertEqual(key(1, 2, 3), key(1.0, 2.0, 3.0))
         self.assertEqual(hash(key(1, 2, 3)), hash(key(1.0, 2.0, 3.0)))
 
-    def test_typedkey(self, key=cachetools.typedkey):
+    def test_typedkey(self, key=cachetools.keys.typedkey):
         self.assertEqual(key(), key())
         self.assertEqual(hash(key()), hash(key()))
         self.assertEqual(key(1, 2, 3), key(1, 2, 3))
@@ -38,7 +38,7 @@ class CacheKeysTest(unittest.TestCase):
         # typed keys compare unequal
         self.assertNotEqual(key(1, 2, 3), key(1.0, 2.0, 3.0))
 
-    def test_addkeys(self, key=cachetools.hashkey):
+    def test_addkeys(self, key=cachetools.keys.hashkey):
         self.assertIsInstance(key(), tuple)
         self.assertIsInstance(key(1, 2, 3) + key(4, 5, 6), type(key()))
         self.assertIsInstance(key(1, 2, 3) + (4, 5, 6), type(key()))

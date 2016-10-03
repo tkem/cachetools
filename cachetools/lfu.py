@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import collections
 
 from .cache import Cache

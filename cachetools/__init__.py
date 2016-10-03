@@ -1,9 +1,11 @@
 """Extensible memoizing collections and decorators."""
 
+from __future__ import absolute_import
+
 import functools
 
+from . import keys
 from .cache import Cache
-from .keys import hashkey, typedkey
 from .lfu import LFUCache
 from .lru import LRUCache
 from .rr import RRCache
@@ -11,7 +13,7 @@ from .ttl import TTLCache
 
 __all__ = (
     'Cache', 'LFUCache', 'LRUCache', 'RRCache', 'TTLCache',
-    'cached', 'cachedmethod', 'hashkey', 'typedkey'
+    'cached', 'cachedmethod'
 )
 
 __version__ = '1.1.6'
@@ -27,7 +29,7 @@ else:
         return wrapper
 
 
-def cached(cache, key=hashkey, lock=None):
+def cached(cache, key=keys.hashkey, lock=None):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
@@ -68,7 +70,7 @@ def cached(cache, key=hashkey, lock=None):
     return decorator
 
 
-def cachedmethod(cache, key=hashkey, lock=None):
+def cachedmethod(cache, key=keys.hashkey, lock=None):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a cache.
 

@@ -1,5 +1,7 @@
 """`functools.lru_cache` compatible memoizing function decorators."""
 
+from __future__ import absolute_import
+
 import collections
 import functools
 import random
@@ -10,7 +12,7 @@ try:
 except ImportError:
     from dummy_threading import RLock
 
-from .keys import hashkey, typedkey
+from . import keys
 from .lfu import LFUCache
 from .lru import LRUCache
 from .rr import RRCache
@@ -26,7 +28,7 @@ _CacheInfo = collections.namedtuple('CacheInfo', [
 
 def _cache(cache, typed=False):
     def decorator(func):
-        key = typedkey if typed else hashkey
+        key = keys.typedkey if typed else keys.hashkey
         lock = RLock()
         stats = [0, 0]
 
