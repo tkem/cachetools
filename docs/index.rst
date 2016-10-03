@@ -21,20 +21,6 @@ Multiple cache classes based on different caching algorithms are
 implemented, and decorators for easily memoizing function and method
 calls are provided, too.
 
-.. note::
-
-   Several features are now marked as deprecated and will be removed
-   in the next major release, :mod:`cachetools` version 2.0.  If you
-   happen to rely on any of these features, it is highly recommended
-   to specify your module dependencies accordingly, for example
-   ``cachetools ~= 1.1`` when using :mod:`setuptools`.
-
-.. versionchanged:: 1.1
-
-   Moved :func:`functools.lru_cache` compatible decorators to the
-   :mod:`cachetools.func` module.  For backwards compatibility, they
-   continue to be visible in this module as well.
-
 
 Cache implementations
 ------------------------------------------------------------------------
@@ -243,7 +229,7 @@ often called with the same arguments::
 
    .. versionadded:: 1.1
 
-.. decorator:: cachedmethod(cache, key=hashkey, lock=None, typed=False)
+.. decorator:: cachedmethod(cache, key=hashkey, lock=None)
 
    Decorator to wrap a class or instance method with a memoizing
    callable that saves results in a (possibly shared) cache.
@@ -260,11 +246,6 @@ often called with the same arguments::
       ``lock(self)`` will only guard access to the cache itself.  It
       is the user's responsibility to handle concurrent calls to the
       underlying wrapped method in a multithreaded environment.
-
-   If `key` or the optional `typed` keyword argument are set to
-   :const:`True`, the :func:`typedkey` function is used for generating
-   hash keys.  This has been deprecated in favor of specifying
-   ``key=typedkey`` explicitly.
 
    One advantage of :func:`cachedmethod` over the :func:`cached`
    function decorator is that cache properties such as `maxsize` can
@@ -290,37 +271,6 @@ often called with the same arguments::
      peps = CachedPEPs(cachesize=10)
      print("PEP #1: %s" % peps.get(1))
 
-   For backwards compatibility, the default key function used by
-   :func:`cachedmethod` will generate distinct keys for different
-   methods to ease using a shared cache with multiple methods.  This
-   has been deprecated, and relying on this feature is strongly
-   discouraged.  When using a shared cache, distinct key functions
-   should be used, as with the :func:`cached` decorator.
-
-   .. versionadded:: 1.1
-
-      The optional `key` and `lock` parameters.
-
-   .. versionchanged:: 1.1
-
-      The :attr:`__wrapped__` attribute is now set when running Python
-      2.7, too.
-
-   .. deprecated:: 1.1
-
-      The `typed` argument.  Use ``key=typedkey`` instead.
-
-   .. deprecated:: 1.1
-
-      When using a shared cached for multiple methods, distinct key
-      function should be used.
-
-   .. deprecated:: 1.1
-
-      The wrapper function's :attr:`cache` attribute.  Use the
-      original function passed as the decorator's `cache` argument to
-      access the cache object.
-
 
 Key functions
 ------------------------------------------------------------------------
@@ -333,16 +283,12 @@ The following functions can be used as key functions with the
    This function returns a :class:`tuple` instance suitable as a cache
    key, provided the positional and keywords arguments are hashable.
 
-   .. versionadded:: 1.1
-
 .. autofunction:: typedkey
 
    This function is similar to :func:`hashkey`, but arguments of
    different types will yield distinct cache keys.  For example,
    ``typedkey(3)`` and ``typedkey(3.0)`` will return different
    results.
-
-   .. versionadded:: 1.1
 
 These functions can also be helpful when implementing custom key
 functions for handling some non-hashable arguments.  For example,
@@ -381,76 +327,39 @@ different caching strategies.  Note that unlike
 :func:`functools.lru_cache`, setting `maxsize` to :const:`None` is not
 supported.
 
+If the optional argument `typed` is set to :const:`True`, function
+arguments of different types will be cached separately.  For example,
+``f(3)`` and ``f(3.0)`` will be treated as distinct calls with
+distinct results.
+
 The wrapped function is instrumented with :func:`cache_info` and
 :func:`cache_clear` functions to provide information about cache
 performance and clear the cache.  See the :func:`functools.lru_cache`
 documentation for details.
 
-In addition to `maxsize`, all decorators accept the following
-optional keyword arguments:
-
-- `typed`, if is set to :const:`True`, will cause function arguments
-  of different types to be cached separately.  For example, ``f(3)``
-  and ``f(3.0)`` will be treated as distinct calls with distinct
-  results.
-
-- `getsizeof` specifies a function of one argument that will be
-  applied to each cache value to determine its size.  The default
-  value is :const:`None`, which will assign each item an equal size of
-  :const:`1`.  This has been deprecated in favor of the new
-  :func:`cachetools.cached` decorator, which allows passing fully
-  customized cache objects.
-
-- `lock` specifies a function of zero arguments that returns a
-  `context manager`_ to lock the cache when necessary.  If not
-  specified, :class:`threading.RLock` will be used to synchronize
-  access from multiple threads.  The use of `lock` is discouraged, and
-  the `lock` argument has been deprecated.
-
-.. versionadded:: 1.1
-
-   Formerly, the decorators provided by :mod:`cachetools.func` were
-   part of the :mod:`cachetools` module.
-
-.. decorator:: lfu_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: lfu_cache(maxsize=128, typed=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Frequently Used
    (LFU) algorithm.
 
-   .. deprecated:: 1.1
-
-      The `getsizeof` and `lock` arguments.
-
-.. decorator:: lru_cache(maxsize=128, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: lru_cache(maxsize=128, typed=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
 
-   .. deprecated:: 1.1
-
-      The `getsizeof` and `lock` arguments.
-
-.. decorator:: rr_cache(maxsize=128, choice=random.choice, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: rr_cache(maxsize=128, choice=random.choice, typed=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Random Replacement (RR)
    algorithm.
 
-   .. deprecated:: 1.1
-
-      The `getsizeof` and `lock` arguments.
-
-.. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False, getsizeof=None, lock=threading.RLock)
+.. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm with a per-item time-to-live (TTL) value.
-
-   .. deprecated:: 1.1
-
-      The `getsizeof` and `lock` arguments.
 
 
 .. _@lru_cache: http://docs.python.org/3/library/functools.html#functools.lru_cache

@@ -1,6 +1,5 @@
 import operator
 import unittest
-import warnings
 
 from cachetools import LRUCache, cachedmethod, typedkey
 
@@ -45,7 +44,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_dict(self):
         cached = Cached({})
-        self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(cached.get(1), 1)
@@ -58,7 +56,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_typed_dict(self):
         cached = Cached(LRUCache(maxsize=2))
-        self.assertEqual(cached.cache, cached.get_typed.cache(cached))
 
         self.assertEqual(cached.get_typed(0), 0)
         self.assertEqual(cached.get_typed(1), 1)
@@ -70,7 +67,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_lru(self):
         cached = Cached(LRUCache(maxsize=2))
-        self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(cached.get(1), 1)
@@ -83,7 +79,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_typed_lru(self):
         cached = Cached(LRUCache(maxsize=2))
-        self.assertEqual(cached.cache, cached.get_typed.cache(cached))
 
         self.assertEqual(cached.get_typed(0), 0)
         self.assertEqual(cached.get_typed(1), 1)
@@ -95,7 +90,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_nospace(self):
         cached = Cached(LRUCache(maxsize=0))
-        self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(cached.get(1), 1)
@@ -105,7 +99,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_nocache(self):
         cached = Cached(None)
-        self.assertEqual(None, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(cached.get(1), 1)
@@ -124,7 +117,6 @@ class CachedMethodTest(unittest.TestCase):
                 return Int(fractions.Fraction.__add__(self, other))
 
         cached = Cached(weakref.WeakValueDictionary(), count=Int(0))
-        self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(cached.get(0), 1)
@@ -144,7 +136,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_locked_dict(self):
         cached = Locked({})
-        self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 1)
         self.assertEqual(cached.get(1), 3)
@@ -154,7 +145,6 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_locked_nocache(self):
         cached = Locked(None)
-        self.assertEqual(None, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(cached.get(1), 0)
@@ -164,28 +154,9 @@ class CachedMethodTest(unittest.TestCase):
 
     def test_locked_nospace(self):
         cached = Locked(LRUCache(maxsize=0))
-        self.assertEqual(cached.cache, cached.get.cache(cached))
 
         self.assertEqual(cached.get(0), 1)
         self.assertEqual(cached.get(1), 3)
         self.assertEqual(cached.get(1), 5)
         self.assertEqual(cached.get(1.0), 7)
         self.assertEqual(cached.get(1.0), 9)
-
-    def test_typed_deprecated(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cachedmethod(lambda self: None, None)(lambda self: None)
-            self.assertIs(w[-1].category, DeprecationWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cachedmethod(lambda self: None, False)(lambda self: None)
-            self.assertIs(w[-1].category, DeprecationWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cachedmethod(lambda self: None, True)(lambda self: None)
-            self.assertIs(w[-1].category, DeprecationWarning)
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            cachedmethod(lambda self: None, typed=None)(lambda self: None)
-            self.assertIs(w[-1].category, DeprecationWarning)
