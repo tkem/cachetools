@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from .abc import DefaultMapping
 
+from collections import MutableMapping
 
 class _DefaultSize(object):
     def __getitem__(self, _):
@@ -13,20 +14,46 @@ class _DefaultSize(object):
     def pop(self, _):
         return 1
 
+class CacheDict(MutableMapping):
+
+    def __init__(self):
+        self.store = dict()
+        self.size = 0
+
+    def __setitem__(self, key, item):
+        self.store[key] = item
+
+    def __getitem__(self, key):
+        return self.store[key]
+
+    def __len__(self):
+        return len(self.store)
+
+    def __delitem__(self, key):
+        del self.store[key]
+
+    def items(self):
+        return self.store.items()
+
+    def __iter__(self):
+        return iter(self.store)
+
 
 class Cache(DefaultMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
     __size = _DefaultSize()
 
-    def __init__(self, maxsize, missing=None, getsizeof=None):
+    def __init__(self, maxsize, missing=None, getsizeof=None, data=None):
         if missing:
             self.__missing = missing
         if getsizeof:
             self.__getsizeof = getsizeof
             self.__size = dict()
-        self.__data = dict()
-        self.__currsize = 0
+        if data is None or not isinstance(data, CacheDict):
+            self.__data = CacheDict()
+        else:
+            self.__data = data
         self.__maxsize = maxsize
 
     def __repr__(self):
@@ -34,7 +61,7 @@ class Cache(DefaultMapping):
             self.__class__.__name__,
             list(self.__data.items()),
             self.__maxsize,
-            self.__currsize,
+            self.__data.size,
         )
 
     def __getitem__(self, key):
@@ -49,7 +76,7 @@ class Cache(DefaultMapping):
         if size > maxsize:
             raise ValueError('value too large')
         if key not in self.__data or self.__size[key] < size:
-            while self.__currsize + size > maxsize:
+            while self.__data.size + size > maxsize:
                 self.popitem()
         if key in self.__data:
             diffsize = size - self.__size[key]
@@ -57,12 +84,12 @@ class Cache(DefaultMapping):
             diffsize = size
         self.__data[key] = value
         self.__size[key] = size
-        self.__currsize += diffsize
+        self.__data.size += diffsize
 
     def __delitem__(self, key):
         size = self.__size.pop(key)
         del self.__data[key]
-        self.__currsize -= size
+        self.__data.size -= size
 
     def __contains__(self, key):
         return key in self.__data
@@ -97,7 +124,12 @@ class Cache(DefaultMapping):
     @property
     def currsize(self):
         """The current size of the cache."""
-        return self.__currsize
+        return self.__data.size
+
+    @property
+    def data(self):
+        """The data of the cache (CacheDict)."""
+        return self.__data
 
     def getsizeof(self, value):
         """Return the size of a cache element's value."""
