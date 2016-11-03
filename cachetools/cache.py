@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
+from collections import MutableMapping
+
 from .abc import DefaultMapping
 
-from collections import MutableMapping
 
 class _DefaultSize(object):
     def __getitem__(self, _):
@@ -14,8 +15,8 @@ class _DefaultSize(object):
     def pop(self, _):
         return 1
 
-class CacheDict(MutableMapping):
 
+class CacheDict(MutableMapping):
     def __init__(self):
         self.store = dict()
         self.size = 0

@@ -1,8 +1,8 @@
 import unittest
 
-from cachetools import LRUCache
-
 from pickle import dumps, loads
+
+from cachetools import LRUCache
 
 from . import CacheTestMixin
 
@@ -10,7 +10,8 @@ from . import CacheTestMixin
 class LRUCachePersistTest(unittest.TestCase, CacheTestMixin):
 
     def cache(self, maxsize, missing=None, getsizeof=None, data=None):
-        return LRUCache(maxsize, missing=missing, getsizeof=getsizeof, data=data)
+        return LRUCache(maxsize, missing=missing, getsizeof=getsizeof,
+                        data=data)
 
     def test_lru(self):
         cache = self.cache(maxsize=2)
@@ -46,7 +47,3 @@ class LRUCachePersistTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache2[4], 4)
         self.assertEqual(cache2[5], 5)
         self.assertNotIn(2, cache2)
-
-
-
-
