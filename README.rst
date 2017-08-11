@@ -35,6 +35,9 @@ Multiple cache classes based on different caching algorithms are
 implemented, and decorators for easily memoizing function and method
 calls are provided, too.
 
+For more information, please refer to cachetools's online
+documentation_.
+
 
 Installation
 ------------------------------------------------------------------------
@@ -59,7 +62,10 @@ Project Resources
    :target: https://coveralls.io/r/tkem/cachetools
    :alt: Test coverage
 
-- `Documentation`_
+.. image:: https://readthedocs.org/projects/cachetools/badge/?version=latest&style=flat
+   :target: http://cachetools.readthedocs.io/en/latest/
+   :alt: Documentation Status
+
 - `Issue Tracker`_
 - `Source Code`_
 - `Change Log`_
@@ -78,7 +84,7 @@ Licensed under the `MIT License`_.
 .. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
 
-.. _Documentation: http://pythonhosted.org/cachetools/
+.. _Documentation: http://cachetools.readthedocs.io/en/latest/
 .. _Issue Tracker: https://github.com/tkem/cachetools/issues/
 .. _Source Code: https://github.com/tkem/cachetools/
 .. _Change Log: https://github.com/tkem/cachetools/blob/master/CHANGES.rst
