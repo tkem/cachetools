@@ -35,8 +35,7 @@ Multiple cache classes based on different caching algorithms are
 implemented, and decorators for easily memoizing function and method
 calls are provided, too.
 
-For more information, please refer to cachetools's online
-documentation_.
+For more information, please refer to the online documentation_.
 
 
 Installation
