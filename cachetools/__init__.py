@@ -16,7 +16,7 @@ __all__ = (
     'cached', 'cachedmethod'
 )
 
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 
 if hasattr(functools.update_wrapper(lambda f: f(), lambda: 42), '__wrapped__'):
     _update_wrapper = functools.update_wrapper

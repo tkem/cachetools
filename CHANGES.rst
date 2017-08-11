@@ -1,3 +1,14 @@
+v2.0.1 (2017-08-11)
+-------------------
+
+- Officially support Python 3.6.
+
+- Move documentation to RTD.
+
+- Documentation: Update import paths for key functions (courtesy of
+  slavkoja).
+
+
 v2.0.0 (2016-10-03)
 -------------------
 
