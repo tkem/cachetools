@@ -211,7 +211,8 @@ often called with the same arguments::
    function arguments::
 
      from functools import partial
-     from cachetools import cached, hashkey, LRUCache
+     from cachetools import cached, LRUCache
+     from cachetools.keys import hashkey
 
      cache = LRUCache(maxsize=100)
 
