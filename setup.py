@@ -7,6 +7,7 @@ def get_version(filename):
         metadata = dict(findall("__([a-z]+)__ = '([^']+)'", f.read()))
     return metadata['version']
 
+
 setup(
     name='cachetools',
     version=get_version('cachetools/__init__.py'),

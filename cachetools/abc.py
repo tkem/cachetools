@@ -45,4 +45,5 @@ class DefaultMapping(collections.MutableMapping):
             self[key] = value = default
         return value
 
+
 DefaultMapping.register(dict)

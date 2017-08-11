@@ -68,7 +68,7 @@ Project Resources
 License
 ------------------------------------------------------------------------
 
-Copyright (c) 2014-2016 Thomas Kemmer.
+Copyright (c) 2014-2017 Thomas Kemmer.
 
 Licensed under the `MIT License`_.
 
