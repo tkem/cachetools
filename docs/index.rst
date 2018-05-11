@@ -81,10 +81,9 @@ of one argument used to retrieve the size of an item's value.
 
    This class associates a time-to-live value with each item.  Items
    that expire because they have exceeded their time-to-live will be
-   removed automatically.  If no expired items are there to remove,
-   the least recently used items will be discarded first to make space
-   when necessary.  Trying to access an expired item will raise a
-   :exc:`KeyError`.
+   no longer accessible, and will be removed eventually.  If no
+   expired items are there to remove, the least recently used items
+   will be discarded first to make space when necessary.
 
    By default, the time-to-live is specified in seconds, and the
    :func:`time.time` function is used to retrieve the current time.  A
@@ -92,15 +91,14 @@ of one argument used to retrieve the size of an item's value.
 
    .. method:: expire(self, time=None)
 
-      Since expired items will be "physically" removed from a cache
-      only at the next mutating operation, e.g. :meth:`__setitem__` or
-      :meth:`__delitem__`, to avoid changing the underlying dictionary
-      while iterating over it, expired items may still claim memory
-      although they are no longer accessible.  Calling this method
-      removes all items whose time-to-live would have expired by
-      `time`, so garbage collection is free to reuse their memory.  If
-      `time` is :const:`None`, this removes all items that have
-      expired by the current value returned by :attr:`timer`.
+      Expired items will be removed from a cache only at the next
+      mutating operation, e.g. :meth:`__setitem__` or
+      :meth:`__delitem__`, and therefore may still claim memory.
+      Calling this method removes all items whose time-to-live would
+      have expired by `time`, so garbage collection is free to reuse
+      their memory.  If `time` is :const:`None`, this removes all
+      items that have expired by the current value returned by
+      :attr:`timer`.
 
 
 Extending cache classes
