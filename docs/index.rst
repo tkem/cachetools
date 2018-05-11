@@ -30,9 +30,9 @@ different cache algorithms.  All these classes derive from class
 :class:`Cache`, which in turn derives from
 :class:`collections.MutableMapping`, and provide :attr:`maxsize` and
 :attr:`currsize` properties to retrieve the maximum and current size
-of the cache.  When a cache is full, :meth:`setitem` calls
-:meth:`popitem` repeatedly until there is enough room for the item to
-be added.
+of the cache.  When a cache is full, :meth:`Cache.__setitem__()` calls
+:meth:`self.popitem()` repeatedly until there is enough room for the
+item to be added.
 
 All cache classes accept an optional `missing` keyword argument in
 their constructor, which can be used to provide a default *factory
