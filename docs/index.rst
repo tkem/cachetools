@@ -34,34 +34,6 @@ of the cache.  When a cache is full, :meth:`Cache.__setitem__()` calls
 :meth:`self.popitem()` repeatedly until there is enough room for the
 item to be added.
 
-All cache classes accept an optional `missing` keyword argument in
-their constructor, which can be used to provide a default *factory
-function*.  If the key `key` is not present, the ``cache[key]``
-operation calls :meth:`Cache.__missing__`, which in turn calls
-`missing` with `key` as its sole argument.  The cache will then store
-the object returned from ``missing(key)`` as the new cache value for
-`key`, possibly discarding other items if the cache is full.  This may
-be used to provide memoization for existing single-argument functions::
-
-    from cachetools import LRUCache
-    import urllib.request
-
-    def get_pep(num):
-        """Retrieve text of a Python Enhancement Proposal"""
-        url = 'http://www.python.org/dev/peps/pep-%04d/' % num
-        with urllib.request.urlopen(url) as s:
-            return s.read()
-
-    cache = LRUCache(maxsize=4, missing=get_pep)
-
-    for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
-        try:
-            print(n, len(cache[n]))
-        except urllib.error.HTTPError:
-            print(n, 'Not Found')
-    print(sorted(cache.keys()))
-
-
 :class:`Cache` also features a :meth:`getsizeof` method, which returns
 the size of a given `value`.  The default implementation of
 :meth:`getsizeof` returns :const:`1` irrespective of its argument,
@@ -69,6 +41,7 @@ making the cache's size equal to the number of its items, or
 ``len(cache)``.  For convenience, all cache classes accept an optional
 named constructor parameter `getsizeof`, which may specify a function
 of one argument used to retrieve the size of an item's value.
+
 
 .. autoclass:: Cache
    :members:
@@ -78,11 +51,7 @@ of one argument used to retrieve the size of an item's value.
    to implement specific caching strategies.  If a subclass has to
    keep track of item access, insertion or deletion, it may
    additionally need to override :meth:`__getitem__`,
-   :meth:`__setitem__` and :meth:`__delitem__`.  If a subclass wants
-   to store meta data with its values, i.e. the `value` argument
-   passed to :meth:`Cache.__setitem__` is different from what the
-   derived class's :meth:`__setitem__` received, it will probably need
-   to override :meth:`getsizeof`, too.
+   :meth:`__setitem__` and :meth:`__delitem__`.
 
 .. autoclass:: LFUCache
    :members:
@@ -108,8 +77,7 @@ of one argument used to retrieve the size of an item's value.
    non-empty sequence.
 
 .. autoclass:: TTLCache(maxsize, ttl, timer=time.time, missing=None, getsizeof=None)
-   :members:
-   :exclude-members: expire
+   :members: popitem, timer, ttl
 
    This class associates a time-to-live value with each item.  Items
    that expire because they have exceeded their time-to-live will be
@@ -122,7 +90,7 @@ of one argument used to retrieve the size of an item's value.
    :func:`time.time` function is used to retrieve the current time.  A
    custom `timer` function can be supplied if needed.
 
-   .. automethod:: expire(self, time=None)
+   .. method:: expire(self, time=None)
 
       Since expired items will be "physically" removed from a cache
       only at the next mutating operation, e.g. :meth:`__setitem__` or
@@ -133,6 +101,57 @@ of one argument used to retrieve the size of an item's value.
       `time`, so garbage collection is free to reuse their memory.  If
       `time` is :const:`None`, this removes all items that have
       expired by the current value returned by :attr:`timer`.
+
+
+Extending cache classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes it may be desirable to notice when and what cache items are
+evicted, i.e. removed from a cache to make room for new items.  Since
+all cache implementations call :meth:`popitem` to evict items from the
+cache, this can be achieved by overriding this method in a subclass::
+
+  >>> from cachetools import LRUCache
+  >>> class MyCache(LRUCache):
+  ...     def popitem(self):
+  ...         key, value = super().popitem()
+  ...         print('Key "%s" evicted with value "%s"' % (key, value))
+  ...         return key, value
+  ...
+  >>> c = MyCache(maxsize=2)
+  >>> c['a'] = 1
+  >>> c['b'] = 2
+  >>> c['c'] = 3
+  Key "a" evicted with value "1"
+
+Similar to the standard library's :class:`collections.defaultdict`,
+subclasses of :class:`Cache` may implement a :meth:`__missing__`
+method which is called by :meth:`Cache.__getitem__` if the requested
+key is not found::
+
+  >>> from cachetools import LRUCache
+  >>> import urllib.request
+  >>> class PepStore(LRUCache):
+  ...     def __missing__(self, key):
+  ...         """Retrieve text of a Python Enhancement Proposal"""
+  ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % key
+  ...         try:
+  ...             with urllib.request.urlopen(url) as s:
+  ...                 pep = s.read()
+  ...                 self[key] = pep  # store text in cache
+  ...                 return pep
+  ...         except urllib.error.HTTPError:
+  ...             return 'Not Found'  # do not store in cache
+  >>> peps = PepStore(maxsize=4)
+  >>> for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
+  ...     pep = peps[n]
+  >>> print(sorted(peps.keys()))
+  [218, 279, 289, 320]
+
+Note, though, that such a class does not really behave like a *cache*
+any more, and will lead to surprising results when used with any of
+the memoizing decorators described below.  However, it may be useful
+in its own right.
 
 
 Memoizing decorators
