@@ -1,3 +1,15 @@
+v2.1.0 (UNRELEASED)
+-------------------
+
+- Deprecate ``missing`` cache constructor parameter.
+
+- Handle overridden ``getsizeof()`` method in subclasses.
+
+- Fix Python 2.7 ``RRCache`` pickling issues.
+
+- Various documentation improvements.
+
+
 v2.0.1 (2017-08-11)
 -------------------
 
