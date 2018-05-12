@@ -7,11 +7,10 @@ from . import CacheTestMixin
 
 class LFUCacheTest(unittest.TestCase, CacheTestMixin):
 
-    def cache(self, maxsize, missing=None, getsizeof=None):
-        return LFUCache(maxsize, missing=missing, getsizeof=getsizeof)
+    Cache = LFUCache
 
     def test_lfu(self):
-        cache = self.cache(maxsize=2)
+        cache = LFUCache(maxsize=2)
 
         cache[1] = 1
         cache[1]
@@ -29,7 +28,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[1], 1)
 
     def test_lfu_getsizeof(self):
-        cache = self.cache(maxsize=3, getsizeof=lambda x: x)
+        cache = LFUCache(maxsize=3, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2

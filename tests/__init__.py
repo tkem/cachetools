@@ -1,10 +1,13 @@
 class CacheTestMixin(object):
 
-    def cache(self, maxsize, missing=None, getsizeof=None):
-        raise NotImplementedError
+    Cache = None
 
-    def test_cache_defaults(self):
-        cache = self.cache(maxsize=1)
+#    def cache(self, maxsize, missing=None, getsizeof=None):
+#        c = self.Cache(maxsize, missing=missing, getsizeof=getsizeof)
+#        return c
+
+    def test_defaults(self):
+        cache = self.Cache(maxsize=1)
         self.assertEqual(0, len(cache))
         self.assertEqual(1, cache.maxsize)
         self.assertEqual(0, cache.currsize)
@@ -13,8 +16,8 @@ class CacheTestMixin(object):
         self.assertEqual(1, cache.getsizeof(0))
         self.assertTrue(repr(cache).startswith(cache.__class__.__name__))
 
-    def test_cache_insert(self):
-        cache = self.cache(maxsize=2)
+    def test_insert(self):
+        cache = self.Cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))
@@ -31,8 +34,8 @@ class CacheTestMixin(object):
         self.assertEqual(4, cache[4])
         self.assertTrue(1 in cache or 2 in cache or 3 in cache)
 
-    def test_cache_update(self):
-        cache = self.cache(maxsize=2)
+    def test_update(self):
+        cache = self.Cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))
@@ -49,8 +52,8 @@ class CacheTestMixin(object):
         self.assertEqual('a', cache[1])
         self.assertEqual('b', cache[2])
 
-    def test_cache_delete(self):
-        cache = self.cache(maxsize=2)
+    def test_delete(self):
+        cache = self.Cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, len(cache))
@@ -73,8 +76,8 @@ class CacheTestMixin(object):
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
 
-    def test_cache_pop(self):
-        cache = self.cache(maxsize=2)
+    def test_pop(self):
+        cache = self.Cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertEqual(2, cache.pop(2))
@@ -93,8 +96,8 @@ class CacheTestMixin(object):
         self.assertEqual(None, cache.pop(1, None))
         self.assertEqual(None, cache.pop(0, None))
 
-    def test_cache_popitem(self):
-        cache = self.cache(maxsize=2)
+    def test_popitem(self):
+        cache = self.Cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
         self.assertIn(cache.pop(1), {1: 1, 2: 2})
@@ -105,9 +108,9 @@ class CacheTestMixin(object):
         with self.assertRaises(KeyError):
             cache.popitem()
 
-    def test_cache_missing(self):
-        cache = self.cache(maxsize=2, missing=lambda x: x)
-
+    def _test_missing(self, cache):
+        self.assertEqual(0, cache.currsize)
+        self.assertEqual(2, cache.maxsize)
         self.assertEqual(0, len(cache))
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
@@ -157,8 +160,9 @@ class CacheTestMixin(object):
         self.assertTrue(1 in cache or 2 in cache)
         self.assertTrue(1 not in cache or 2 not in cache)
 
-        cache = self.cache(maxsize=2, missing=lambda x: x,
-                           getsizeof=lambda x: x)
+    def _test_missing_getsizeof(self, cache):
+        self.assertEqual(0, cache.currsize)
+        self.assertEqual(2, cache.maxsize)
         self.assertEqual(1, cache[1])
         self.assertIn(1, cache)
         self.assertEqual(2, cache[2])
@@ -169,10 +173,26 @@ class CacheTestMixin(object):
         self.assertIn(2, cache)
         self.assertNotIn(3, cache)
 
-    def test_cache_getsizeof(self):
-        cache = self.cache(maxsize=3, getsizeof=lambda x: x)
-        self.assertEqual(3, cache.maxsize)
+    def test_missing_param(self):
+        self._test_missing(self.Cache(maxsize=2, missing=lambda x: x))
+        self._test_missing_getsizeof(self.Cache(maxsize=2, missing=lambda x: x,
+                                                getsizeof=lambda x: x))
+
+    def test_missing_subclass(self):
+        class Cache(self.Cache):
+            def __missing__(self, key):
+                try:
+                    self[key] = key
+                except ValueError:
+                    pass
+                return key
+
+        self._test_missing(Cache(maxsize=2))
+        self._test_missing_getsizeof(Cache(maxsize=2, getsizeof=lambda x: x))
+
+    def _test_getsizeof(self, cache):
         self.assertEqual(0, cache.currsize)
+        self.assertEqual(3, cache.maxsize)
         self.assertEqual(1, cache.getsizeof(1))
         self.assertEqual(2, cache.getsizeof(2))
         self.assertEqual(3, cache.getsizeof(3))
@@ -214,10 +234,20 @@ class CacheTestMixin(object):
         self.assertEqual(3, cache.currsize)
         self.assertEqual(3, cache[3])
 
-    def test_cache_pickle(self):
+    def test_getsizeof_param(self):
+        self._test_getsizeof(self.Cache(maxsize=3, getsizeof=lambda x: x))
+
+    def test_getsizeof_subclass(self):
+        class Cache(self.Cache):
+            def getsizeof(self, value):
+                return value
+
+        self._test_getsizeof(Cache(maxsize=3))
+
+    def test_pickle(self):
         import pickle
 
-        source = self.cache(maxsize=2)
+        source = self.Cache(maxsize=2)
         source.update({1: 1, 2: 2})
 
         cache = pickle.loads(pickle.dumps(source))
@@ -239,13 +269,13 @@ class CacheTestMixin(object):
 
         self.assertEqual(cache, pickle.loads(pickle.dumps(cache)))
 
-    def test_cache_pickle_maxsize(self):
+    def test_pickle_maxsize(self):
         import pickle
         import sys
 
         # test empty cache, single element, large cache (recursion limit)
         for n in [0, 1, sys.getrecursionlimit() * 2]:
-            source = self.cache(maxsize=n)
+            source = self.Cache(maxsize=n)
             source.update((i, i) for i in range(n))
             cache = pickle.loads(pickle.dumps(source))
             self.assertEqual(n, len(cache))

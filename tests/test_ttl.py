@@ -19,42 +19,18 @@ class Timer:
         self.time += 1
 
 
+class TTLTestCache(TTLCache):
+    def __init__(self, maxsize, ttl=0, missing=None, getsizeof=None):
+        TTLCache.__init__(self, maxsize, ttl=ttl, timer=Timer(),
+                          missing=missing, getsizeof=getsizeof)
+
+
 class TTLCacheTest(unittest.TestCase, CacheTestMixin):
 
-    def cache(self, maxsize, ttl=0, missing=None, getsizeof=None):
-        return TTLCache(maxsize, ttl, timer=Timer(), missing=missing,
-                        getsizeof=getsizeof)
-
-    def test_lru(self):
-        cache = self.cache(maxsize=2)
-
-        cache[1] = 1
-        cache[2] = 2
-        cache[3] = 3
-
-        self.assertEqual(len(cache), 2)
-        self.assertNotIn(1, cache)
-        self.assertEqual(cache[2], 2)
-        self.assertEqual(cache[3], 3)
-
-        cache[2]
-        cache[4] = 4
-        self.assertEqual(len(cache), 2)
-        self.assertNotIn(1, cache)
-        self.assertEqual(cache[2], 2)
-        self.assertNotIn(3, cache)
-        self.assertEqual(cache[4], 4)
-
-        cache[5] = 5
-        self.assertEqual(len(cache), 2)
-        self.assertNotIn(1, cache)
-        self.assertNotIn(2, cache)
-        self.assertNotIn(3, cache)
-        self.assertEqual(cache[4], 4)
-        self.assertEqual(cache[5], 5)
+    Cache = TTLTestCache
 
     def test_ttl(self):
-        cache = self.cache(maxsize=2, ttl=1)
+        cache = TTLCache(maxsize=2, ttl=1, timer=Timer())
         self.assertEqual(0, cache.timer())
         self.assertEqual(1, cache.ttl)
 
@@ -108,8 +84,36 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         with self.assertRaises(KeyError):
             del cache[3]
 
-    def test_expire(self):
-        cache = self.cache(maxsize=3, ttl=2)
+    def test_ttl_lru(self):
+        cache = TTLCache(maxsize=2, ttl=0, timer=Timer())
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[3] = 3
+
+        self.assertEqual(len(cache), 2)
+        self.assertNotIn(1, cache)
+        self.assertEqual(cache[2], 2)
+        self.assertEqual(cache[3], 3)
+
+        cache[2]
+        cache[4] = 4
+        self.assertEqual(len(cache), 2)
+        self.assertNotIn(1, cache)
+        self.assertEqual(cache[2], 2)
+        self.assertNotIn(3, cache)
+        self.assertEqual(cache[4], 4)
+
+        cache[5] = 5
+        self.assertEqual(len(cache), 2)
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertNotIn(3, cache)
+        self.assertEqual(cache[4], 4)
+        self.assertEqual(cache[5], 5)
+
+    def test_ttl_expire(self):
+        cache = TTLCache(maxsize=3, ttl=2, timer=Timer())
         with cache.timer as time:
             self.assertEqual(time, cache.timer())
         self.assertEqual(2, cache.ttl)
@@ -155,7 +159,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
-    def test_atomic(self):
+    def test_ttl_atomic(self):
         cache = TTLCache(maxsize=1, ttl=1, timer=Timer(auto=True))
         cache[1] = 1
         self.assertEqual(1, cache[1])
@@ -169,22 +173,8 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.clear()
         self.assertEqual(0, len(cache))
 
-    def test_missing(self):
-        class DefaultTTLCache(TTLCache):
-            def __missing__(self, key):
-                self[key] = key
-                return key
-
-        cache = DefaultTTLCache(maxsize=1, ttl=1, timer=Timer())
-        self.assertEqual(1, cache[1])
-        self.assertIn(1, cache)
-        self.assertNotIn(2, cache)
-        self.assertEqual(2, cache[2])
-        self.assertNotIn(1, cache)
-        self.assertIn(2, cache)
-
-    def test_tuple_key(self):
-        cache = self.cache(maxsize=1, ttl=0)
+    def test_ttl_tuple_key(self):
+        cache = TTLCache(maxsize=1, ttl=0, timer=Timer())
         self.assertEqual(0, cache.ttl)
 
         cache[(1, 2, 3)] = 42

@@ -7,11 +7,10 @@ from . import CacheTestMixin
 
 class LRUCacheTest(unittest.TestCase, CacheTestMixin):
 
-    def cache(self, maxsize, missing=None, getsizeof=None):
-        return LRUCache(maxsize, missing=missing, getsizeof=getsizeof)
+    Cache = LRUCache
 
     def test_lru(self):
-        cache = self.cache(maxsize=2)
+        cache = LRUCache(maxsize=2)
 
         cache[1] = 1
         cache[2] = 2
@@ -36,7 +35,7 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
 
     def test_lru_getsizeof(self):
-        cache = self.cache(maxsize=3, getsizeof=lambda x: x)
+        cache = LRUCache(maxsize=3, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2
