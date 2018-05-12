@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from warnings import warn
+
 from .abc import DefaultMapping
 
 
@@ -14,14 +16,20 @@ class _DefaultSize(object):
         return 1
 
 
+_deprecated = object()
+
+
 class Cache(DefaultMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
     __size = _DefaultSize()
 
-    def __init__(self, maxsize, missing=None, getsizeof=None):
-        if missing:
-            self.__missing = missing
+    def __init__(self, maxsize, missing=_deprecated, getsizeof=None):
+        if missing is not _deprecated:
+            warn("Cache constructor parameter 'missing' is deprecated",
+                 DeprecationWarning, 3)
+            if missing:
+                self.__missing = missing
         if getsizeof:
             self.getsizeof = getsizeof
         if self.getsizeof is not Cache.getsizeof:

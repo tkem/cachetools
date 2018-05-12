@@ -1,10 +1,9 @@
+import warnings
+
+
 class CacheTestMixin(object):
 
     Cache = None
-
-#    def cache(self, maxsize, missing=None, getsizeof=None):
-#        c = self.Cache(maxsize, missing=missing, getsizeof=getsizeof)
-#        return c
 
     def test_defaults(self):
         cache = self.Cache(maxsize=1)
@@ -174,9 +173,19 @@ class CacheTestMixin(object):
         self.assertNotIn(3, cache)
 
     def test_missing_param(self):
-        self._test_missing(self.Cache(maxsize=2, missing=lambda x: x))
-        self._test_missing_getsizeof(self.Cache(maxsize=2, missing=lambda x: x,
-                                                getsizeof=lambda x: x))
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            c = self.Cache(2, missing=lambda x: x)
+            self.assertEqual(len(w), 1)
+            self.assertIs(w[0].category, DeprecationWarning)
+        self._test_missing(c)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            c = self.Cache(2, missing=lambda x: x, getsizeof=lambda x: x)
+            self.assertEqual(len(w), 1)
+            self.assertIs(w[0].category, DeprecationWarning)
+        self._test_missing_getsizeof(c)
 
     def test_missing_subclass(self):
         class Cache(self.Cache):

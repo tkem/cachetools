@@ -20,9 +20,8 @@ class Timer:
 
 
 class TTLTestCache(TTLCache):
-    def __init__(self, maxsize, ttl=0, missing=None, getsizeof=None):
-        TTLCache.__init__(self, maxsize, ttl=ttl, timer=Timer(),
-                          missing=missing, getsizeof=getsizeof)
+    def __init__(self, maxsize, ttl=0, **kwargs):
+        TTLCache.__init__(self, maxsize, ttl=ttl, timer=Timer(), **kwargs)
 
 
 class TTLCacheTest(unittest.TestCase, CacheTestMixin):
