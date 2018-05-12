@@ -1,4 +1,4 @@
-v2.1.0 (UNRELEASED)
+v2.1.0 (2018-05-12)
 -------------------
 
 - Deprecate ``missing`` cache constructor parameter.
