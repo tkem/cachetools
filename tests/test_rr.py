@@ -1,4 +1,3 @@
-import random
 import unittest
 
 from cachetools import RRCache
@@ -6,22 +5,11 @@ from cachetools import RRCache
 from . import CacheTestMixin
 
 
-# random.choice cannot be pickled...
-def choice(seq):
-    return random.choice(seq)
-
-
-class RRTestCache(RRCache):
-    def __init__(self, maxsize, choice=choice, missing=None, getsizeof=None):
-        RRCache.__init__(self, maxsize, choice=choice,
-                         missing=missing, getsizeof=getsizeof)
-
-
 class RRCacheTest(unittest.TestCase, CacheTestMixin):
 
-    Cache = RRTestCache
+    Cache = RRCache
 
-    def test_rr_choice(self):
+    def test_rr(self):
         cache = RRCache(maxsize=2, choice=min)
         self.assertEqual(min, cache.choice)
 
