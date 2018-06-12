@@ -109,6 +109,7 @@ class CachedMethodTest(unittest.TestCase):
     def test_weakref(self):
         import weakref
         import fractions
+        import gc
 
         # in Python 3.4, `int` does not support weak references even
         # when subclassed, but Fraction apparently does...
@@ -119,6 +120,7 @@ class CachedMethodTest(unittest.TestCase):
         cached = Cached(weakref.WeakValueDictionary(), count=Int(0))
 
         self.assertEqual(cached.get(0), 0)
+        gc.collect()
         self.assertEqual(cached.get(0), 1)
 
         ref = cached.get(1)
