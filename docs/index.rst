@@ -137,7 +137,7 @@ cache, this can be achieved by overriding this method in a subclass::
   >>> from cachetools import LRUCache
   >>> class MyCache(LRUCache):
   ...     def popitem(self):
-  ...         key, value = super().popitem()
+  ...         key, value = super(MyCache, self).popitem()
   ...         print('Key "%s" evicted with value "%s"' % (key, value))
   ...         return key, value
   ...
@@ -153,22 +153,30 @@ method which is called by :meth:`Cache.__getitem__` if the requested
 key is not found::
 
   >>> from cachetools import LRUCache
-  >>> import urllib.request
+  >>> try:
+  ...     from urllib.request import urlopen
+  ...     from urllib.error import HTTPError
+  ... except ImportError:
+  ...     from urllib import urlopen
+  ...     from urllib2 import HTTPError
   >>> class PepStore(LRUCache):
   ...     def __missing__(self, key):
   ...         """Retrieve text of a Python Enhancement Proposal"""
   ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % key
   ...         try:
-  ...             with urllib.request.urlopen(url) as s:
-  ...                 pep = s.read()
-  ...                 self[key] = pep  # store text in cache
-  ...                 return pep
-  ...         except urllib.error.HTTPError:
+  ...             s = urlopen(url)
+  ...             pep = s.read()
+  ...             s.close()
+  ...             self[key] = pep  # store text in cache
+  ...             return pep
+  ...         except HTTPError:
   ...             return 'Not Found'  # do not store in cache
   >>> peps = PepStore(maxsize=4)
   >>> for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
   ...     pep = peps[n]
-  >>> print(sorted(peps.keys()))
+  >>> len(peps)
+  4
+  >>> sorted(peps)  # doctest: +SKIP
   [218, 279, 289, 320]
 
 Note, though, that such a class does not really behave like a *cache*
