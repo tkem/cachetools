@@ -8,3 +8,4 @@ MANIFEST
 build/
 dist/
 docs/_build/
+.pytest_cache/
