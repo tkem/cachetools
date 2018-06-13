@@ -348,8 +348,11 @@ specially::
 
   def envkey(*args, env={}, **kwargs):
       key = hashkey(*args, **kwargs)
-      key += tuple(env.items())
+      key += tuple(sorted(env.items()))
       return key
+
+It's assumed that cached function will not modify `env` argument as a
+side effect.
 
 The :func:`envkey` function can then be used in decorator declarations
 like this::
