@@ -348,7 +348,7 @@ specially::
 
   def envkey(*args, env={}, **kwargs):
       key = hashkey(*args, **kwargs)
-      key += tuple(env.items())
+      key += tuple(sorted(env.items()))
       return key
 
 The :func:`envkey` function can then be used in decorator declarations
