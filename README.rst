@@ -10,16 +10,14 @@ function decorator.
    >>> from cachetools import LRUCache
    >>> cache = LRUCache(maxsize=2)
    >>> cache.update([('first', 1), ('second', 2)])
-   >>> cache
-   LRUCache([('second', 2), ('first', 1)], maxsize=2, currsize=2)
+   >>> 'first' in cache and 'second' in cache
+   True
    >>> cache['third'] = 3
-   >>> cache
-   LRUCache([('second', 2), ('third', 3)], maxsize=2, currsize=2)
-   >>> cache['second']
-   2
+   >>> 'first' not in cache or 'second' not in cache
+   True
    >>> cache['fourth'] = 4
-   >>> cache
-   LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
+   >>> 'fourth' in cache and 'third' in cache
+   True
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
 fixed maximum size.  When the cache is full, i.e. by adding another
