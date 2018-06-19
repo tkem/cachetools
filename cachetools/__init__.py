@@ -38,7 +38,7 @@ def cached(cache, key=keys.hashkey, lock=None):
                 return func(*args, **kwargs)
         elif lock is None:
             def wrapper(*args, **kwargs):
-                k = key(*args, **kwargs)
+                k = key(func, *args, **kwargs)
                 try:
                     return cache[k]
                 except KeyError:
@@ -51,7 +51,7 @@ def cached(cache, key=keys.hashkey, lock=None):
                 return v
         else:
             def wrapper(*args, **kwargs):
-                k = key(*args, **kwargs)
+                k = key(func, *args, **kwargs)
                 try:
                     with lock:
                         return cache[k]
@@ -79,7 +79,7 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
                 c = cache(self)
                 if c is None:
                     return method(self, *args, **kwargs)
-                k = key(self, *args, **kwargs)
+                k = key(self, method, *args, **kwargs)
                 try:
                     return c[k]
                 except KeyError:
@@ -95,7 +95,7 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
                 c = cache(self)
                 if c is None:
                     return method(self, *args, **kwargs)
-                k = key(self, *args, **kwargs)
+                k = key(self, method, *args, **kwargs)
                 try:
                     with lock(self):
                         return c[k]
