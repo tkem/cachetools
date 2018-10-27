@@ -43,7 +43,7 @@ named constructor parameter `getsizeof`, which may specify a function
 of one argument used to retrieve the size of an item's value.
 
 
-.. autoclass:: Cache(maxsize, missing=None, getsizeof=None)
+.. autoclass:: Cache(maxsize, getsizeof=None)
    :members:
 
    This class discards arbitrary items using :meth:`popitem` to make
@@ -53,34 +53,19 @@ of one argument used to retrieve the size of an item's value.
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
 
-   .. deprecated:: 2.1
-
-      The `missing` argument.  Override :meth:`__missing__` in a
-      subclass instead.
-
-.. autoclass:: LFUCache(maxsize, missing=None, getsizeof=None)
+.. autoclass:: LFUCache(maxsize, getsizeof=None)
    :members:
 
    This class counts how often an item is retrieved, and discards the
    items used least often to make space when necessary.
 
-   .. deprecated:: 2.1
-
-      The `missing` argument.  Override :meth:`__missing__` in a
-      subclass instead.
-
-.. autoclass:: LRUCache(maxsize, missing=None, getsizeof=None)
+.. autoclass:: LRUCache(maxsize, getsizeof=None)
    :members:
 
    This class discards the least recently used items first to make
    space when necessary.
 
-   .. deprecated:: 2.1
-
-      The `missing` argument.  Override :meth:`__missing__` in a
-      subclass instead.
-
-.. autoclass:: RRCache(maxsize, choice=random.choice, missing=None, getsizeof=None)
+.. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
    :members:
 
    This class randomly selects candidate items and discards them to
@@ -91,12 +76,7 @@ of one argument used to retrieve the size of an item's value.
    an alternative function that returns an arbitrary element from a
    non-empty sequence.
 
-   .. deprecated:: 2.1
-
-      The `missing` argument.  Override :meth:`__missing__` in a
-      subclass instead.
-
-.. autoclass:: TTLCache(maxsize, ttl, timer=time.time, missing=None, getsizeof=None)
+.. autoclass:: TTLCache(maxsize, ttl, timer=time.time, getsizeof=None)
    :members: popitem, timer, ttl
 
    This class associates a time-to-live value with each item.  Items
@@ -108,11 +88,6 @@ of one argument used to retrieve the size of an item's value.
    By default, the time-to-live is specified in seconds, and the
    :func:`time.time` function is used to retrieve the current time.  A
    custom `timer` function can be supplied if needed.
-
-   .. deprecated:: 2.1
-
-      The `missing` argument.  Override :meth:`__missing__` in a
-      subclass instead.
 
    .. method:: expire(self, time=None)
 

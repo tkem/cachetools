@@ -1,6 +1,3 @@
-import warnings
-
-
 class CacheTestMixin(object):
 
     Cache = None
@@ -171,21 +168,6 @@ class CacheTestMixin(object):
         self.assertNotIn(1, cache)
         self.assertIn(2, cache)
         self.assertNotIn(3, cache)
-
-    def test_missing_param(self):
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            c = self.Cache(2, missing=lambda x: x)
-            self.assertEqual(len(w), 1)
-            self.assertIs(w[0].category, DeprecationWarning)
-        self._test_missing(c)
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter('always')
-            c = self.Cache(2, missing=lambda x: x, getsizeof=lambda x: x)
-            self.assertEqual(len(w), 1)
-            self.assertIs(w[0].category, DeprecationWarning)
-        self._test_missing_getsizeof(c)
 
     def test_missing_subclass(self):
         class Cache(self.Cache):
