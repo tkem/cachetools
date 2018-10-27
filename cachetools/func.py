@@ -9,7 +9,7 @@ import time
 
 try:
     from threading import RLock
-except ImportError:
+except ImportError:  # pragma: no cover
     from dummy_threading import RLock
 
 from . import keys
