@@ -22,6 +22,10 @@ class Cached(object):
         self.count += 1
         return count
 
+    # https://github.com/tkem/cachetools/issues/107
+    def __hash__(self):
+        raise TypeError('unhashable type')
+
 
 class Locked(object):
 
