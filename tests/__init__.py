@@ -1,3 +1,5 @@
+import asyncio
+import functools
 import warnings
 
 
@@ -289,3 +291,14 @@ class CacheTestMixin(object):
             cache = pickle.loads(pickle.dumps(source))
             self.assertEqual(n, len(cache))
             self.assertEqual(source, cache)
+
+
+def sync(func):
+    """
+    Helper to force an async function/method to run synchronously.
+    """
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(func(*args, **kwargs))
+    return wrapped
