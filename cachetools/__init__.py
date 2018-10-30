@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 
 import functools
-import inspect
+import sys
 
 from . import keys
 from .cache import Cache
@@ -11,6 +11,17 @@ from .lfu import LFUCache
 from .lru import LRUCache
 from .rr import RRCache
 from .ttl import TTLCache
+
+if sys.version_info >= (3, 5):
+    from inspect import iscoroutinefunction
+    from . import _async
+
+else:
+    def iscoroutinefunction(*_, **__):
+        return False
+
+    _async = None
+
 
 __all__ = (
     'Cache', 'LFUCache', 'LRUCache', 'RRCache', 'TTLCache',
@@ -38,19 +49,8 @@ def cached(cache, key=keys.hashkey, lock=None):
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)
         elif lock is None:
-            if inspect.iscoroutinefunction(func):
-                async def wrapper(*args, **kwargs):
-                    k = key(*args, **kwargs)
-                    try:
-                        return cache[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = await func(*args, **kwargs)
-                    try:
-                        cache[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
+            if iscoroutinefunction(func):
+                wrapper = _async.func_wrapper(func, cache, key)
 
             else:
                 def wrapper(*args, **kwargs):
@@ -66,21 +66,8 @@ def cached(cache, key=keys.hashkey, lock=None):
                         pass  # value too large
                     return v
         else:
-            if inspect.iscoroutinefunction(func):
-                async def wrapper(*args, **kwargs):
-                    k = key(*args, **kwargs)
-                    try:
-                        with lock:
-                            return cache[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = await func(*args, **kwargs)
-                    try:
-                        with lock:
-                            cache[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
+            if iscoroutinefunction(func):
+                wrapper = _async.func_wrapper_lock(func, cache, key, lock)
 
             else:
                 def wrapper(*args, **kwargs):
@@ -108,23 +95,8 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
     """
     def decorator(method):
         if lock is None:
-            if inspect.iscoroutinefunction(method):
-                async def wrapper(self, *args, **kwargs):
-                    c = cache(self)
-                    if c is None:
-                        v = await method(self, *args, **kwargs)
-                        return v
-                    k = key(self, *args, **kwargs)
-                    try:
-                        return c[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = await method(self, *args, **kwargs)
-                    try:
-                        c[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
+            if iscoroutinefunction(method):
+                wrapper = _async.method_wrapper(method, cache, key)
 
             else:
                 def wrapper(self, *args, **kwargs):
@@ -143,25 +115,8 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
                         pass  # value too large
                     return v
         else:
-            if inspect.iscoroutinefunction(method):
-                async def wrapper(self, *args, **kwargs):
-                    c = cache(self)
-                    if c is None:
-                        v = await method(self, *args, **kwargs)
-                        return v
-                    k = key(self, *args, **kwargs)
-                    try:
-                        with lock(self):
-                            return c[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = await method(self, *args, **kwargs)
-                    try:
-                        with lock(self):
-                            c[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
+            if iscoroutinefunction(method):
+                wrapper = _async.method_wrapper_lock(method, cache, key, lock)
 
             else:
                 def wrapper(self, *args, **kwargs):
