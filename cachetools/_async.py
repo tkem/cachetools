@@ -1,5 +1,13 @@
+"""
+This module contains all the code that uses `async`/`await`
+and gets imported by other modules only if the running Python version
+is greater or equal to 3.5.
+"""
 
 def func_wrapper(func, cache, key):
+    """
+    Creates an async wrapper for `cachetools.cached`.
+    """
     async def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
         try:
@@ -17,6 +25,9 @@ def func_wrapper(func, cache, key):
 
 
 def func_wrapper_lock(func, cache, key, lock):
+    """
+    Creates an async wrapper with locking for `cachetools.cached`.
+    """
     async def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
         try:
@@ -36,6 +47,9 @@ def func_wrapper_lock(func, cache, key, lock):
 
 
 def method_wrapper(method, cache, key):
+    """
+    Creates an async wrapper for `cachetools.cachedmethod`.
+    """
     async def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
@@ -57,6 +71,9 @@ def method_wrapper(method, cache, key):
 
 
 def method_wrapper_lock(method, cache, key, lock):
+    """
+    Creates an async wrapper with locking for `cachetools.cachedmethod`.
+    """
     async def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
