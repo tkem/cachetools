@@ -4,6 +4,7 @@ and gets imported by other modules only if the running Python version
 is greater or equal to 3.5.
 """
 
+
 def func_wrapper(func, cache, key):
     """
     Creates an async wrapper for `cachetools.cached`.
