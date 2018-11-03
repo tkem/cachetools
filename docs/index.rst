@@ -51,6 +51,13 @@ making the cache's size equal to the number of its items, or
 named constructor parameter `getsizeof`, which may specify a function
 of one argument used to retrieve the size of an item's value.
 
+.. note::
+
+   Please be aware that :class:`Cache` and its subclasses are *not*
+   thread-safe.  Access to a shared cache from multiple threads must
+   be properly synchronized, e.g. by using one of the memoizing
+   decorators with a suitable `lock` object.
+
 
 .. autoclass:: Cache(maxsize, getsizeof=None)
    :members:
