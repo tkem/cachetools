@@ -22,6 +22,15 @@ implemented, and decorators for easily memoizing function and method
 calls are provided, too.
 
 
+.. testsetup:: *
+
+   import operator
+   from cachetools import cached, cachedmethod, LRUCache
+
+   import mock
+   urllib = mock.MagicMock()
+
+
 Cache implementations
 ------------------------------------------------------------------------
 
@@ -107,44 +116,48 @@ Extending cache classes
 Sometimes it may be desirable to notice when and what cache items are
 evicted, i.e. removed from a cache to make room for new items.  Since
 all cache implementations call :meth:`popitem` to evict items from the
-cache, this can be achieved by overriding this method in a subclass::
+cache, this can be achieved by overriding this method in a subclass:
 
-  >>> from cachetools import LRUCache
-  >>> class MyCache(LRUCache):
-  ...     def popitem(self):
-  ...         key, value = super().popitem()
-  ...         print('Key "%s" evicted with value "%s"' % (key, value))
-  ...         return key, value
-  ...
-  >>> c = MyCache(maxsize=2)
-  >>> c['a'] = 1
-  >>> c['b'] = 2
-  >>> c['c'] = 3
-  Key "a" evicted with value "1"
+.. doctest::
+   :pyversion: >= 3
+
+   >>> class MyCache(LRUCache):
+   ...     def popitem(self):
+   ...         key, value = super().popitem()
+   ...         print('Key "%s" evicted with value "%s"' % (key, value))
+   ...         return key, value
+
+   >>> c = MyCache(maxsize=2)
+   >>> c['a'] = 1
+   >>> c['b'] = 2
+   >>> c['c'] = 3
+   Key "a" evicted with value "1"
 
 Similar to the standard library's :class:`collections.defaultdict`,
 subclasses of :class:`Cache` may implement a :meth:`__missing__`
 method which is called by :meth:`Cache.__getitem__` if the requested
-key is not found::
+key is not found:
 
-  >>> from cachetools import LRUCache
-  >>> import urllib.request
-  >>> class PepStore(LRUCache):
-  ...     def __missing__(self, key):
-  ...         """Retrieve text of a Python Enhancement Proposal"""
-  ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % key
-  ...         try:
-  ...             with urllib.request.urlopen(url) as s:
-  ...                 pep = s.read()
-  ...                 self[key] = pep  # store text in cache
-  ...                 return pep
-  ...         except urllib.error.HTTPError:
-  ...             return 'Not Found'  # do not store in cache
-  >>> peps = PepStore(maxsize=4)
-  >>> for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
-  ...     pep = peps[n]
-  >>> print(sorted(peps.keys()))
-  [218, 279, 289, 320]
+.. doctest::
+   :pyversion: >= 3
+
+   >>> class PepStore(LRUCache):
+   ...     def __missing__(self, key):
+   ...         """Retrieve text of a Python Enhancement Proposal"""
+   ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % key
+   ...         try:
+   ...             with urllib.request.urlopen(url) as s:
+   ...                 pep = s.read()
+   ...                 self[key] = pep  # store text in cache
+   ...                 return pep
+   ...         except urllib.error.HTTPError:
+   ...             return 'Not Found'  # do not store in cache
+
+   >>> peps = PepStore(maxsize=4)
+   >>> for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320:
+   ...     pep = peps[n]
+   >>> print(sorted(peps.keys()))
+   [218, 279, 289, 320]
 
 Note, though, that such a class does not really behave like a *cache*
 any more, and will lead to surprising results when used with any of
@@ -157,16 +170,17 @@ Memoizing decorators
 
 The :mod:`cachetools` module provides decorators for memoizing
 function and method calls.  This can save time when a function is
-often called with the same arguments::
+often called with the same arguments:
 
-  from cachetools import cached
+.. doctest::
 
-  @cached(cache={})
-  def fib(n):
-      return n if n < 2 else fib(n - 1) + fib(n - 2)
+   >>> @cached(cache={})
+   ... def fib(n):
+   ...     'Compute the nth number in the Fibonacci sequence'
+   ...     return n if n < 2 else fib(n - 1) + fib(n - 2)
 
-  for i in range(100):
-      print('fib(%d) = %d' % (i, fib(i)))
+   >>> fib(42)
+   267914296
 
 .. decorator:: cached(cache, key=cachetools.keys.hashkey, lock=None)
 
@@ -206,44 +220,56 @@ often called with the same arguments::
    cache during runtime, the cache should be assigned to a variable.
    When a `lock` object is used, any access to the cache from outside
    the function wrapper should also be performed within an appropriate
-   `with` statement::
+   `with` statement:
 
-     from threading import RLock
-     from cachetools import cached, LRUCache
+   .. testcode::
 
-     cache = LRUCache(maxsize=100)
-     lock = RLock()
+      from threading import RLock
 
-     @cached(cache, lock=lock)
-     def fib(n):
-         return n if n < 2 else fib(n - 1) + fib(n - 2)
+      cache = LRUCache(maxsize=32)
+      lock = RLock()
 
-     # make sure access to cache is synchronized
-     with lock:
-         cache.clear()
+      @cached(cache, lock=lock)
+      def get_pep(num):
+          'Retrieve text of a Python Enhancement Proposal'
+          url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+          with urllib.request.urlopen(url) as s:
+              return s.read()
+
+      # make sure access to cache is synchronized
+      with lock:
+          cache.clear()
 
    It is also possible to use a single shared cache object with
    multiple functions.  However, care must be taken that different
    cache keys are generated for each function, even for identical
-   function arguments::
+   function arguments:
 
-     from functools import partial
-     from cachetools import cached, LRUCache
-     from cachetools.keys import hashkey
+   .. doctest::
+      :options: +ELLIPSIS
 
-     cache = LRUCache(maxsize=100)
+      >>> from cachetools.keys import hashkey
+      >>> from functools import partial
 
-     @cached(cache, key=partial(hashkey, 'fib'))
-     def fib(n):
-         return n if n < 2 else fib(n - 1) + fib(n - 2)
+      >>> # shared cache for integer sequences
+      >>> numcache = {}
 
-     @cached(cache, key=partial(hashkey, 'fac'))
-     def fac(n):
-         return 1 if n == 0 else n * fac(n - 1)
+      >>> # compute Fibonacci numbers
+      >>> @cached(numcache, key=partial(hashkey, 'fib'))
+      ... def fib(n):
+      ...    return n if n < 2 else fib(n - 1) + fib(n - 2)
 
-     print(fib(42))
-     print(fac(42))
-     print(cache)
+      >>> # compute Lucas numbers
+      >>> @cached(numcache, key=partial(hashkey, 'luc'))
+      ... def luc(n):
+      ...    return 2 - n if n < 2 else luc(n - 1) + luc(n - 2)
+
+      >>> fib(42)
+      267914296
+      >>> luc(42)
+      599074578
+      >>> list(sorted(numcache.items()))
+      [..., (('fib', 42), 267914296), ..., (('luc', 42), 599074578)]
 
 .. decorator:: cachedmethod(cache, key=cachetools.keys.hashkey, lock=None)
 
@@ -265,27 +291,30 @@ often called with the same arguments::
 
    One advantage of :func:`cachedmethod` over the :func:`cached`
    function decorator is that cache properties such as `maxsize` can
-   be set at runtime::
+   be set at runtime:
 
-     import operator
-     import urllib.request
+   .. testcode::
 
-     from cachetools import LRUCache, cachedmethod
+      class CachedPEPs(object):
 
-     class CachedPEPs(object):
+          def __init__(self, cachesize):
+              self.cache = LRUCache(maxsize=cachesize)
 
-         def __init__(self, cachesize):
-             self.cache = LRUCache(maxsize=cachesize)
+          @cachedmethod(operator.attrgetter('cache'))
+          def get(self, num):
+              """Retrieve text of a Python Enhancement Proposal"""
+              url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+              with urllib.request.urlopen(url) as s:
+                  return s.read()
 
-         @cachedmethod(operator.attrgetter('cache'))
-         def get(self, num):
-             """Retrieve text of a Python Enhancement Proposal"""
-             url = 'http://www.python.org/dev/peps/pep-%04d/' % num
-             with urllib.request.urlopen(url) as s:
-                 return s.read()
+      peps = CachedPEPs(cachesize=10)
+      print("PEP #1: %s" % peps.get(1))
 
-     peps = CachedPEPs(cachesize=10)
-     print("PEP #1: %s" % peps.get(1))
+   .. testoutput::
+      :hide:
+      :options: +ELLIPSIS
+
+      PEP #1: ...
 
 
 :mod:`cachetools.keys` --- Key functions for memoizing decorators
