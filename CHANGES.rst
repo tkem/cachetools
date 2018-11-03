@@ -1,3 +1,18 @@
+v3.0.0 (2018-11-04)
+-------------------
+
+- Officially support Python 3.7.
+
+- Drop Python 3.3 support (breaking change).
+
+- Remove ``missing`` cache constructor parameter (breaking change).
+
+- Remove ``self`` from ``@cachedmethod`` key arguments (breaking
+  change).
+
+- Add support for ``maxsize=None`` in ``cachetools.func`` decorators.
+
+
 v2.1.0 (2018-05-12)
 -------------------
 
