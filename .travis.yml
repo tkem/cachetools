@@ -16,7 +16,7 @@ install:
 - pip install coveralls tox
 
 script:
-- tox -e check-manifest,flake8,py
+- tox
 
 after_success:
 - coveralls
