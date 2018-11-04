@@ -58,7 +58,6 @@ of one argument used to retrieve the size of an item's value.
    be properly synchronized, e.g. by using one of the memoizing
    decorators with a suitable `lock` object.
 
-
 .. autoclass:: Cache(maxsize, getsizeof=None)
    :members:
 
@@ -377,9 +376,9 @@ To ease migration from (or to) Python 3's :func:`functools.lru_cache`,
 this module provides several memoizing function decorators with a
 similar API.  All these decorators wrap a function with a memoizing
 callable that saves up to the `maxsize` most recent calls, using
-different caching strategies.  Note that unlike
-:func:`functools.lru_cache`, setting `maxsize` to :const:`None` is not
-supported.
+different caching strategies.  If `maxsize` is set to :const:`None`,
+the caching strategy is effectively disabled and the cache can grow
+without bound.
 
 If the optional argument `typed` is set to :const:`True`, function
 arguments of different types will be cached separately.  For example,
@@ -388,8 +387,9 @@ distinct results.
 
 The wrapped function is instrumented with :func:`cache_info` and
 :func:`cache_clear` functions to provide information about cache
-performance and clear the cache.  See the :func:`functools.lru_cache`
-documentation for details.
+performance and clear the cache.  Please see the
+:func:`functools.lru_cache` documentation for details.  Also note that
+all the decorators in this module are thread-safe by default.
 
 .. decorator:: lfu_cache(maxsize=128, typed=False)
 
