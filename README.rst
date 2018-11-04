@@ -5,21 +5,26 @@ This module provides various memoizing collections and decorators,
 including variants of the Python 3 Standard Library `@lru_cache`_
 function decorator.
 
-.. code-block:: pycon
+.. code-block:: python
 
-   >>> from cachetools import LRUCache
-   >>> cache = LRUCache(maxsize=2)
-   >>> cache.update([('first', 1), ('second', 2)])
-   >>> cache
-   LRUCache([('second', 2), ('first', 1)], maxsize=2, currsize=2)
-   >>> cache['third'] = 3
-   >>> cache
-   LRUCache([('second', 2), ('third', 3)], maxsize=2, currsize=2)
-   >>> cache['second']
-   2
-   >>> cache['fourth'] = 4
-   >>> cache
-   LRUCache([('second', 2), ('fourth', 4)], maxsize=2, currsize=2)
+   from cachetools import cached, LRUCache, TTLCache
+
+   # speed up calculating Fibonacci numbers with dynamic programming
+   @cached(cache={})
+   def fib(n):
+       return n if n < 2 else fib(n - 1) + fib(n - 2)
+
+   # cache least recently used Python Enhancement Proposals
+   @cached(cache=LRUCache(maxsize=32))
+   def get_pep(num):
+       url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+       with urllib.request.urlopen(url) as s:
+           return s.read()
+
+   # cache weather data for no longer than ten minutes
+   @cached(cache=TTLCache(maxsize=1024, ttl=600))
+   def get_weather(place):
+       return owm.weather_at_place(place).get_weather()
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
 fixed maximum size.  When the cache is full, i.e. by adding another
