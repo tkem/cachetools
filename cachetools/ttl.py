@@ -165,7 +165,7 @@ class TTLCache(Cache):
         root = self.__root
         curr = root.next
         links = self.__links
-        cache_delitem = Cache.__delitem__
+        cache_delitem = self.__delitem__
         while curr is not root and curr.expire < time:
             cache_delitem(self, curr.key)
             del links[curr.key]
