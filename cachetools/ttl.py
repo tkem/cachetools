@@ -81,7 +81,7 @@ class TTLCache(Cache):
         else:
             expired = link.expire < self.__timer()
         if expired:
-            return self.__missing__(key)
+            return self._missing_because_expired(key)
         else:
             return cache_getitem(self, key)
 
@@ -101,9 +101,7 @@ class TTLCache(Cache):
         prev.next = root.prev = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
-        cache_delitem(self, key)
-        link = self.__links.pop(key)
-        link.unlink()
+        link = self._delete_without_expiration_validation(key)
         if link.expire < self.__timer():
             raise KeyError(key)
 
@@ -165,9 +163,8 @@ class TTLCache(Cache):
         root = self.__root
         curr = root.next
         links = self.__links
-        cache_delitem = Cache.__delitem__
         while curr is not root and curr.expire < time:
-            cache_delitem(self, curr.key)
+            self._cache_delete_expired_item(curr.key)
             del links[curr.key]
             next = curr.next
             curr.unlink()
@@ -214,3 +211,15 @@ class TTLCache(Cache):
             value = self.__links.pop(key)
             self.__links[key] = value
             return value
+
+    def _delete_without_expiration_validation(self, key, cache_delitem=Cache.__delitem__):
+        cache_delitem(self, key)
+        link = self.__links.pop(key)
+        link.unlink()
+        return link
+
+    def _missing_because_expired(self, key):
+        return self.__missing__(key)
+
+    def _cache_delete_expired_item(self, key):
+        Cache.__delitem__(self, key)
