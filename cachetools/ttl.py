@@ -212,7 +212,9 @@ class TTLCache(Cache):
             self.__links[key] = value
             return value
 
-    def _delete_without_expiration_validation(self, key, cache_delitem=Cache.__delitem__):
+    def _delete_without_expiration_validation(self,
+                                              key,
+                                              cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
         link = self.__links.pop(key)
         link.unlink()
