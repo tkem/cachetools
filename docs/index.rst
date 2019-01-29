@@ -91,7 +91,7 @@ of one argument used to retrieve the size of an item's value.
    an alternative function that returns an arbitrary element from a
    non-empty sequence.
 
-.. autoclass:: TTLCache(maxsize, ttl, timer=time.time, getsizeof=None)
+.. autoclass:: TTLCache(maxsize, ttl, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttl
 
    This class associates a time-to-live value with each item.  Items
@@ -100,9 +100,11 @@ of one argument used to retrieve the size of an item's value.
    expired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
 
-   By default, the time-to-live is specified in seconds, and the
-   :func:`time.time` function is used to retrieve the current time.  A
-   custom `timer` function can be supplied if needed.
+   By default, the time-to-live is specified in seconds and
+   :func:`time.monotonic` is used to retrieve the current time.  If
+   :func:`time.monotonic` is not available, e.g. when running Python
+   2.7, :func:`time.time` will be used.  A custom `timer` function can
+   be supplied if needed.
 
    .. method:: expire(self, time=None)
 
@@ -409,7 +411,7 @@ all the decorators in this module are thread-safe by default.
    saves up to `maxsize` results based on a Random Replacement (RR)
    algorithm.
 
-.. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False)
+.. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)

@@ -5,7 +5,11 @@ from __future__ import absolute_import
 import collections
 import functools
 import random
-import time
+
+try:
+    from time import monotonic as default_timer
+except ImportError:
+    from time import time as default_timer
 
 try:
     from threading import RLock
@@ -125,7 +129,7 @@ def rr_cache(maxsize=128, choice=random.choice, typed=False):
         return _cache(RRCache(maxsize, choice), typed)
 
 
-def ttl_cache(maxsize=128, ttl=600, timer=time.time, typed=False):
+def ttl_cache(maxsize=128, ttl=600, timer=default_timer, typed=False):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm with a per-item time-to-live (TTL) value.
