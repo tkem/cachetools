@@ -1,9 +1,9 @@
-v3.1.0 (UNRELEASED)
+v3.1.0 (2019-01-29)
 -------------------
 
 - Fix Python 3.8 compatibility issue.
 
-- Use time.monotonic as default timer if available.
+- Use ``time.monotonic`` as default timer if available.
 
 - Improve documentation regarding thread safety.
 
