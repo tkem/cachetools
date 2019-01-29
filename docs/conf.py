@@ -6,7 +6,7 @@ def get_version(filename):
 
 
 project = 'cachetools'
-copyright = '2014-2018 Thomas Kemmer'
+copyright = '2014-2019 Thomas Kemmer'
 version = get_version(b'../cachetools/__init__.py')
 release = version
 
