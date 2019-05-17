@@ -79,7 +79,7 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
                 c = cache(self)
                 if c is None:
                     return method(self, *args, **kwargs)
-                k = key(*args, **kwargs)
+                k = key(method, *args, **kwargs)
                 try:
                     return c[k]
                 except KeyError:
@@ -95,7 +95,7 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
                 c = cache(self)
                 if c is None:
                     return method(self, *args, **kwargs)
-                k = key(*args, **kwargs)
+                k = key(method, *args, **kwargs)
                 try:
                     with lock(self):
                         return c[k]

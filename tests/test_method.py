@@ -6,15 +6,22 @@ from cachetools import LRUCache, cachedmethod, keys
 
 class Cached(object):
 
-    def __init__(self, cache, count=0):
+    def __init__(self, cache, count=0, other_count=5):
         self.cache = cache
         self.count = count
+        self.other_count = other_count
 
     @cachedmethod(operator.attrgetter('cache'))
     def get(self, value):
         count = self.count
         self.count += 1
         return count
+
+    @cachedmethod(operator.attrgetter('cache'))
+    def get_other(self, value):
+        other_count = self.other_count
+        self.other_count += 1
+        return other_count
 
     @cachedmethod(operator.attrgetter('cache'), key=keys.typedkey)
     def get_typed(self, value):
@@ -57,6 +64,20 @@ class CachedMethodTest(unittest.TestCase):
 
         cached.cache.clear()
         self.assertEqual(cached.get(1), 2)
+
+    def test_that_methods_are_cached_independently(self):
+        cached = Cached({})
+
+        self.assertEqual(cached.get(0), 0)
+        self.assertEqual(cached.get(0), 0)
+        self.assertEqual(cached.get(1), 1)
+        self.assertEqual(cached.get(1), 1)
+        self.assertEqual(cached.get_other(0), 5)
+        self.assertEqual(cached.get_other(0), 5)
+        self.assertEqual(cached.get_other(1), 6)
+        self.assertEqual(cached.get_other(1), 6)
+        self.assertEqual(cached.get_other(2), 7)
+        self.assertEqual(cached.get(2), 2)
 
     def test_typed_dict(self):
         cached = Cached(LRUCache(maxsize=2))
