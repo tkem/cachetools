@@ -6,6 +6,12 @@ __all__ = ('hashkey', 'typedkey')
 
 
 class _HashedTuple(tuple):
+    """A tuple that ensures that hash() will be called no more than once
+    per element, since cache decorators will hash the key multiple
+    times on a cache miss.  See also _HashedSeq in the standard
+    library functools implementation.
+
+    """
 
     __hashvalue = None
 
@@ -21,8 +27,13 @@ class _HashedTuple(tuple):
     def __radd__(self, other, add=tuple.__add__):
         return _HashedTuple(add(other, self))
 
+    def __getstate__(self):
+        return {}
 
-_kwmark = (object(),)
+
+# used for separating keyword arguments; we do not use an object
+# instance here so identity is preserved when pickling/unpickling
+_kwmark = (_HashedTuple,)
 
 
 def hashkey(*args, **kwargs):
