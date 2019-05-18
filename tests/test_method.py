@@ -186,33 +186,28 @@ class CachedMethodTest(unittest.TestCase):
         obj.calc("abc", 69)
         obj.calc("abc", 72, times_two=True)
 
+    @pytest.mark.skipif(sys.version_info[0] < 3)
     def test_pickle_hashvalue_store(self):
         import pickle
 
         obj = Pickled()
         self._call_pickle_obj(obj)
-        if sys.version_info[0] == 2:
-            mode = 'w'
-        else:
-            mode = 'bw'
 
-        with open('./pickle_test.pickle', mode) as fh:
+        with open('./pickle_test.pickle', 'bw') as fh:
             pickle.dump(obj, fh)
+
         assert len(obj.cache) == 2
 
+    @pytest.mark.skipif(sys.version_info[0] < 3)
     @pytest.mark.pickle_restore()
     def test_pickle_hashvalue_restore(self):
         import pickle
 
-        if sys.version_info[0] == 2:
-            mode = 'r'
-        else:
-            mode = 'br'
-
-        with open('./pickle_test.pickle', mode) as fh:
+        with open('./pickle_test.pickle', 'br') as fh:
             obj = pickle.load(fh)
 
         # do the same calculations as in `test_pickle_hashvalue_store`
         self._call_pickle_obj(obj)
+
         # assure that there a no duplications due to new hash values
         assert len(obj.cache) == 2
