@@ -1,5 +1,6 @@
 import operator
 import unittest
+import pytest
 
 from cachetools import LRUCache, cachedmethod, keys
 
@@ -42,6 +43,18 @@ class Locked(object):
 
     def __exit__(self, *exc):
         pass
+
+
+class Pickled(object):
+    def __init__(self):
+        self.cache = {}
+
+    @cachedmethod(operator.attrgetter('cache'))
+    def calc(self, text, x, times_two=False):
+        result = 42*x
+        if times_two:
+            result *= 2
+        return result
 
 
 class CachedMethodTest(unittest.TestCase):
@@ -166,3 +179,28 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 5)
         self.assertEqual(cached.get(1.0), 7)
         self.assertEqual(cached.get(1.0), 9)
+
+    def _call_pickle_obj(self, obj):
+        obj.calc("abc", 69)
+        obj.calc("abc", 72, times_two=True)
+
+    def test_pickle_hashvalue_store(self):
+        import pickle
+
+        obj = Pickled()
+        self._call_pickle_obj(obj)
+        with open('./pickle_test.pickle', 'bw') as fh:
+            pickle.dump(obj, fh)
+        assert len(obj.cache) == 2
+
+    @pytest.mark.pickle_restore()
+    def test_pickle_hashvalue_restore(self):
+        import pickle
+
+        with open('./pickle_test.pickle', 'br') as fh:
+            obj = pickle.load(fh)
+
+        # do the same calculations as in `test_pickle_hashvalue_store`
+        self._call_pickle_obj(obj)
+        # assure that there a no duplications due to new hash values
+        assert len(obj.cache) == 2
