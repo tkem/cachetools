@@ -1,4 +1,5 @@
 import operator
+import sys
 import unittest
 
 from cachetools import LRUCache, cachedmethod, keys
@@ -190,7 +191,12 @@ class CachedMethodTest(unittest.TestCase):
 
         obj = Pickled()
         self._call_pickle_obj(obj)
-        with open('./pickle_test.pickle', 'bw') as fh:
+        if sys.version_info[0] == 2:
+            mode = 'w'
+        else:
+            mode = 'bw'
+
+        with open('./pickle_test.pickle', mode) as fh:
             pickle.dump(obj, fh)
         assert len(obj.cache) == 2
 
@@ -198,7 +204,12 @@ class CachedMethodTest(unittest.TestCase):
     def test_pickle_hashvalue_restore(self):
         import pickle
 
-        with open('./pickle_test.pickle', 'br') as fh:
+        if sys.version_info[0] == 2:
+            mode = 'r'
+        else:
+            mode = 'br'
+
+        with open('./pickle_test.pickle', mode) as fh:
             obj = pickle.load(fh)
 
         # do the same calculations as in `test_pickle_hashvalue_store`
