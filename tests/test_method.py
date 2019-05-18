@@ -1,8 +1,9 @@
 import operator
 import unittest
-import pytest
 
 from cachetools import LRUCache, cachedmethod, keys
+
+import pytest
 
 
 class Cached(object):
