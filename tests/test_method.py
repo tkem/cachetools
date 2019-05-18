@@ -186,7 +186,8 @@ class CachedMethodTest(unittest.TestCase):
         obj.calc("abc", 69)
         obj.calc("abc", 72, times_two=True)
 
-    @pytest.mark.skipif(sys.version_info[0] < 3)
+    @pytest.mark.skipif(sys.version_info[0] < 3,
+                        reason="Not supported under Python 2")
     def test_pickle_hashvalue_store(self):
         import pickle
 
@@ -198,7 +199,8 @@ class CachedMethodTest(unittest.TestCase):
 
         assert len(obj.cache) == 2
 
-    @pytest.mark.skipif(sys.version_info[0] < 3)
+    @pytest.mark.skipif(sys.version_info[0] < 3,
+                        reason="Not supported under Python 2")
     @pytest.mark.pickle_restore()
     def test_pickle_hashvalue_restore(self):
         import pickle
