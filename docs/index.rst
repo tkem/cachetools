@@ -325,6 +325,44 @@ often called with the same arguments:
       PEP #1: ...
 
 
+   When using a shared cache for multiple methods, be aware that
+   different cache keys must be created for each method even when
+   function arguments are the same, just as with the `@cached`
+   decorator:
+
+   .. testcode::
+
+      class CachedReferences(object):
+
+          def __init__(self, cachesize):
+              self.cache = LRUCache(maxsize=cachesize)
+
+          @cachedmethod(lambda self: self.cache, key=partial(hashkey, 'pep'))
+          def get_pep(self, num):
+              """Retrieve text of a Python Enhancement Proposal"""
+              url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+              with urllib.request.urlopen(url) as s:
+                  return s.read()
+
+          @cachedmethod(lambda self: self.cache, key=partial(hashkey, 'rfc'))
+          def get_rfc(self, num):
+              """Retrieve text of an IETF Request for Comments"""
+              url = 'https://tools.ietf.org/rfc/rfc%d.txt' % num
+              with urllib.request.urlopen(url) as s:
+                  return s.read()
+
+      docs = CachedReferences(cachesize=100)
+      print("PEP #1: %s" % docs.get_pep(1))
+      print("RFC #1: %s" % docs.get_rfc(1))
+
+   .. testoutput::
+      :hide:
+      :options: +ELLIPSIS
+
+      PEP #1: ...
+      RFC #1: ...
+
+
 :mod:`cachetools.keys` --- Key functions for memoizing decorators
 ============================================================================
 
