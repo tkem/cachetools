@@ -1,4 +1,4 @@
-v3.1.1 (UNRELEASED)
+v3.1.1 (2019-05-23)
 -------------------
 
 - Document how to use shared caches with ``@cachedmethod``.
