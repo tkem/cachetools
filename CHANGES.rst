@@ -1,3 +1,11 @@
+v3.1.1 (UNRELEASED)
+-------------------
+
+- Document how to use shared caches with ``@cachedmethod``.
+
+- Fix pickling/unpickling of cache keys
+
+
 v3.1.0 (2019-01-29)
 -------------------
 
