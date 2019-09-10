@@ -271,3 +271,7 @@ class CacheTestMixin(object):
             cache = pickle.loads(pickle.dumps(source))
             self.assertEqual(n, len(cache))
             self.assertEqual(source, cache)
+
+    def test_unlimited_cache_size(self):
+        cache = self.Cache(maxsize=None)
+        cache[1] = 1

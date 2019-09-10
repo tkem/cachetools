@@ -45,10 +45,10 @@ class Cache(DefaultMapping):
     def __setitem__(self, key, value):
         maxsize = self.__maxsize
         size = self.getsizeof(value)
-        if size > maxsize:
+        if maxsize is not None and size > maxsize:
             raise ValueError('value too large')
         if key not in self.__data or self.__size[key] < size:
-            while self.__currsize + size > maxsize:
+            while maxsize is not None and self.__currsize + size > maxsize:
                 self.popitem()
         if key in self.__data:
             diffsize = size - self.__size[key]
