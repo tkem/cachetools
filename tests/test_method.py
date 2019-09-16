@@ -115,7 +115,7 @@ class CachedMethodTest(unittest.TestCase):
         import fractions
         import gc
 
-        # in Python 3.4, `int` does not support weak references even
+        # `int` does not support weak references even
         # when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
             def __add__(self, other):

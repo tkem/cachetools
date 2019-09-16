@@ -1,11 +1,7 @@
 from __future__ import absolute_import
 
 import collections
-
-try:
-    from time import monotonic as default_timer
-except ImportError:
-    from time import time as default_timer
+from time import monotonic as default_timer
 
 from .cache import Cache
 

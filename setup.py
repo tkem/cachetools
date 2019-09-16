@@ -19,6 +19,7 @@ setup(
     long_description=open('README.rst').read(),
     keywords='cache caching memoize memoizing memoization LRU LFU TTL',
     packages=find_packages(exclude=['tests', 'tests.*']),
+    python_requires='>=3.5',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Environment :: Other Environment',
@@ -26,13 +27,11 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Topic :: Software Development :: Libraries :: Python Modules'
