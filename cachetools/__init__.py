@@ -1,7 +1,5 @@
 """Extensible memoizing collections and decorators."""
 
-from __future__ import absolute_import
-
 import functools
 
 from . import keys
