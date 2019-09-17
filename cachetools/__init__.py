@@ -16,14 +16,6 @@ __all__ = (
 
 __version__ = '3.1.1'
 
-if hasattr(functools.update_wrapper(lambda f: f(), lambda: 42), '__wrapped__'):
-    _update_wrapper = functools.update_wrapper
-else:
-    def _update_wrapper(wrapper, wrapped):
-        functools.update_wrapper(wrapper, wrapped)
-        wrapper.__wrapped__ = wrapped
-        return wrapper
-
 
 def cached(cache, key=keys.hashkey, lock=None):
     """Decorator to wrap a function with a memoizing callable that saves
@@ -62,7 +54,7 @@ def cached(cache, key=keys.hashkey, lock=None):
                 except ValueError:
                     pass  # value too large
                 return v
-        return _update_wrapper(wrapper, func)
+        return functools.update_wrapper(wrapper, func)
     return decorator
 
 
@@ -106,5 +98,5 @@ def cachedmethod(cache, key=keys.hashkey, lock=None):
                 except ValueError:
                     pass  # value too large
                 return v
-        return _update_wrapper(wrapper, method)
+        return functools.update_wrapper(wrapper, method)
     return decorator

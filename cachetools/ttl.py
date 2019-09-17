@@ -202,13 +202,7 @@ class TTLCache(Cache):
             else:
                 return (key, self.pop(key))
 
-    if hasattr(collections.OrderedDict, 'move_to_end'):
-        def __getlink(self, key):
-            value = self.__links[key]
-            self.__links.move_to_end(key)
-            return value
-    else:
-        def __getlink(self, key):
-            value = self.__links.pop(key)
-            self.__links[key] = value
-            return value
+    def __getlink(self, key):
+        value = self.__links[key]
+        self.__links.move_to_end(key)
+        return value
