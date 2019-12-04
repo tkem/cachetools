@@ -4,6 +4,7 @@ from __future__ import absolute_import
 
 import functools
 
+from . import func
 from . import keys
 from .cache import Cache
 from .lfu import LFUCache
@@ -13,7 +14,7 @@ from .ttl import TTLCache
 
 __all__ = (
     'Cache', 'LFUCache', 'LRUCache', 'RRCache', 'TTLCache',
-    'cached', 'cachedmethod'
+    'cached', 'cachedmethod', 'func'
 )
 
 __version__ = '3.1.1'
