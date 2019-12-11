@@ -1,11 +1,5 @@
-from __future__ import absolute_import
-
 import collections
-
-try:
-    from time import monotonic as default_timer
-except ImportError:
-    from time import time as default_timer
+import time
 
 from .cache import Cache
 
@@ -61,7 +55,7 @@ class _Timer(object):
 class TTLCache(Cache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
-    def __init__(self, maxsize, ttl, timer=default_timer, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
         self.__root = root = _Link()
         root.prev = root.next = root
@@ -208,13 +202,7 @@ class TTLCache(Cache):
             else:
                 return (key, self.pop(key))
 
-    if hasattr(collections.OrderedDict, 'move_to_end'):
-        def __getlink(self, key):
-            value = self.__links[key]
-            self.__links.move_to_end(key)
-            return value
-    else:
-        def __getlink(self, key):
-            value = self.__links.pop(key)
-            self.__links[key] = value
-            return value
+    def __getlink(self, key):
+        value = self.__links[key]
+        self.__links.move_to_end(key)
+        return value
