@@ -1,15 +1,9 @@
 """`functools.lru_cache` compatible memoizing function decorators."""
 
-from __future__ import absolute_import
-
 import collections
 import functools
 import random
-
-try:
-    from time import monotonic as default_timer
-except ImportError:
-    from time import time as default_timer
+import time
 
 try:
     from threading import RLock
@@ -85,8 +79,6 @@ def _cache(cache, typed=False):
                 pass  # value too large
             return v
         functools.update_wrapper(wrapper, func)
-        if not hasattr(wrapper, '__wrapped__'):
-            wrapper.__wrapped__ = func  # Python 2.7
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
         return wrapper
@@ -129,7 +121,7 @@ def rr_cache(maxsize=128, choice=random.choice, typed=False):
         return _cache(RRCache(maxsize, choice), typed)
 
 
-def ttl_cache(maxsize=128, ttl=600, timer=default_timer, typed=False):
+def ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm with a per-item time-to-live (TTL) value.

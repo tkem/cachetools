@@ -4,7 +4,7 @@
 .. module:: cachetools
 
 This module provides various memoizing collections and decorators,
-including variants of the Python 3 Standard Library `@lru_cache`_
+including variants of the Python Standard Library's `@lru_cache`_
 function decorator.
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
@@ -101,10 +101,8 @@ of one argument used to retrieve the size of an item's value.
    will be discarded first to make space when necessary.
 
    By default, the time-to-live is specified in seconds and
-   :func:`time.monotonic` is used to retrieve the current time.  If
-   :func:`time.monotonic` is not available, e.g. when running Python
-   2.7, :func:`time.time` will be used.  A custom `timer` function can
-   be supplied if needed.
+   :func:`time.monotonic` is used to retrieve the current time.  A
+   custom `timer` function can be supplied if needed.
 
    .. method:: expire(self, time=None)
 

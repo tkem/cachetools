@@ -1,11 +1,5 @@
-from __future__ import absolute_import
-
 from abc import abstractmethod
-
-try:
-    from collections.abc import MutableMapping
-except ImportError:
-    from collections import MutableMapping
+from collections.abc import MutableMapping
 
 
 class DefaultMapping(MutableMapping):
