@@ -1,5 +1,6 @@
+*********************************************************************
 :mod:`cachetools` --- Extensible memoizing collections and decorators
-=======================================================================
+*********************************************************************
 
 .. module:: cachetools
 
@@ -27,12 +28,12 @@ calls are provided, too.
    import operator
    from cachetools import cached, cachedmethod, LRUCache
 
-   import mock
+   from unittest import mock
    urllib = mock.MagicMock()
 
 
 Cache implementations
-------------------------------------------------------------------------
+=====================
 
 This module provides several classes implementing caches using
 different cache algorithms.  All these classes derive from class
@@ -117,7 +118,7 @@ of one argument used to retrieve the size of an item's value.
 
 
 Extending cache classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Sometimes it may be desirable to notice when and what cache items are
 evicted, i.e. removed from a cache to make room for new items.  Since
@@ -172,7 +173,7 @@ in its own right.
 
 
 Memoizing decorators
-------------------------------------------------------------------------
+====================
 
 The :mod:`cachetools` module provides decorators for memoizing
 function and method calls.  This can save time when a function is
@@ -361,8 +362,9 @@ often called with the same arguments:
       RFC #1: ...
 
 
+*****************************************************************
 :mod:`cachetools.keys` --- Key functions for memoizing decorators
-============================================================================
+*****************************************************************
 
 .. module:: cachetools.keys
 
@@ -405,8 +407,9 @@ like this::
   @cached(LRUCache(maxsize=128), key=envkey)
 
 
+****************************************************************************
 :mod:`cachetools.func` --- :func:`functools.lru_cache` compatible decorators
-============================================================================
+****************************************************************************
 
 .. module:: cachetools.func
 

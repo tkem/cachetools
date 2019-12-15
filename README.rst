@@ -1,8 +1,28 @@
 cachetools
 ========================================================================
 
+.. image:: http://img.shields.io/pypi/v/cachetools
+   :target: https://pypi.org/project/cachetools/
+   :alt: Latest PyPI version
+
+.. image:: https://img.shields.io/readthedocs/cachetools
+   :target: http://cachetools.readthedocs.io/
+   :alt: Documentation build status
+
+.. image:: http://img.shields.io/travis/tkem/cachetools
+   :target: https://travis-ci.org/tkem/cachetools/
+   :alt: Travis CI build status
+
+.. image:: http://img.shields.io/coveralls/tkem/cachetools
+   :target: https://coveralls.io/r/tkem/cachetools
+   :alt: Test coverage
+
+.. image:: https://img.shields.io/github/license/tkem/cachetools
+   :target: http://raw.github.com/tkem/cachetools/master/LICENSE
+   :alt: License
+
 This module provides various memoizing collections and decorators,
-including variants of the Python 3 Standard Library `@lru_cache`_
+including variants of the Python Standard Library's `@lru_cache`_
 function decorator.
 
 .. code-block:: python
@@ -40,39 +60,22 @@ Multiple cache classes based on different caching algorithms are
 implemented, and decorators for easily memoizing function and method
 calls are provided, too.
 
-For more information, please refer to the online documentation_.
-
 
 Installation
 ------------------------------------------------------------------------
 
-Install cachetools using pip::
+cachetools is available from PyPI_ and can be installed by running::
 
-    pip install cachetools
+  pip install cachetools
 
 
 Project Resources
 ------------------------------------------------------------------------
 
-.. image:: http://img.shields.io/pypi/v/cachetools.svg?style=flat
-   :target: https://pypi.python.org/pypi/cachetools/
-   :alt: Latest PyPI version
-
-.. image:: http://img.shields.io/travis/tkem/cachetools/master.svg?style=flat
-   :target: https://travis-ci.org/tkem/cachetools/
-   :alt: Travis CI build status
-
-.. image:: http://img.shields.io/coveralls/tkem/cachetools/master.svg?style=flat
-   :target: https://coveralls.io/r/tkem/cachetools
-   :alt: Test coverage
-
-.. image:: https://readthedocs.org/projects/cachetools/badge/?version=latest&style=flat
-   :target: http://cachetools.readthedocs.io/en/latest/
-   :alt: Documentation Status
-
-- `Issue Tracker`_
-- `Source Code`_
-- `Change Log`_
+- `Documentation`_
+- `Issue tracker`_
+- `Source code`_
+- `Change log`_
 
 
 License
@@ -88,8 +91,9 @@ Licensed under the `MIT License`_.
 .. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
 .. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
 
-.. _Documentation: http://cachetools.readthedocs.io/en/latest/
-.. _Issue Tracker: https://github.com/tkem/cachetools/issues/
-.. _Source Code: https://github.com/tkem/cachetools/
-.. _Change Log: https://github.com/tkem/cachetools/blob/master/CHANGES.rst
+.. _PyPI: https://pypi.org/project/cachetools/
+.. _Documentation: https://cachetools.readthedocs.io/
+.. _Issue tracker: https://github.com/tkem/cachetools/issues/
+.. _Source code: https://github.com/tkem/cachetools/
+.. _Change log: https://github.com/tkem/cachetools/blob/master/CHANGELOG.rst
 .. _MIT License: http://raw.github.com/tkem/cachetools/master/LICENSE
