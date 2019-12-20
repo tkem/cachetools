@@ -9,3 +9,7 @@ build/
 dist/
 docs/_build/
 .pytest_cache/
+.env
+.vscode
+.pytest_cache
+.mypy_cache
