@@ -116,6 +116,11 @@ of one argument used to retrieve the size of an item's value.
       items that have expired by the current value returned by
       :attr:`timer`.
 
+   .. method:: set(self, key, value, ttl=None)
+
+      Key in cache will be set with a custom TTL value if set. When
+      `ttl is None` the TTL for the key will default to :attr:`ttl`.
+
 
 Extending cache classes
 -----------------------

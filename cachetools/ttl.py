@@ -83,7 +83,8 @@ class TTLCache(Cache):
         else:
             return cache_getitem(self, key)
 
-    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
+    def __setitem__(self, key, value, ttl=None,
+                    cache_setitem=Cache.__setitem__):
         with self.__timer as time:
             self.expire(time)
             cache_setitem(self, key, value)
@@ -93,7 +94,8 @@ class TTLCache(Cache):
             self.__links[key] = link = _Link(key)
         else:
             link.unlink()
-        link.expire = time + self.__ttl
+        ttl = ttl or self.__ttl
+        link.expire = time + ttl
         link.next = root = self.__root
         link.prev = prev = root.prev
         prev.next = root.prev = link
@@ -153,7 +155,7 @@ class TTLCache(Cache):
 
     @property
     def ttl(self):
-        """The time-to-live value of the cache's items."""
+        """The default time-to-live value of the cache's items."""
         return self.__ttl
 
     def expire(self, time=None):
@@ -206,3 +208,6 @@ class TTLCache(Cache):
         value = self.__links[key]
         self.__links.move_to_end(key)
         return value
+
+    def set(self, key, value, ttl=None):
+        self.__setitem__(key, value, ttl=ttl)
