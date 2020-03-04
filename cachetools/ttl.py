@@ -53,7 +53,8 @@ class _Timer(object):
 
 
 class TTLCache(Cache):
-    """LRU Cache implementation with per-item time-to-live (TTL) value."""
+    """LRU Cache implementation with per-item time-to-live (TTL) value (in
+seconds)."""
 
     def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
