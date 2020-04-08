@@ -26,7 +26,9 @@ _CacheInfo = collections.namedtuple('CacheInfo', [
 
 class _UnboundCache(dict):
 
-    maxsize = None
+    @property
+    def maxsize(self):
+        return None
 
     @property
     def currsize(self):
@@ -42,25 +44,13 @@ class _UnboundTTLCache(TTLCache):
         return None
 
 
-def _cache(cache, typed=False):
+def _cache(cache, typed):
+    maxsize = cache.maxsize
+
     def decorator(func):
         key = keys.typedkey if typed else keys.hashkey
         lock = RLock()
         stats = [0, 0]
-
-        def cache_info():
-            with lock:
-                hits, misses = stats
-                maxsize = cache.maxsize
-                currsize = cache.currsize
-            return _CacheInfo(hits, misses, maxsize, currsize)
-
-        def cache_clear():
-            with lock:
-                try:
-                    cache.clear()
-                finally:
-                    stats[:] = [0, 0]
 
         def wrapper(*args, **kwargs):
             k = key(*args, **kwargs)
@@ -78,9 +68,25 @@ def _cache(cache, typed=False):
             except ValueError:
                 pass  # value too large
             return v
-        functools.update_wrapper(wrapper, func)
+
+        def cache_info():
+            with lock:
+                hits, misses = stats
+                maxsize = cache.maxsize
+                currsize = cache.currsize
+            return _CacheInfo(hits, misses, maxsize, currsize)
+
+        def cache_clear():
+            with lock:
+                try:
+                    cache.clear()
+                finally:
+                    stats[:] = [0, 0]
+
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
+        wrapper.cache_parameters = lambda: {'maxsize': maxsize, 'typed': typed}
+        functools.update_wrapper(wrapper, func)
         return wrapper
     return decorator
 

@@ -435,11 +435,17 @@ leaving the `maxsize` at its default value of 128::
       sentence = sentence.casefold()
       return sum(sentence.count(vowel) for vowel in 'aeiou')
 
-The wrapped function is instrumented with :func:`cache_info` and
+The wrapped function is instrumented with a :func:`cache_parameters`
+function that returns a new :class:`dict` showing the values for
+`maxsize` and `typed`.  This is for information purposes only.
+Mutating the values has no effect.
+
+The wrapped function is also instrumented with :func:`cache_info` and
 :func:`cache_clear` functions to provide information about cache
 performance and clear the cache.  Please see the
 :func:`functools.lru_cache` documentation for details.  Also note that
 all the decorators in this module are thread-safe by default.
+
 
 .. decorator:: lfu_cache(user_function)
                lfu_cache(maxsize=128, typed=False)
