@@ -1,4 +1,4 @@
-v4.1.0 (UNRELEASED)
+v4.1.0 (2020-04-08)
 ===================
 
 - Support ``user_function`` with ``cachetools.func`` decorators
