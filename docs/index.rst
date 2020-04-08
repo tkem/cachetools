@@ -426,31 +426,44 @@ arguments of different types will be cached separately.  For example,
 ``f(3)`` and ``f(3.0)`` will be treated as distinct calls with
 distinct results.
 
+If a `user_function` is specified instead, it must be a callable.
+This allows the decorator to be applied directly to a user function,
+leaving the `maxsize` at its default value of 128::
+
+  @cachetools.func.lru_cache
+  def count_vowels(sentence):
+      sentence = sentence.casefold()
+      return sum(sentence.count(vowel) for vowel in 'aeiou')
+
 The wrapped function is instrumented with :func:`cache_info` and
 :func:`cache_clear` functions to provide information about cache
 performance and clear the cache.  Please see the
 :func:`functools.lru_cache` documentation for details.  Also note that
 all the decorators in this module are thread-safe by default.
 
-.. decorator:: lfu_cache(maxsize=128, typed=False)
+.. decorator:: lfu_cache(user_function)
+               lfu_cache(maxsize=128, typed=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Frequently Used
    (LFU) algorithm.
 
-.. decorator:: lru_cache(maxsize=128, typed=False)
+.. decorator:: lru_cache(user_function)
+               lru_cache(maxsize=128, typed=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
 
-.. decorator:: rr_cache(maxsize=128, choice=random.choice, typed=False)
+.. decorator:: rr_cache(user_function)
+               rr_cache(maxsize=128, choice=random.choice, typed=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Random Replacement (RR)
    algorithm.
 
-.. decorator:: ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
+.. decorator:: ttl_cache(user_function)
+               ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
