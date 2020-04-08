@@ -1,3 +1,13 @@
+v4.1.0 (UNRELEASED)
+===================
+
+- Support ``user_function`` with ``cachetools.func`` decorators
+  (Python 3.8 compatibility).
+
+- Support ``cache_parameters()`` with ``cachetools.func`` decorators
+  (Python 3.9 compatibility).
+
+
 v4.0.0 (2019-12-15)
 ===================
 
