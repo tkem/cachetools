@@ -5,8 +5,8 @@ import cachetools.func
 
 class DecoratorTestMixin(object):
 
-    def decorator(self, maxsize, typed=False, lock=None):
-        raise NotImplementedError
+    def decorator(self, maxsize, **kwargs):
+        return self.DECORATOR(maxsize, **kwargs)
 
     def test_decorator(self):
         cached = self.decorator(maxsize=2)(lambda n: n)
@@ -65,26 +65,33 @@ class DecoratorTestMixin(object):
         self.assertEqual(cached(1.0), 1.0)
         self.assertEqual(cached.cache_info(), (2, 2, 2, 2))
 
+    def test_decorator_user_function(self):
+        cached = self.decorator(lambda n: n)
+
+        self.assertEqual(cached.cache_info(), (0, 0, 128, 0))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 1, 128, 1))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 1, 128, 1))
+        self.assertEqual(cached(1.0), 1.0)
+        self.assertEqual(cached.cache_info(), (2, 1, 128, 1))
+
 
 class LFUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
-    def decorator(self, maxsize, **kwargs):
-        return cachetools.func.lfu_cache(maxsize, **kwargs)
+    DECORATOR = staticmethod(cachetools.func.lfu_cache)
 
 
 class LRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
-    def decorator(self, maxsize, **kwargs):
-        return cachetools.func.lru_cache(maxsize, **kwargs)
+    DECORATOR = staticmethod(cachetools.func.lru_cache)
 
 
 class RRDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
-    def decorator(self, maxsize, **kwargs):
-        return cachetools.func.rr_cache(maxsize, **kwargs)
+    DECORATOR = staticmethod(cachetools.func.rr_cache)
 
 
 class TTLDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
-    def decorator(self, maxsize, **kwargs):
-        return cachetools.func.ttl_cache(maxsize, **kwargs)
+    DECORATOR = staticmethod(cachetools.func.ttl_cache)

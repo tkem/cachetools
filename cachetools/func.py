@@ -93,6 +93,8 @@ def lfu_cache(maxsize=128, typed=False):
     """
     if maxsize is None:
         return _cache(_UnboundCache(), typed)
+    elif callable(maxsize):
+        return _cache(LFUCache(128), typed)(maxsize)
     else:
         return _cache(LFUCache(maxsize), typed)
 
@@ -105,6 +107,8 @@ def lru_cache(maxsize=128, typed=False):
     """
     if maxsize is None:
         return _cache(_UnboundCache(), typed)
+    elif callable(maxsize):
+        return _cache(LRUCache(128), typed)(maxsize)
     else:
         return _cache(LRUCache(maxsize), typed)
 
@@ -117,6 +121,8 @@ def rr_cache(maxsize=128, choice=random.choice, typed=False):
     """
     if maxsize is None:
         return _cache(_UnboundCache(), typed)
+    elif callable(maxsize):
+        return _cache(RRCache(128, choice), typed)(maxsize)
     else:
         return _cache(RRCache(maxsize, choice), typed)
 
@@ -128,5 +134,7 @@ def ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False):
     """
     if maxsize is None:
         return _cache(_UnboundTTLCache(ttl, timer), typed)
+    elif callable(maxsize):
+        return _cache(TTLCache(128, ttl, timer), typed)(maxsize)
     else:
         return _cache(TTLCache(maxsize, ttl, timer), typed)
