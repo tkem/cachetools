@@ -27,8 +27,8 @@ class LRUCache(Cache):
         """Remove and return the `(key, value)` pair least recently used."""
         try:
             key = next(iter(self.__order))
-        except StopIteration:
-            raise KeyError('%s is empty' % self.__class__.__name__)
+        except StopIteration as e:
+            raise KeyError('%s is empty' % self.__class__.__name__) from e
         else:
             return (key, self.pop(key))
 

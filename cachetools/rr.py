@@ -28,7 +28,7 @@ class RRCache(Cache):
         """Remove and return a random `(key, value)` pair."""
         try:
             key = self.__choice(list(self))
-        except IndexError:
-            raise KeyError('%s is empty' % self.__class__.__name__)
+        except IndexError as e:
+            raise KeyError('%s is empty' % self.__class__.__name__) from e
         else:
             return (key, self.pop(key))

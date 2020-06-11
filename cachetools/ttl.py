@@ -197,8 +197,8 @@ class TTLCache(Cache):
             self.expire(time)
             try:
                 key = next(iter(self.__links))
-            except StopIteration:
-                raise KeyError('%s is empty' % self.__class__.__name__)
+            except StopIteration as e:
+                raise KeyError('%s is empty' % self.__class__.__name__) from e
             else:
                 return (key, self.pop(key))
 

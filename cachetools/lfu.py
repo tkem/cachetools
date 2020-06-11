@@ -27,7 +27,7 @@ class LFUCache(Cache):
         """Remove and return the `(key, value)` pair least frequently used."""
         try:
             (key, _), = self.__counter.most_common(1)
-        except ValueError:
-            raise KeyError('%s is empty' % self.__class__.__name__)
+        except ValueError as e:
+            raise KeyError('%s is empty' % self.__class__.__name__) from e
         else:
             return (key, self.pop(key))
