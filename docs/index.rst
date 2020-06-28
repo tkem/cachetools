@@ -405,6 +405,10 @@ The :func:`envkey` function can then be used in decorator declarations
 like this::
 
   @cached(LRUCache(maxsize=128), key=envkey)
+  def foo(x, y, z, env={}):
+      pass
+
+  foo(1, 2, 3, env=dict(a='a', b='b'))
 
 
 ****************************************************************************
