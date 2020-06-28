@@ -2,6 +2,7 @@
 
 import collections
 import functools
+import math
 import random
 import time
 
@@ -37,7 +38,7 @@ class _UnboundCache(dict):
 
 class _UnboundTTLCache(TTLCache):
     def __init__(self, ttl, timer):
-        TTLCache.__init__(self, float('inf'), ttl, timer)
+        TTLCache.__init__(self, math.inf, ttl, timer)
 
     @property
     def maxsize(self):
