@@ -1,3 +1,13 @@
+v4.1.1 (UNRELEASED)
+===================
+
+- Improve ``popitem()`` exception context handling.
+
+- Replace ``float('inf')`` with ``math.inf``.
+
+- Improve "envkey" documentation example.
+
+
 v4.1.0 (2020-04-08)
 ===================
 
