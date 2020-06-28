@@ -1,4 +1,4 @@
-v4.1.1 (UNRELEASED)
+v4.1.1 (2020-06-28)
 ===================
 
 - Improve ``popitem()`` exception context handling.
