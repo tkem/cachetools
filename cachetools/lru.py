@@ -28,7 +28,8 @@ class LRUCache(Cache):
         try:
             key = next(iter(self.__order))
         except StopIteration:
-            raise KeyError('%s is empty' % self.__class__.__name__)
+            msg = '%s is empty' % self.__class__.__name__
+            raise KeyError(msg) from None
         else:
             return (key, self.pop(key))
 
