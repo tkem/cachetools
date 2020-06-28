@@ -1,3 +1,7 @@
+import sys
+import unittest
+
+
 class CacheTestMixin(object):
 
     Cache = None
@@ -103,6 +107,18 @@ class CacheTestMixin(object):
 
         with self.assertRaises(KeyError):
             cache.popitem()
+
+    @unittest.skipUnless(sys.version_info >= (3, 7), 'requires Python 3.7')
+    def test_popitem_exception_context(self):
+        # since Python 3.7, MutableMapping.popitem() suppresses
+        # exception context as implementation detail
+        exception = None
+        try:
+            self.Cache(maxsize=2).popitem()
+        except Exception as e:
+            exception = e
+        self.assertIsNone(exception.__cause__)
+        self.assertTrue(exception.__suppress_context__)
 
     def _test_missing(self, cache):
         self.assertEqual(0, cache.currsize)
