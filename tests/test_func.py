@@ -99,6 +99,11 @@ class LRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.lru_cache)
 
 
+class MRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
+
+    DECORATOR = staticmethod(cachetools.func.mru_cache)
+
+
 class RRDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
     DECORATOR = staticmethod(cachetools.func.rr_cache)
