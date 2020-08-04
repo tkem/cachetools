@@ -1,6 +1,10 @@
 *.egg-info
 *.pyc
 *.swp
+*.c
+*.so
+*.dll
+.python-version
 .cache/
 .coverage
 .tox/
