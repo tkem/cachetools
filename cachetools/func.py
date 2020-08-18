@@ -14,10 +14,11 @@ except ImportError:  # pragma: no cover
 from . import keys
 from .lfu import LFUCache
 from .lru import LRUCache
+from .mru import MRUCache
 from .rr import RRCache
 from .ttl import TTLCache
 
-__all__ = ('lfu_cache', 'lru_cache', 'rr_cache', 'ttl_cache')
+__all__ = ('lfu_cache', 'lru_cache', 'mru_cache', 'rr_cache', 'ttl_cache')
 
 
 _CacheInfo = collections.namedtuple('CacheInfo', [
@@ -118,6 +119,19 @@ def lru_cache(maxsize=128, typed=False):
         return _cache(LRUCache(128), typed)(maxsize)
     else:
         return _cache(LRUCache(maxsize), typed)
+
+
+def mru_cache(maxsize=128, typed=False):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a Most Recently Used (MRU)
+    algorithm.
+    """
+    if maxsize is None:
+        return _cache(_UnboundCache(), typed)
+    elif callable(maxsize):
+        return _cache(MRUCache(128), typed)(maxsize)
+    else:
+        return _cache(MRUCache(maxsize), typed)
 
 
 def rr_cache(maxsize=128, choice=random.choice, typed=False):
