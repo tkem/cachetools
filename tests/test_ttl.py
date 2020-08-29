@@ -1,6 +1,6 @@
 import unittest
 
-from cachetools import TTLCache
+from cachetools import FlexTTLCache, TTLCache, TTLCacheBase
 
 from . import CacheTestMixin
 
@@ -82,6 +82,58 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
             cache.pop(2)
         with self.assertRaises(KeyError):
             del cache[3]
+
+    def test_custom_ttl(self):
+        for cache in [TTLCacheBase(maxsize=2, timer=Timer()),
+                      TTLCache(maxsize=2, ttl=None, timer=Timer())]:
+            cache.add(1, 1, ttl=3)
+            self.assertEqual({1}, set(cache))
+            self.assertEqual(1, len(cache))
+            self.assertEqual(1, cache[1])
+
+            cache.timer.tick()
+            self.assertEqual({1}, set(cache))
+
+            cache.add(2, 2, ttl=1)
+            self.assertEqual({1, 2}, set(cache))
+
+            cache.timer.tick()
+            self.assertEqual({1, 2}, set(cache))
+
+            cache.timer.tick()
+            self.assertEqual({1}, set(cache))
+
+            cache.timer.tick()
+            self.assertEqual(set(), set(cache))
+
+    def test_flex_ttl(self):
+        def get_ttl(k, v):
+            return v
+
+        cache = FlexTTLCache(maxsize=2, get_ttl=get_ttl, timer=Timer())
+        self.assertEqual(get_ttl, cache.get_ttl)
+        cache[1] = 3
+        self.assertEqual({1}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertEqual(3, cache[1])
+
+        cache.timer.tick()
+        self.assertEqual({1}, set(cache))
+
+        cache[2] = 1
+        self.assertEqual({1, 2}, set(cache))
+        self.assertEqual(2, len(cache))
+        self.assertEqual(3, cache[1])
+        self.assertEqual(1, cache[2])
+
+        cache.timer.tick()
+        self.assertEqual({1, 2}, set(cache))
+
+        cache.timer.tick()
+        self.assertEqual({1}, set(cache))
+
+        cache.timer.tick()
+        self.assertEqual(set(), set(cache))
 
     def test_ttl_lru(self):
         cache = TTLCache(maxsize=2, ttl=0, timer=Timer())

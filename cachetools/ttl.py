@@ -52,16 +52,15 @@ class _Timer(object):
         return getattr(self.__timer, name)
 
 
-class TTLCache(Cache):
-    """LRU Cache implementation with per-item time-to-live (TTL) value."""
+class TTLCacheBase(Cache):
+    """Base LRU Cache implementation with per-item time-to-live (TTL) value."""
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, timer=time.monotonic, getsizeof=None):
+        super().__init__(maxsize, getsizeof)
         self.__root = root = _Link()
         root.prev = root.next = root
         self.__links = collections.OrderedDict()
         self.__timer = _Timer(timer)
-        self.__ttl = ttl
 
     def __contains__(self, key):
         try:
@@ -83,17 +82,18 @@ class TTLCache(Cache):
         else:
             return cache_getitem(self, key)
 
-    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
+    def add(self, key, value, ttl, *, _cache_setitem=Cache.__setitem__):
+        """Add an item to the cache with a given TTL."""
         with self.__timer as time:
             self.expire(time)
-            cache_setitem(self, key, value)
+            _cache_setitem(self, key, value)
         try:
             link = self.__getlink(key)
         except KeyError:
             self.__links[key] = link = _Link(key)
         else:
             link.unlink()
-        link.expire = time + self.__ttl
+        link.expire = time + ttl
         link.next = root = self.__root
         link.prev = prev = root.prev
         prev.next = root.prev = link
@@ -144,17 +144,12 @@ class TTLCache(Cache):
     def currsize(self):
         with self.__timer as time:
             self.expire(time)
-            return super(TTLCache, self).currsize
+            return super().currsize
 
     @property
     def timer(self):
         """The timer function used by the cache."""
         return self.__timer
-
-    @property
-    def ttl(self):
-        """The time-to-live value of the cache's items."""
-        return self.__ttl
 
     def expire(self, time=None):
         """Remove expired items from the cache."""
@@ -207,3 +202,35 @@ class TTLCache(Cache):
         value = self.__links[key]
         self.__links.move_to_end(key)
         return value
+
+
+class TTLCache(TTLCacheBase):
+    """LRU Cache implementation with a fixed time-to-live (TTL) value."""
+
+    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
+        super().__init__(maxsize, timer, getsizeof)
+        self.__ttl = ttl
+
+    @property
+    def ttl(self):
+        """The time-to-live value of the cache's items."""
+        return self.__ttl
+
+    def __setitem__(self, key, value):
+        self.add(key, value, self.__ttl)
+
+
+class FlexTTLCache(TTLCacheBase):
+    """LRU Cache implementation with per-item time-to-live (TTL) value."""
+
+    def __init__(self, maxsize, get_ttl, timer=time.monotonic, getsizeof=None):
+        super().__init__(maxsize, timer, getsizeof)
+        self.__get_ttl = get_ttl
+
+    @property
+    def get_ttl(self):
+        """The function to generate time-to-live value of the cache's items."""
+        return self.__get_ttl
+
+    def __setitem__(self, key, value):
+        self.add(key, value, self.__get_ttl(key, value))
