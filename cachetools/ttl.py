@@ -59,17 +59,17 @@ class TTLCache(Cache):
         Cache.__init__(self, maxsize, getsizeof)
         self.__root = root = _Link()
         root.prev = root.next = root
-        self.__links = collections.OrderedDict()
-        self.__timer = _Timer(timer)
+        self._links = collections.OrderedDict()
+        self._timer = _Timer(timer)
         self.__ttl = ttl
 
     def __contains__(self, key):
         try:
-            link = self.__links[key]  # no reordering
+            link = self._links[key]  # no reordering
         except KeyError:
             return False
         else:
-            return not (link.expire < self.__timer())
+            return not (link.expire < self._timer())
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         try:
@@ -77,20 +77,20 @@ class TTLCache(Cache):
         except KeyError:
             expired = False
         else:
-            expired = link.expire < self.__timer()
+            expired = link.expire < self._timer()
         if expired:
             return self.__missing__(key)
         else:
             return cache_getitem(self, key)
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
-        with self.__timer as time:
+        with self._timer as time:
             self.expire(time)
             cache_setitem(self, key, value)
         try:
             link = self.__getlink(key)
         except KeyError:
-            self.__links[key] = link = _Link(key)
+            self._links[key] = link = _Link(key)
         else:
             link.unlink()
         link.expire = time + self.__ttl
@@ -100,9 +100,9 @@ class TTLCache(Cache):
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
-        link = self.__links.pop(key)
+        link = self._links.pop(key)
         link.unlink()
-        if link.expire < self.__timer():
+        if link.expire < self._timer():
             raise KeyError(key)
 
     def __iter__(self):
@@ -110,7 +110,7 @@ class TTLCache(Cache):
         curr = root.next
         while curr is not root:
             # "freeze" time for iterator access
-            with self.__timer as time:
+            with self._timer as time:
                 if not (curr.expire < time):
                     yield curr.key
             curr = curr.next
@@ -118,8 +118,8 @@ class TTLCache(Cache):
     def __len__(self):
         root = self.__root
         curr = root.next
-        time = self.__timer()
-        count = len(self.__links)
+        time = self._timer()
+        count = len(self._links)
         while curr is not root and curr.expire < time:
             count -= 1
             curr = curr.next
@@ -129,27 +129,27 @@ class TTLCache(Cache):
         self.__dict__.update(state)
         root = self.__root
         root.prev = root.next = root
-        for link in sorted(self.__links.values(), key=lambda obj: obj.expire):
+        for link in sorted(self._links.values(), key=lambda obj: obj.expire):
             link.next = root
             link.prev = prev = root.prev
             prev.next = root.prev = link
-        self.expire(self.__timer())
+        self.expire(self._timer())
 
     def __repr__(self, cache_repr=Cache.__repr__):
-        with self.__timer as time:
+        with self._timer as time:
             self.expire(time)
             return cache_repr(self)
 
     @property
     def currsize(self):
-        with self.__timer as time:
+        with self._timer as time:
             self.expire(time)
             return super(TTLCache, self).currsize
 
     @property
     def timer(self):
         """The timer function used by the cache."""
-        return self.__timer
+        return self._timer
 
     @property
     def ttl(self):
@@ -159,10 +159,10 @@ class TTLCache(Cache):
     def expire(self, time=None):
         """Remove expired items from the cache."""
         if time is None:
-            time = self.__timer()
+            time = self._timer()
         root = self.__root
         curr = root.next
-        links = self.__links
+        links = self._links
         cache_delitem = Cache.__delitem__
         while curr is not root and curr.expire < time:
             cache_delitem(self, curr.key)
@@ -172,20 +172,20 @@ class TTLCache(Cache):
             curr = next
 
     def clear(self):
-        with self.__timer as time:
+        with self._timer as time:
             self.expire(time)
             Cache.clear(self)
 
     def get(self, *args, **kwargs):
-        with self.__timer:
+        with self._timer:
             return Cache.get(self, *args, **kwargs)
 
     def pop(self, *args, **kwargs):
-        with self.__timer:
+        with self._timer:
             return Cache.pop(self, *args, **kwargs)
 
     def setdefault(self, *args, **kwargs):
-        with self.__timer:
+        with self._timer:
             return Cache.setdefault(self, *args, **kwargs)
 
     def popitem(self):
@@ -193,10 +193,10 @@ class TTLCache(Cache):
         has not already expired.
 
         """
-        with self.__timer as time:
+        with self._timer as time:
             self.expire(time)
             try:
-                key = next(iter(self.__links))
+                key = next(iter(self._links))
             except StopIteration:
                 msg = '%s is empty' % self.__class__.__name__
                 raise KeyError(msg) from None
@@ -204,6 +204,6 @@ class TTLCache(Cache):
                 return (key, self.pop(key))
 
     def __getlink(self, key):
-        value = self.__links[key]
-        self.__links.move_to_end(key)
+        value = self._links[key]
+        self._links.move_to_end(key)
         return value

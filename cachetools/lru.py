@@ -8,7 +8,7 @@ class LRUCache(Cache):
 
     def __init__(self, maxsize, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
-        self.__order = collections.OrderedDict()
+        self._order = collections.OrderedDict()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
@@ -21,12 +21,12 @@ class LRUCache(Cache):
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
-        del self.__order[key]
+        del self._order[key]
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used."""
         try:
-            key = next(iter(self.__order))
+            key = next(iter(self._order))
         except StopIteration:
             msg = '%s is empty' % self.__class__.__name__
             raise KeyError(msg) from None
@@ -35,6 +35,6 @@ class LRUCache(Cache):
 
     def __update(self, key):
         try:
-            self.__order.move_to_end(key)
+            self._order.move_to_end(key)
         except KeyError:
-            self.__order[key] = None
+            self._order[key] = None

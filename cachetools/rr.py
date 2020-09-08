@@ -15,19 +15,19 @@ class RRCache(Cache):
         Cache.__init__(self, maxsize, getsizeof)
         # TODO: use None as default, assing to self.choice directly?
         if choice is random.choice:
-            self.__choice = _choice
+            self._choice = _choice
         else:
-            self.__choice = choice
+            self._choice = choice
 
     @property
     def choice(self):
         """The `choice` function used by the cache."""
-        return self.__choice
+        return self._choice
 
     def popitem(self):
         """Remove and return a random `(key, value)` pair."""
         try:
-            key = self.__choice(list(self))
+            key = self._choice(list(self))
         except IndexError:
             msg = '%s is empty' % self.__class__.__name__
             raise KeyError(msg) from None

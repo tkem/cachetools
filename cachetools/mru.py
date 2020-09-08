@@ -8,7 +8,7 @@ class MRUCache(Cache):
 
     def __init__(self, maxsize, getsizeof=None):
         super().__init__(maxsize, getsizeof)
-        self.__order = collections.OrderedDict()
+        self._order = collections.OrderedDict()
 
     def __getitem__(self, key):
         value = super().__getitem__(key)
@@ -21,18 +21,18 @@ class MRUCache(Cache):
 
     def __delitem__(self, key):
         super().__delitem__(key)
-        del self.__order[key]
+        del self._order[key]
 
     def popitem(self):
         """Remove and return the `(key, value)` pair most recently used."""
-        if not self.__order:
+        if not self._order:
             raise KeyError(type(self).__name__ + ' cache is empty') from None
 
-        key = next(iter(self.__order))
+        key = next(iter(self._order))
         return (key, self.pop(key))
 
     def __update(self, key):
         try:
-            self.__order.move_to_end(key, last=False)
+            self._order.move_to_end(key, last=False)
         except KeyError:
-            self.__order[key] = None
+            self._order[key] = None
