@@ -21,10 +21,9 @@ def cached(cache, key=hashkey, lock=None):
                     pass  # key not found
                 v = func(*args, **kwargs)
                 try:
-                    cache[k] = v
+                    return cache.setdefault(k, v)
                 except ValueError:
-                    pass  # value too large
-                return v
+                    return v  # value too large; just return it without caching
         else:
             def wrapper(*args, **kwargs):
                 k = key(*args, **kwargs)
@@ -36,10 +35,9 @@ def cached(cache, key=hashkey, lock=None):
                 v = func(*args, **kwargs)
                 try:
                     with lock:
-                        cache[k] = v
+                        return cache.setdefault(k, v)
                 except ValueError:
-                    pass  # value too large
-                return v
+                    return v  # value too large; just return it without caching
         return functools.update_wrapper(wrapper, func)
     return decorator
 
@@ -62,10 +60,9 @@ def cachedmethod(cache, key=hashkey, lock=None):
                     pass  # key not found
                 v = method(self, *args, **kwargs)
                 try:
-                    c[k] = v
+                    return c.setdefault(k, v)
                 except ValueError:
-                    pass  # value too large
-                return v
+                    return v  # value too large; just return it without caching
         else:
             def wrapper(self, *args, **kwargs):
                 c = cache(self)
@@ -80,9 +77,8 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 v = method(self, *args, **kwargs)
                 try:
                     with lock(self):
-                        c[k] = v
+                        return c.setdefault(k, v)
                 except ValueError:
-                    pass  # value too large
-                return v
+                    return v  # value too large; just return it without caching
         return functools.update_wrapper(wrapper, method)
     return decorator

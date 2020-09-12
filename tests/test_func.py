@@ -1,3 +1,5 @@
+from concurrent import futures
+import threading
 import unittest
 
 import cachetools.func
@@ -87,6 +89,63 @@ class DecoratorTestMixin(object):
         self.assertEqual(cached.cache_info(), (1, 1, 128, 1))
         self.assertEqual(cached(1.0), 1.0)
         self.assertEqual(cached.cache_info(), (2, 1, 128, 1))
+
+    def test_decorator_prefers_existing(self):
+        turn_lock = threading.Lock()
+        turn = [0]
+        def take_number():
+            with turn_lock:
+                mine = turn[0]
+                turn[0] += 1
+            return mine
+
+        # The values to return on each call to interlocked_calculate.
+        zero = 'zero'
+        one = 'one'
+        values = (zero, one)
+        calculated = [False, False]
+
+        # Set up barriers for the control thread (this one) and the test threads
+        # to rendezvous.
+        entered_barriers = [threading.Barrier(2), threading.Barrier(2)]
+        calculated_barriers = [threading.Barrier(2), threading.Barrier(2)]
+
+        def interlocked_calculate():
+            mine = take_number()
+            entered_barriers[mine].wait()
+            calculated[mine] = True
+            calculated_barriers[mine].wait()
+            return values[mine]
+
+        cached = self.decorator(maxsize=None)(interlocked_calculate)
+
+        # 'results' is a dictionary to emphasize that the ordering of threads
+        # ('a' and 'b') does not necessarily correspond with which calculation
+        # (0 and 1) will execute first.
+        results = {}
+
+        def perform_access(thread_id):
+            results[thread_id] = cached()
+
+        # Invert thread order: first thread to arrive gets its calculation last.
+        filo = threading.Thread(target=lambda: perform_access('filo'))
+        lifo = threading.Thread(target=lambda: perform_access('lifo'))
+
+        filo.start()
+        entered_barriers[0].wait()
+        # Ensure that filo has its ticket before starting and ending lifo.
+        lifo.start()
+        entered_barriers[1].wait()
+        calculated_barriers[1].wait()
+        lifo.join()
+        # Now that lifo has returned, let the second calculation complete.
+        calculated_barriers[0].wait()
+        filo.join()
+
+        # Lastly, ensure that both results are from the last-in-first out entry,
+        # using object identity tests.
+        self.assertIs(one, results['filo'])
+        self.assertIs(one, results['lifo'])
 
 
 class LFUDecoratorTest(unittest.TestCase, DecoratorTestMixin):

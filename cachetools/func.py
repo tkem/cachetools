@@ -65,10 +65,9 @@ def _cache(cache, typed):
             v = func(*args, **kwargs)
             try:
                 with lock:
-                    cache[k] = v
+                    return cache.setdefault(k, v)
             except ValueError:
-                pass  # value too large
-            return v
+                return v  # value too large; just return it without caching
 
         def cache_info():
             with lock:
