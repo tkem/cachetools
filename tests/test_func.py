@@ -88,6 +88,29 @@ class DecoratorTestMixin(object):
         self.assertEqual(cached(1.0), 1.0)
         self.assertEqual(cached.cache_info(), (2, 1, 128, 1))
 
+    def test_decorator_needs_rlock(self):
+        cached = self.decorator(lambda n: n)
+
+        class RecursiveEquals:
+            def __init__(self, use_cache):
+                self._use_cache = use_cache
+
+            def __hash__(self):
+                return hash(self._use_cache)
+
+            def __eq__(self, other):
+                if self._use_cache:
+                    # This call will happen while the cache-lock is held,
+                    # requiring a reentrant lock to avoid deadlock.
+                    cached(self)
+                return self._use_cache == other._use_cache
+
+        # Prime the cache.
+        cached(RecursiveEquals(False))
+        cached(RecursiveEquals(True))
+        # Then do a call which will cause a deadlock with a non-reentrant lock.
+        self.assertEqual(cached(RecursiveEquals(True)), RecursiveEquals(True))
+
 
 class FIFODecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
