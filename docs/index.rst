@@ -211,7 +211,7 @@ often called with the same arguments:
    implementing the `context manager`_ protocol.  Any access to the
    cache will then be nested in a ``with lock:`` statement.  This can
    be used for synchronizing thread access to the cache by providing a
-   :class:`threading.RLock` instance, for example.
+   :class:`threading.Lock` instance, for example.
 
    .. note::
 
@@ -231,10 +231,10 @@ often called with the same arguments:
 
    .. testcode::
 
-      from threading import RLock
+      from threading import Lock
 
       cache = LRUCache(maxsize=32)
-      lock = RLock()
+      lock = Lock()
 
       @cached(cache, lock=lock)
       def get_pep(num):

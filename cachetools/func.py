@@ -7,9 +7,9 @@ import random
 import time
 
 try:
-    from threading import RLock
+    from threading import Lock
 except ImportError:  # pragma: no cover
-    from dummy_threading import RLock
+    from dummy_threading import Lock
 
 from . import keys
 from .lfu import LFUCache
@@ -50,7 +50,7 @@ def _cache(cache, typed):
 
     def decorator(func):
         key = keys.typedkey if typed else keys.hashkey
-        lock = RLock()
+        lock = Lock()
         stats = [0, 0]
 
         def wrapper(*args, **kwargs):
