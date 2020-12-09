@@ -76,6 +76,12 @@ computed when the item is inserted into the cache.
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
 
+.. autoclass:: FIFOCache(maxsize, getsizeof=None)
+   :members:
+
+   This class evicts items in the order they were added to make space
+   when necessary.
+
 .. autoclass:: LFUCache(maxsize, getsizeof=None)
    :members:
 
@@ -469,6 +475,13 @@ performance and clear the cache.  Please see the
 :func:`functools.lru_cache` documentation for details.  Also note that
 all the decorators in this module are thread-safe by default.
 
+
+.. decorator:: fifo_cache(user_function)
+               fifo_cache(maxsize=128, typed=False)
+
+   Decorator that wraps a function with a memoizing callable that
+   saves up to `maxsize` results based on a First In First Out
+   (FIFO) algorithm.
 
 .. decorator:: lfu_cache(user_function)
                lfu_cache(maxsize=128, typed=False)

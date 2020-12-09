@@ -12,6 +12,7 @@ except ImportError:  # pragma: no cover
     from dummy_threading import RLock
 
 from . import keys
+from .fifo import FIFOCache
 from .lfu import LFUCache
 from .lru import LRUCache
 from .mru import MRUCache
@@ -91,6 +92,20 @@ def _cache(cache, typed):
         functools.update_wrapper(wrapper, func)
         return wrapper
     return decorator
+
+
+def fifo_cache(maxsize=128, typed=False):
+    """Decorator to wrap a function with a memoizing callable that saves
+    up to `maxsize` results based on a First In First Out (FIFO)
+    algorithm.
+
+    """
+    if maxsize is None:
+        return _cache(_UnboundCache(), typed)
+    elif callable(maxsize):
+        return _cache(FIFOCache(128), typed)(maxsize)
+    else:
+        return _cache(FIFOCache(maxsize), typed)
 
 
 def lfu_cache(maxsize=128, typed=False):

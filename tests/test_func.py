@@ -89,6 +89,11 @@ class DecoratorTestMixin(object):
         self.assertEqual(cached.cache_info(), (2, 1, 128, 1))
 
 
+class FIFODecoratorTest(unittest.TestCase, DecoratorTestMixin):
+
+    DECORATOR = staticmethod(cachetools.func.fifo_cache)
+
+
 class LFUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
     DECORATOR = staticmethod(cachetools.func.lfu_cache)

@@ -2,6 +2,7 @@
 
 from .cache import Cache
 from .decorators import cached, cachedmethod
+from .fifo import FIFOCache
 from .lfu import LFUCache
 from .lru import LRUCache
 from .mru import MRUCache
@@ -10,6 +11,7 @@ from .ttl import TTLCache
 
 __all__ = (
     'Cache',
+    'FIFOCache',
     'LFUCache',
     'LRUCache',
     'MRUCache',
