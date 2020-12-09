@@ -52,6 +52,13 @@ making the cache's size equal to the number of its items, or
 named constructor parameter `getsizeof`, which may specify a function
 of one argument used to retrieve the size of an item's value.
 
+Note that the values of a :class:`Cache` are mutable by default, as
+are e.g. the values of a :class:`dict`.  It is the user's
+responsibility to take care that cached values are not accidentally
+modified.  This is especially important when using a custom
+`getsizeof` function, since the size of an item's value will only be
+computed when the item is inserted into the cache.
+
 .. note::
 
    Please be aware that all these classes are *not* thread-safe.
