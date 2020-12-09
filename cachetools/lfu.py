@@ -28,7 +28,6 @@ class LFUCache(Cache):
         try:
             (key, _), = self.__counter.most_common(1)
         except ValueError:
-            msg = '%s is empty' % self.__class__.__name__
-            raise KeyError(msg) from None
+            raise KeyError('%s is empty' % type(self).__name__) from None
         else:
             return (key, self.pop(key))
