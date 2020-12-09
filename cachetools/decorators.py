@@ -34,12 +34,12 @@ def cached(cache, key=hashkey, lock=None):
                 except KeyError:
                     pass  # key not found
                 v = func(*args, **kwargs)
+                # in case of a race, prefer the item already in the cache
                 try:
                     with lock:
-                        cache[k] = v
+                        return cache.setdefault(k, v)
                 except ValueError:
-                    pass  # value too large
-                return v
+                    return v  # value too large
         return functools.update_wrapper(wrapper, func)
     return decorator
 
@@ -78,11 +78,11 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 except KeyError:
                     pass  # key not found
                 v = method(self, *args, **kwargs)
+                # in case of a race, prefer the item already in the cache
                 try:
                     with lock(self):
-                        c[k] = v
+                        return c.setdefault(k, v)
                 except ValueError:
-                    pass  # value too large
-                return v
+                    return v  # value too large
         return functools.update_wrapper(wrapper, method)
     return decorator

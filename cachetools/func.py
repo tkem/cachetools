@@ -64,12 +64,12 @@ def _cache(cache, typed):
                 except KeyError:
                     stats[1] += 1
             v = func(*args, **kwargs)
+            # in case of a race, prefer the item already in the cache
             try:
                 with lock:
-                    cache[k] = v
+                    return cache.setdefault(k, v)
             except ValueError:
-                pass  # value too large
-            return v
+                return v  # value too large
 
         def cache_info():
             with lock:
