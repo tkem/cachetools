@@ -217,7 +217,7 @@ often called with the same arguments:
    implementing the `context manager`_ protocol.  Any access to the
    cache will then be nested in a ``with lock:`` statement.  This can
    be used for synchronizing thread access to the cache by providing a
-   :class:`threading.RLock` instance, for example.
+   :class:`threading.Lock` instance, for example.
 
    .. note::
 
@@ -237,12 +237,13 @@ often called with the same arguments:
 
    .. testcode::
 
-      from threading import RLock
+      from cachetools.keys import hashkey
+      from threading import Lock
 
       cache = LRUCache(maxsize=32)
-      lock = RLock()
+      lock = Lock()
 
-      @cached(cache, lock=lock)
+      @cached(cache, key=hashkey, lock=lock)
       def get_pep(num):
           'Retrieve text of a Python Enhancement Proposal'
           url = 'http://www.python.org/dev/peps/pep-%04d/' % num
@@ -252,6 +253,10 @@ often called with the same arguments:
       # make sure access to cache is synchronized
       with lock:
           cache.clear()
+
+      # always use the key function for accessing cache items
+      with lock:
+          cache.pop(hashkey(42), None)
 
    It is also possible to use a single shared cache object with
    multiple functions.  However, care must be taken that different
@@ -283,6 +288,7 @@ often called with the same arguments:
       599074578
       >>> list(sorted(numcache.items()))
       [..., (('fib', 42), 267914296), ..., (('luc', 42), 599074578)]
+
 
 .. decorator:: cachedmethod(cache, key=cachetools.keys.hashkey, lock=None)
 
