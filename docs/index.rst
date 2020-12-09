@@ -81,6 +81,12 @@ of one argument used to retrieve the size of an item's value.
    This class discards the least recently used items first to make
    space when necessary.
 
+.. autoclass:: MRUCache(maxsize, getsizeof=None)
+   :members:
+
+   This class discards the most recently used items first to make
+   space when necessary.
+
 .. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
    :members:
 
@@ -463,6 +469,13 @@ all the decorators in this module are thread-safe by default.
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
+   algorithm.
+
+.. decorator:: mru_cache(user_function)
+               mru_cache(maxsize=128, typed=False)
+
+   Decorator that wraps a function with a memoizing callable that
+   saves up to `maxsize` results based on a Most Recently Used (MRU)
    algorithm.
 
 .. decorator:: rr_cache(user_function)
