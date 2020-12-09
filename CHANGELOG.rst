@@ -1,3 +1,18 @@
+v4.2.0 (UNRELEASED)
+===================
+
+- Add FIFO cache implementation.
+
+- Add MRU cache implementation.
+
+- Improve behavior of decorators in case of race conditions.
+
+- Improve documentation regarding mutability of caches values and use
+  of key functions with decorators.
+
+- Officially support Python 3.9.
+
+
 v4.1.1 (2020-06-28)
 ===================
 
