@@ -17,6 +17,10 @@ cachetools
    :target: https://coveralls.io/r/tkem/cachetools
    :alt: Test coverage
 
+.. image:: https://img.shields.io/librariesio/sourcerank/pypi/cachetools
+   :target: https://libraries.io/pypi/cachetools
+   :alt: Libraries.io SourceRank
+
 .. image:: https://img.shields.io/github/license/tkem/cachetools
    :target: http://raw.github.com/tkem/cachetools/master/LICENSE
    :alt: License
