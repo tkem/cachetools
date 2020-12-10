@@ -1,4 +1,4 @@
-v4.2.0 (UNRELEASED)
+v4.2.0 (2020-12-10)
 ===================
 
 - Add FIFO cache implementation.
