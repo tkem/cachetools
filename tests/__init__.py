@@ -2,7 +2,7 @@ import sys
 import unittest
 
 
-class CacheTestMixin(object):
+class CacheTestMixin:
 
     Cache = None
 

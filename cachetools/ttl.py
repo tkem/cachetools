@@ -4,7 +4,7 @@ import time
 from .cache import Cache
 
 
-class _Link(object):
+class _Link:
 
     __slots__ = ('key', 'expire', 'next', 'prev')
 
@@ -22,7 +22,7 @@ class _Link(object):
         next.prev = prev
 
 
-class _Timer(object):
+class _Timer:
 
     def __init__(self, timer):
         self.__timer = timer
@@ -144,7 +144,7 @@ class TTLCache(Cache):
     def currsize(self):
         with self.__timer as time:
             self.expire(time)
-            return super(TTLCache, self).currsize
+            return super().currsize
 
     @property
     def timer(self):

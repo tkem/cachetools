@@ -26,6 +26,6 @@ class FIFOCache(Cache):
         try:
             key = next(iter(self.__order))
         except StopIteration:
-            raise KeyError('%s is empty' % type(self).__name__) from None
+            raise KeyError(f'{type(self).__name__} is empty') from None
         else:
             return (key, self.pop(key))

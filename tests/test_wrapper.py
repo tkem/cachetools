@@ -4,7 +4,7 @@ import cachetools
 import cachetools.keys
 
 
-class DecoratorTestMixin(object):
+class DecoratorTestMixin:
 
     def cache(self, minsize):
         raise NotImplementedError
@@ -77,7 +77,7 @@ class DecoratorTestMixin(object):
         self.assertEqual(len(cache), 3)
 
     def test_decorator_lock(self):
-        class Lock(object):
+        class Lock:
 
             count = 0
 
@@ -116,7 +116,7 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(len(cache), 0)
 
     def test_zero_size_cache_decorator_lock(self):
-        class Lock(object):
+        class Lock:
 
             count = 0
 

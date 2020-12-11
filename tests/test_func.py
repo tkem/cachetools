@@ -3,7 +3,7 @@ import unittest
 import cachetools.func
 
 
-class DecoratorTestMixin(object):
+class DecoratorTestMixin:
 
     def decorator(self, maxsize, **kwargs):
         return self.DECORATOR(maxsize, **kwargs)

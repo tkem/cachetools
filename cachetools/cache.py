@@ -1,7 +1,7 @@
 from collections.abc import MutableMapping
 
 
-class _DefaultSize(object):
+class _DefaultSize:
 
     __slots__ = ()
 
@@ -32,7 +32,7 @@ class Cache(MutableMapping):
         self.__maxsize = maxsize
 
     def __repr__(self):
-        return '%s(%r, maxsize=%r, currsize=%r)' % (
+        return '{}({!r}, maxsize={!r}, currsize={!r})'.format(
             self.__class__.__name__,
             list(self.__data.items()),
             self.__maxsize,
