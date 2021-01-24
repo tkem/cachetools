@@ -1,4 +1,4 @@
-v4.2.1 (UNRELEASED)
+v4.2.1 (2021-01-24)
 ===================
 
 - Handle ``__missing__()`` not storing cache items.
