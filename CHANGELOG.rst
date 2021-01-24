@@ -1,3 +1,11 @@
+v4.2.1 (UNRELEASED)
+===================
+
+- Handle ``__missing__()`` not storing cache items.
+
+- Clean up ``__missing__()`` example.
+
+
 v4.2.0 (2020-12-10)
 ===================
 
