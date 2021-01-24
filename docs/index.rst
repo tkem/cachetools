@@ -171,13 +171,10 @@ key is not found:
    ...     def __missing__(self, key):
    ...         """Retrieve text of a Python Enhancement Proposal"""
    ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % key
-   ...         try:
-   ...             with urllib.request.urlopen(url) as s:
-   ...                 pep = s.read()
-   ...                 self[key] = pep  # store text in cache
-   ...                 return pep
-   ...         except urllib.error.HTTPError:
-   ...             return 'Not Found'  # do not store in cache
+   ...         with urllib.request.urlopen(url) as s:
+   ...             pep = s.read()
+   ...             self[key] = pep  # store text in cache
+   ...             return pep
 
    >>> peps = PepStore(maxsize=4)
    >>> for n in 8, 9, 290, 308, 320, 8, 218, 320, 279, 289, 320:
