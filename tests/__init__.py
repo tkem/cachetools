@@ -120,7 +120,14 @@ class CacheTestMixin(object):
         self.assertIsNone(exception.__cause__)
         self.assertTrue(exception.__suppress_context__)
 
-    def _test_missing(self, cache):
+    def test_missing(self):
+        class DefaultCache(self.Cache):
+            def __missing__(self, key):
+                self[key] = key
+                return key
+
+        cache = DefaultCache(maxsize=2)
+
         self.assertEqual(0, cache.currsize)
         self.assertEqual(2, cache.maxsize)
         self.assertEqual(0, len(cache))
@@ -172,30 +179,38 @@ class CacheTestMixin(object):
         self.assertTrue(1 in cache or 2 in cache)
         self.assertTrue(1 not in cache or 2 not in cache)
 
-    def _test_missing_getsizeof(self, cache):
-        self.assertEqual(0, cache.currsize)
-        self.assertEqual(2, cache.maxsize)
-        self.assertEqual(1, cache[1])
-        self.assertIn(1, cache)
-        self.assertEqual(2, cache[2])
-        self.assertNotIn(1, cache)
-        self.assertIn(2, cache)
-        self.assertEqual(3, cache[3])
-        self.assertNotIn(1, cache)
-        self.assertIn(2, cache)
-        self.assertNotIn(3, cache)
-
-    def test_missing_subclass(self):
-        class Cache(self.Cache):
+    def test_missing_getsizeof(self):
+        class DefaultCache(self.Cache):
             def __missing__(self, key):
                 try:
                     self[key] = key
                 except ValueError:
-                    pass
+                    pass  # not stored
                 return key
 
-        self._test_missing(Cache(maxsize=2))
-        self._test_missing_getsizeof(Cache(maxsize=2, getsizeof=lambda x: x))
+        cache = DefaultCache(maxsize=2, getsizeof=lambda x: x)
+
+        self.assertEqual(0, cache.currsize)
+        self.assertEqual(2, cache.maxsize)
+
+        self.assertEqual(1, cache[1])
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
+        self.assertIn(1, cache)
+
+        self.assertEqual(2, cache[2])
+        self.assertEqual(1, len(cache))
+        self.assertEqual(2, cache.currsize)
+        self.assertNotIn(1, cache)
+        self.assertIn(2, cache)
+
+        self.assertEqual(3, cache[3])  # not stored
+        self.assertEqual(1, len(cache))
+        self.assertEqual(2, cache.currsize)
+        self.assertEqual(1, cache[1])
+        self.assertEqual(1, len(cache))
+        self.assertEqual(1, cache.currsize)
+        self.assertEqual((1, 1), cache.popitem())
 
     def _test_getsizeof(self, cache):
         self.assertEqual(0, cache.currsize)

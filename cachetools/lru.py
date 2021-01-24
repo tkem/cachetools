@@ -12,7 +12,8 @@ class LRUCache(Cache):
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
-        self.__update(key)
+        if key in self:  # __missing__ may not store item
+            self.__update(key)
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):

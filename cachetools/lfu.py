@@ -12,7 +12,8 @@ class LFUCache(Cache):
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
-        self.__counter[key] -= 1
+        if key in self:  # __missing__ may not store item
+            self.__counter[key] -= 1
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
