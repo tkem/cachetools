@@ -1,19 +1,19 @@
 cachetools
 ========================================================================
 
-.. image:: http://img.shields.io/pypi/v/cachetools
+.. image:: https://img.shields.io/pypi/v/cachetools
    :target: https://pypi.org/project/cachetools/
    :alt: Latest PyPI version
 
 .. image:: https://img.shields.io/readthedocs/cachetools
-   :target: http://cachetools.readthedocs.io/
+   :target: https://cachetools.readthedocs.io/
    :alt: Documentation build status
 
-.. image:: http://img.shields.io/travis/tkem/cachetools
+.. image:: https://img.shields.io/travis/tkem/cachetools
    :target: https://travis-ci.org/tkem/cachetools/
    :alt: Travis CI build status
 
-.. image:: http://img.shields.io/coveralls/tkem/cachetools
+.. image:: https://img.shields.io/coveralls/tkem/cachetools
    :target: https://coveralls.io/r/tkem/cachetools
    :alt: Test coverage
 
@@ -22,7 +22,7 @@ cachetools
    :alt: Libraries.io SourceRank
 
 .. image:: https://img.shields.io/github/license/tkem/cachetools
-   :target: http://raw.github.com/tkem/cachetools/master/LICENSE
+   :target: https://raw.github.com/tkem/cachetools/master/LICENSE
    :alt: License
 
 This module provides various memoizing collections and decorators,
@@ -90,14 +90,14 @@ Copyright (c) 2014-2021 Thomas Kemmer.
 Licensed under the `MIT License`_.
 
 
-.. _@lru_cache: http://docs.python.org/3/library/functools.html#functools.lru_cache
-.. _mutable: http://docs.python.org/dev/glossary.html#term-mutable
-.. _mapping: http://docs.python.org/dev/glossary.html#term-mapping
-.. _cache algorithm: http://en.wikipedia.org/wiki/Cache_algorithms
+.. _@lru_cache: https://docs.python.org/3/library/functools.html#functools.lru_cache
+.. _mutable: https://docs.python.org/dev/glossary.html#term-mutable
+.. _mapping: https://docs.python.org/dev/glossary.html#term-mapping
+.. _cache algorithm: https://en.wikipedia.org/wiki/Cache_algorithms
 
 .. _PyPI: https://pypi.org/project/cachetools/
 .. _Documentation: https://cachetools.readthedocs.io/
 .. _Issue tracker: https://github.com/tkem/cachetools/issues/
 .. _Source code: https://github.com/tkem/cachetools/
 .. _Change log: https://github.com/tkem/cachetools/blob/master/CHANGELOG.rst
-.. _MIT License: http://raw.github.com/tkem/cachetools/master/LICENSE
+.. _MIT License: https://raw.github.com/tkem/cachetools/master/LICENSE
