@@ -1,5 +1,5 @@
 *********************************************************************
-:mod:`cachetools` --- Extensible memoizing collections and decorators
+:mod:`cachetools` --- Extensible memorizing collections and decorators
 *********************************************************************
 
 .. module:: cachetools
