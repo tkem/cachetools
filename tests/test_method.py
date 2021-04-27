@@ -4,7 +4,7 @@ import unittest
 from cachetools import LRUCache, cachedmethod, keys
 
 
-class Cached(object):
+class Cached:
     def __init__(self, cache, count=0):
         self.cache = cache
         self.count = count
@@ -26,7 +26,7 @@ class Cached(object):
         raise TypeError("unhashable type")
 
 
-class Locked(object):
+class Locked:
     def __init__(self, cache):
         self.cache = cache
         self.count = 0
