@@ -1,3 +1,13 @@
+v4.2.2 (2021-04-27)
+===================
+
+- Update build environment.
+
+- Remove Python 2 remnants.
+
+- Format code with Black.
+
+
 v4.2.1 (2021-01-24)
 ===================
 
