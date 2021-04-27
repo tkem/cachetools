@@ -1,7 +1,7 @@
 from collections.abc import MutableMapping
 
 
-class _DefaultSize(object):
+class _DefaultSize:
 
     __slots__ = ()
 
