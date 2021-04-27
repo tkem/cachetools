@@ -29,7 +29,7 @@ class MRUCache(Cache):
         try:
             key = next(iter(self.__order))
         except StopIteration:
-            raise KeyError('%s is empty' % type(self).__name__) from None
+            raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))
 

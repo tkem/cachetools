@@ -6,7 +6,7 @@ from .cache import Cache
 
 class _Link(object):
 
-    __slots__ = ('key', 'expire', 'next', 'prev')
+    __slots__ = ("key", "expire", "next", "prev")
 
     def __init__(self, key=None, expire=None):
         self.key = key
@@ -23,7 +23,6 @@ class _Link(object):
 
 
 class _Timer(object):
-
     def __init__(self, timer):
         self.__timer = timer
         self.__nesting = 0
@@ -198,7 +197,7 @@ class TTLCache(Cache):
             try:
                 key = next(iter(self.__links))
             except StopIteration:
-                raise KeyError('%s is empty' % type(self).__name__) from None
+                raise KeyError("%s is empty" % type(self).__name__) from None
             else:
                 return (key, self.pop(key))
 

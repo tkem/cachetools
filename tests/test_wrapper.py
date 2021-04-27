@@ -5,12 +5,11 @@ import cachetools.keys
 
 
 class DecoratorTestMixin(object):
-
     def cache(self, minsize):
         raise NotImplementedError
 
     def func(self, *args, **kwargs):
-        if hasattr(self, 'count'):
+        if hasattr(self, "count"):
             self.count += 1
         else:
             self.count = 0
@@ -101,7 +100,6 @@ class DecoratorTestMixin(object):
 
 
 class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
-
     def cache(self, minsize):
         return cachetools.Cache(maxsize=minsize)
 
@@ -138,13 +136,11 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
 
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
-
     def cache(self, minsize):
         return dict()
 
 
 class NoneWrapperTest(unittest.TestCase):
-
     def func(self, *args, **kwargs):
         return args + tuple(kwargs.items())
 
@@ -154,4 +150,4 @@ class NoneWrapperTest(unittest.TestCase):
 
         self.assertEqual(wrapper(0), (0,))
         self.assertEqual(wrapper(1), (1,))
-        self.assertEqual(wrapper(1, foo='bar'), (1, ('foo', 'bar')))
+        self.assertEqual(wrapper(1, foo="bar"), (1, ("foo", "bar")))

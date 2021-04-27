@@ -19,16 +19,15 @@ from .mru import MRUCache
 from .rr import RRCache
 from .ttl import TTLCache
 
-__all__ = ('lfu_cache', 'lru_cache', 'mru_cache', 'rr_cache', 'ttl_cache')
+__all__ = ("lfu_cache", "lru_cache", "mru_cache", "rr_cache", "ttl_cache")
 
 
-_CacheInfo = collections.namedtuple('CacheInfo', [
-    'hits', 'misses', 'maxsize', 'currsize'
-])
+_CacheInfo = collections.namedtuple(
+    "CacheInfo", ["hits", "misses", "maxsize", "currsize"]
+)
 
 
 class _UnboundCache(dict):
-
     @property
     def maxsize(self):
         return None
@@ -88,9 +87,10 @@ def _cache(cache, typed):
 
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
-        wrapper.cache_parameters = lambda: {'maxsize': maxsize, 'typed': typed}
+        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
         functools.update_wrapper(wrapper, func)
         return wrapper
+
     return decorator
 
 

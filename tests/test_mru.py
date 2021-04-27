@@ -17,7 +17,7 @@ class MRUCacheTest(unittest.TestCase, CacheTestMixin):
         cache[3] = 3  # Evicts 1 because nothing's been used yet
 
         assert len(cache) == 2
-        assert 1 not in cache, 'Wrong key was evicted. Should have been `1`.'
+        assert 1 not in cache, "Wrong key was evicted. Should have been '1'."
         assert 2 in cache
         assert 3 in cache
 
@@ -29,7 +29,7 @@ class MRUCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1]
         cache[2]
         cache[3] = 3  # Evicts 2
-        assert 2 not in cache, 'Wrong key was evicted. Should have been `2`.'
+        assert 2 not in cache, "Wrong key was evicted. Should have been '2'."
         assert 1 in cache
         assert 3 in cache
 

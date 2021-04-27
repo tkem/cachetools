@@ -8,17 +8,17 @@ def get_version():
     return cp["metadata"]["version"]
 
 
-project = 'cachetools'
-copyright = '2014-2021 Thomas Kemmer'
+project = "cachetools"
+copyright = "2014-2021 Thomas Kemmer"
 version = get_version()
 release = version
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
-    'sphinx.ext.doctest',
-    'sphinx.ext.todo'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.coverage",
+    "sphinx.ext.doctest",
+    "sphinx.ext.todo",
 ]
-exclude_patterns = ['_build']
-master_doc = 'index'
-html_theme = 'default'
+exclude_patterns = ["_build"]
+master_doc = "index"
+html_theme = "default"

@@ -12,7 +12,7 @@ class CacheTestMixin(object):
         self.assertEqual(1, cache.maxsize)
         self.assertEqual(0, cache.currsize)
         self.assertEqual(1, cache.getsizeof(None))
-        self.assertEqual(1, cache.getsizeof(''))
+        self.assertEqual(1, cache.getsizeof(""))
         self.assertEqual(1, cache.getsizeof(0))
         self.assertTrue(repr(cache).startswith(cache.__class__.__name__))
 
@@ -47,10 +47,10 @@ class CacheTestMixin(object):
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
 
-        cache.update({1: 'a', 2: 'b'})
+        cache.update({1: "a", 2: "b"})
         self.assertEqual(2, len(cache))
-        self.assertEqual('a', cache[1])
-        self.assertEqual('b', cache[2])
+        self.assertEqual("a", cache[1])
+        self.assertEqual("b", cache[2])
 
     def test_delete(self):
         cache = self.Cache(maxsize=2)
@@ -108,7 +108,7 @@ class CacheTestMixin(object):
         with self.assertRaises(KeyError):
             cache.popitem()
 
-    @unittest.skipUnless(sys.version_info >= (3, 7), 'requires Python 3.7')
+    @unittest.skipUnless(sys.version_info >= (3, 7), "requires Python 3.7")
     def test_popitem_exception_context(self):
         # since Python 3.7, MutableMapping.popitem() suppresses
         # exception context as implementation detail

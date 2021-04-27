@@ -1,6 +1,6 @@
 """Key functions for memoizing decorators."""
 
-__all__ = ('hashkey', 'typedkey')
+__all__ = ("hashkey", "typedkey")
 
 
 class _HashedTuple(tuple):
