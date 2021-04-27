@@ -32,7 +32,7 @@ class Cache(MutableMapping):
         self.__maxsize = maxsize
 
     def __repr__(self):
-        return '%s(%r, maxsize=%r, currsize=%r)' % (
+        return "%s(%r, maxsize=%r, currsize=%r)" % (
             self.__class__.__name__,
             list(self.__data.items()),
             self.__maxsize,
@@ -49,7 +49,7 @@ class Cache(MutableMapping):
         maxsize = self.__maxsize
         size = self.getsizeof(value)
         if size > maxsize:
-            raise ValueError('value too large')
+            raise ValueError("value too large")
         if key not in self.__data or self.__size[key] < size:
             while self.__currsize + size > maxsize:
                 self.popitem()

@@ -10,15 +10,15 @@ from .rr import RRCache
 from .ttl import TTLCache
 
 __all__ = (
-    'Cache',
-    'FIFOCache',
-    'LFUCache',
-    'LRUCache',
-    'MRUCache',
-    'RRCache',
-    'TTLCache',
-    'cached',
-    'cachedmethod'
+    "Cache",
+    "FIFOCache",
+    "LFUCache",
+    "LRUCache",
+    "MRUCache",
+    "RRCache",
+    "TTLCache",
+    "cached",
+    "cachedmethod",
 )
 
-__version__ = '4.2.1'
+__version__ = "4.2.1"

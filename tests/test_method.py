@@ -5,18 +5,17 @@ from cachetools import LRUCache, cachedmethod, keys
 
 
 class Cached(object):
-
     def __init__(self, cache, count=0):
         self.cache = cache
         self.count = count
 
-    @cachedmethod(operator.attrgetter('cache'))
+    @cachedmethod(operator.attrgetter("cache"))
     def get(self, value):
         count = self.count
         self.count += 1
         return count
 
-    @cachedmethod(operator.attrgetter('cache'), key=keys.typedkey)
+    @cachedmethod(operator.attrgetter("cache"), key=keys.typedkey)
     def get_typed(self, value):
         count = self.count
         self.count += 1
@@ -24,16 +23,15 @@ class Cached(object):
 
     # https://github.com/tkem/cachetools/issues/107
     def __hash__(self):
-        raise TypeError('unhashable type')
+        raise TypeError("unhashable type")
 
 
 class Locked(object):
-
     def __init__(self, cache):
         self.cache = cache
         self.count = 0
 
-    @cachedmethod(operator.attrgetter('cache'), lock=lambda self: self)
+    @cachedmethod(operator.attrgetter("cache"), lock=lambda self: self)
     def get(self, value):
         return self.count
 
@@ -45,7 +43,6 @@ class Locked(object):
 
 
 class CachedMethodTest(unittest.TestCase):
-
     def test_dict(self):
         cached = Cached({})
 

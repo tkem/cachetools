@@ -29,6 +29,6 @@ class RRCache(Cache):
         try:
             key = self.__choice(list(self))
         except IndexError:
-            raise KeyError('%s is empty' % type(self).__name__) from None
+            raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))

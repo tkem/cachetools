@@ -27,8 +27,8 @@ class LFUCache(Cache):
     def popitem(self):
         """Remove and return the `(key, value)` pair least frequently used."""
         try:
-            (key, _), = self.__counter.most_common(1)
+            ((key, _),) = self.__counter.most_common(1)
         except ValueError:
-            raise KeyError('%s is empty' % type(self).__name__) from None
+            raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))
