@@ -1,3 +1,4 @@
+import copy
 import functools
 
 from .keys import hashkey
@@ -20,7 +21,7 @@ def cached(cache, key=hashkey, lock=None):
             def wrapper(*args, **kwargs):
                 k = key(*args, **kwargs)
                 try:
-                    return cache[k]
+                    return copy.deepcopy(cache[k])
                 except KeyError:
                     pass  # key not found
                 v = func(*args, **kwargs)
@@ -28,7 +29,7 @@ def cached(cache, key=hashkey, lock=None):
                     cache[k] = v
                 except ValueError:
                     pass  # value too large
-                return v
+                return copy.deepcopy(v)
 
         else:
 
@@ -36,14 +37,14 @@ def cached(cache, key=hashkey, lock=None):
                 k = key(*args, **kwargs)
                 try:
                     with lock:
-                        return cache[k]
+                        return copy.deepcopy(cache[k])
                 except KeyError:
                     pass  # key not found
                 v = func(*args, **kwargs)
                 # in case of a race, prefer the item already in the cache
                 try:
                     with lock:
-                        return cache.setdefault(k, v)
+                        return copy.deepcopy(cache.setdefault(k, v))
                 except ValueError:
                     return v  # value too large
 
@@ -67,7 +68,7 @@ def cachedmethod(cache, key=hashkey, lock=None):
                     return method(self, *args, **kwargs)
                 k = key(*args, **kwargs)
                 try:
-                    return c[k]
+                    return copy.deepcopy(c[k])
                 except KeyError:
                     pass  # key not found
                 v = method(self, *args, **kwargs)
@@ -75,7 +76,7 @@ def cachedmethod(cache, key=hashkey, lock=None):
                     c[k] = v
                 except ValueError:
                     pass  # value too large
-                return v
+                return copy.deepcopy(v)
 
         else:
 
@@ -86,14 +87,14 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 k = key(*args, **kwargs)
                 try:
                     with lock(self):
-                        return c[k]
+                        return copy.deepcopy(c[k])
                 except KeyError:
                     pass  # key not found
                 v = method(self, *args, **kwargs)
                 # in case of a race, prefer the item already in the cache
                 try:
                     with lock(self):
-                        return c.setdefault(k, v)
+                        return copy.deepcopy(c.setdefault(k, v))
                 except ValueError:
                     return v  # value too large
 

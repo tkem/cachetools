@@ -15,6 +15,9 @@ class DecoratorTestMixin:
             self.count = 0
         return self.count
 
+    def variable_result_func(self, *args, **kwargs):
+        return [1]
+
     def test_decorator(self):
         cache = self.cache(2)
         wrapper = cachetools.cached(cache)(self.func)
@@ -133,6 +136,20 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(len(cache), 0)
         self.assertEqual(Lock.count, 2)
+
+    def test_variable_result(self):
+        cache = self.cache(2)
+        wrapper = cachetools.cached(cache)(self.variable_result_func)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.__wrapped__, self.variable_result_func)
+        tmp_result = wrapper(1)
+        self.assertEqual(tmp_result, [1])
+        self.assertEqual(len(cache), 1)
+
+        # update tmp_result
+        tmp_result.append(2)
+        self.assertEqual(tmp_result, [1, 2])
+        self.assertEqual(wrapper(1), [1])
 
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):

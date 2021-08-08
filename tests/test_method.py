@@ -21,6 +21,10 @@ class Cached:
         self.count += 1
         return count
 
+    @cachedmethod(operator.attrgetter("cache"))
+    def get_variable_result(self, *args, **kwargs):
+        return [0]
+
     # https://github.com/tkem/cachetools/issues/107
     def __hash__(self):
         raise TypeError("unhashable type")
@@ -163,3 +167,11 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 5)
         self.assertEqual(cached.get(1.0), 7)
         self.assertEqual(cached.get(1.0), 9)
+
+    def test_variable_result(self):
+        cached = Cached(LRUCache(maxsize=2))
+        tmp_result = cached.get_variable_result(0)
+        self.assertEqual(tmp_result, [0])
+        tmp_result.append(1)
+        self.assertEqual(tmp_result, [0, 1])
+        self.assertEqual(cached.get_variable_result(0), [0])
