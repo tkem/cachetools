@@ -9,12 +9,12 @@ cachetools
    :target: https://cachetools.readthedocs.io/
    :alt: Documentation build status
 
-.. image:: https://img.shields.io/travis/tkem/cachetools
-   :target: https://travis-ci.org/tkem/cachetools/
-   :alt: Travis CI build status
+.. image:: https://img.shields.io/github/workflow/status/tkem/cachetools/CI
+   :target: https://github.com/tkem/cachetools/actions
+   :alt: CI build status
 
-.. image:: https://img.shields.io/coveralls/tkem/cachetools
-   :target: https://coveralls.io/r/tkem/cachetools
+.. image:: https://img.shields.io/codecov/c/github/tkem/cachetools/master.svg
+   :target: https://codecov.io/gh/tkem/cachetools
    :alt: Test coverage
 
 .. image:: https://img.shields.io/github/license/tkem/cachetools
