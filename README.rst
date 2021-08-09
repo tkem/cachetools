@@ -10,7 +10,7 @@ cachetools
    :alt: Documentation build status
 
 .. image:: https://img.shields.io/github/workflow/status/tkem/cachetools/CI
-   :target: https://github.com/tkem/cachetools/actions
+   :target: https://github.com/tkem/cachetools/actions/workflows/ci.yml
    :alt: CI build status
 
 .. image:: https://img.shields.io/codecov/c/github/tkem/cachetools/master.svg
