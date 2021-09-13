@@ -38,8 +38,8 @@ class _UnboundCache(dict):
 
 
 class _UnboundTTLCache(TTLCache):
-    def __init__(self, ttl, timer):
-        TTLCache.__init__(self, math.inf, ttl, timer)
+    def __init__(self, ttl, timer, *, exclusive):
+        TTLCache.__init__(self, math.inf, ttl, timer, exclusive=exclusive)
 
     @property
     def maxsize(self):
@@ -163,14 +163,14 @@ def rr_cache(maxsize=128, choice=random.choice, typed=False):
         return _cache(RRCache(maxsize, choice), typed)
 
 
-def ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False):
+def ttl_cache(maxsize=128, ttl=600, timer=time.perf_counter, typed=False, *, exclusive=False):
     """Decorator to wrap a function with a memoizing callable that saves
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm with a per-item time-to-live (TTL) value.
     """
     if maxsize is None:
-        return _cache(_UnboundTTLCache(ttl, timer), typed)
+        return _cache(_UnboundTTLCache(ttl, timer, exclusive=exclusive), typed)
     elif callable(maxsize):
-        return _cache(TTLCache(128, ttl, timer), typed)(maxsize)
+        return _cache(TTLCache(128, ttl, timer, exclusive=exclusive), typed)(maxsize)
     else:
-        return _cache(TTLCache(maxsize, ttl, timer), typed)
+        return _cache(TTLCache(maxsize, ttl, timer, exclusive=exclusive), typed)

@@ -158,6 +158,46 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
+    def test_ttl_expire_exclusive(self):
+        cache = TTLCache(maxsize=3, ttl=2, timer=Timer(), exclusive=True)
+        with cache.timer as time:
+            self.assertEqual(time, cache.timer())
+        self.assertEqual(2, cache.ttl)
+
+        cache[1] = 1
+        cache.timer.tick()
+        cache[2] = 2
+        cache.timer.tick()
+        cache[3] = 3
+        self.assertEqual(2, cache.timer())
+
+        self.assertEqual({2, 3}, set(cache))
+        self.assertEqual(2, len(cache))
+        self.assertNotIn(1, cache)
+        self.assertEqual(2, cache[2])
+        self.assertEqual(3, cache[3])
+
+        cache.expire()
+        self.assertEqual({2, 3}, set(cache))
+        self.assertEqual(2, len(cache))
+        self.assertNotIn(1, cache)
+        self.assertEqual(2, cache[2])
+        self.assertEqual(3, cache[3])
+
+        cache.expire(3)
+        self.assertEqual({3}, set(cache))
+        self.assertEqual(1, len(cache))
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertEqual(3, cache[3])
+
+        cache.expire(4)
+        self.assertEqual(set(), set(cache))
+        self.assertEqual(0, len(cache))
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertNotIn(3, cache)
+
     def test_ttl_atomic(self):
         cache = TTLCache(maxsize=1, ttl=1, timer=Timer(auto=True))
         cache[1] = 1

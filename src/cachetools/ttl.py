@@ -1,5 +1,6 @@
 import collections
 import time
+from operator import ge, gt
 
 from .cache import Cache
 
@@ -54,13 +55,15 @@ class _Timer:
 class TTLCache(Cache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=time.perf_counter, getsizeof=None, *, exclusive=False):
         Cache.__init__(self, maxsize, getsizeof)
         self.__root = root = _Link()
         root.prev = root.next = root
         self.__links = collections.OrderedDict()
         self.__timer = _Timer(timer)
         self.__ttl = ttl
+        self.__exclusive = exclusive
+        self.__compare = (ge if exclusive else gt)
 
     def __contains__(self, key):
         try:
@@ -68,7 +71,7 @@ class TTLCache(Cache):
         except KeyError:
             return False
         else:
-            return not (link.expire < self.__timer())
+            return not self.__compare(self.__timer(), link.expire)
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         try:
@@ -76,7 +79,7 @@ class TTLCache(Cache):
         except KeyError:
             expired = False
         else:
-            expired = link.expire < self.__timer()
+            expired = self.__compare(self.__timer(), link.expire)
         if expired:
             return self.__missing__(key)
         else:
@@ -101,7 +104,7 @@ class TTLCache(Cache):
         cache_delitem(self, key)
         link = self.__links.pop(key)
         link.unlink()
-        if link.expire < self.__timer():
+        if self.__compare(self.__timer(), link.expire):
             raise KeyError(key)
 
     def __iter__(self):
@@ -155,15 +158,24 @@ class TTLCache(Cache):
         """The time-to-live value of the cache's items."""
         return self.__ttl
 
-    def expire(self, time=None):
+    @property
+    def exclusive(self):
+        """Whether to expire the item when it reaches the exact point of its lifetime."""
+        return self.__exclusive
+
+    def expire(self, time=None, exclusive=None):
         """Remove expired items from the cache."""
         if time is None:
             time = self.__timer()
+        if exclusive is not None:
+            compare = (ge if exclusive else gt)
+        else:
+            compare = self.__compare
         root = self.__root
         curr = root.next
         links = self.__links
         cache_delitem = Cache.__delitem__
-        while curr is not root and curr.expire < time:
+        while curr is not root and compare(time, curr.expire):
             cache_delitem(self, curr.key)
             del links[curr.key]
             next = curr.next

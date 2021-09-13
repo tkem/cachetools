@@ -111,20 +111,22 @@ computed when the item is inserted into the cache.
    an alternative function that returns an arbitrary element from a
    non-empty sequence.
 
-.. autoclass:: TTLCache(maxsize, ttl, timer=time.monotonic, getsizeof=None)
-   :members: popitem, timer, ttl
+.. autoclass:: TTLCache(maxsize, ttl, timer=time.perf_counter, getsizeof=None, *, exclusive=False)
+   :members: popitem, timer, ttl, exclusive
 
    This class associates a time-to-live value with each item.  Items
    that expire because they have exceeded their time-to-live will be
-   no longer accessible, and will be removed eventually.  If no
-   expired items are there to remove, the least recently used items
-   will be discarded first to make space when necessary.
+   no longer accessible, and will be removed eventually. The optional
+   argument `exclusive` indicates whether to expire a time when it
+   reaches the exact point of its lifetime. If no expired items are
+   there to remove, the least recently used items will be discarded
+   first to make space when necessary.
 
    By default, the time-to-live is specified in seconds and
-   :func:`time.monotonic` is used to retrieve the current time.  A
+   :func:`time.perf_counter` is used to retrieve the current time. A
    custom `timer` function can be supplied if needed.
 
-   .. method:: expire(self, time=None)
+   .. method:: expire(self, time=None, exclusive=None)
 
       Expired items will be removed from a cache only at the next
       mutating operation, e.g. :meth:`__setitem__` or
@@ -133,7 +135,8 @@ computed when the item is inserted into the cache.
       have expired by `time`, so garbage collection is free to reuse
       their memory.  If `time` is :const:`None`, this removes all
       items that have expired by the current value returned by
-      :attr:`timer`.
+      :attr:`timer`. If `exclusive` is :const:`None`, the value from
+      the instance property will be used.
 
 
 Extending cache classes
@@ -509,7 +512,7 @@ all the decorators in this module are thread-safe by default.
    algorithm.
 
 .. decorator:: ttl_cache(user_function)
-               ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
+               ttl_cache(maxsize=128, ttl=600, timer=time.perf_counter, typed=False, *, exclusive=False)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
