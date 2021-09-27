@@ -1,5 +1,7 @@
 """`functools.lru_cache` compatible memoizing function decorators."""
 
+__all__ = ("fifo_cache", "lfu_cache", "lru_cache", "mru_cache", "rr_cache", "ttl_cache")
+
 import collections
 import functools
 import math
@@ -11,15 +13,8 @@ try:
 except ImportError:  # pragma: no cover
     from dummy_threading import RLock
 
+from . import FIFOCache, LFUCache, LRUCache, MRUCache, RRCache, TTLCache
 from . import keys
-from .fifo import FIFOCache
-from .lfu import LFUCache
-from .lru import LRUCache
-from .mru import MRUCache
-from .rr import RRCache
-from .ttl import TTLCache
-
-__all__ = ("lfu_cache", "lru_cache", "mru_cache", "rr_cache", "ttl_cache")
 
 
 _CacheInfo = collections.namedtuple(
