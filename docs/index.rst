@@ -67,7 +67,7 @@ computed when the item is inserted into the cache.
    suitable `lock` object.
 
 .. autoclass:: Cache(maxsize, getsizeof=None)
-   :members:
+   :members: currsize, getsizeof, maxsize
 
    This class discards arbitrary items using :meth:`popitem` to make
    space when necessary.  Derived classes may override :meth:`popitem`
@@ -77,31 +77,31 @@ computed when the item is inserted into the cache.
    :meth:`__setitem__` and :meth:`__delitem__`.
 
 .. autoclass:: FIFOCache(maxsize, getsizeof=None)
-   :members:
+   :members: popitem
 
    This class evicts items in the order they were added to make space
    when necessary.
 
 .. autoclass:: LFUCache(maxsize, getsizeof=None)
-   :members:
+   :members: popitem
 
    This class counts how often an item is retrieved, and discards the
    items used least often to make space when necessary.
 
 .. autoclass:: LRUCache(maxsize, getsizeof=None)
-   :members:
+   :members: popitem
 
    This class discards the least recently used items first to make
    space when necessary.
 
 .. autoclass:: MRUCache(maxsize, getsizeof=None)
-   :members:
+   :members: popitem
 
    This class discards the most recently used items first to make
    space when necessary.
 
 .. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
-   :members:
+   :members: choice, popitem
 
    This class randomly selects candidate items and discards them to
    make space when necessary.
