@@ -47,6 +47,7 @@ def _cache(cache, typed):
     def decorator(func):
         key = keys.typedkey if typed else keys.hashkey
         lock = RLock()
+        key_level_locks = {}
         stats = [0, 0]
 
         def wrapper(*args, **kwargs):
@@ -58,13 +59,22 @@ def _cache(cache, typed):
                     return v
                 except KeyError:
                     stats[1] += 1
-            v = func(*args, **kwargs)
-            # in case of a race, prefer the item already in the cache
-            try:
-                with lock:
-                    return cache.setdefault(k, v)
-            except ValueError:
-                return v  # value too large
+                _key_level_lock = key_level_locks.setdefault(k, RLock())
+            # Only one caller may generate or retrieve a value for this key
+            with _key_level_lock:
+                try:
+                    # In the case that this thread was blocked, retrieve and return the now computed value
+                    return cache[k]
+                except KeyError:
+                    # Otherwise compute it on this thread since the key is not in the cache
+                    v = func(*args, **kwargs)
+                finally:
+                    with lock:
+                        key_level_locks.pop(k)
+                try:
+                    return cache.setdefault(k,v)
+                except ValueError:
+                    return v  # value too large
 
         def cache_info():
             with lock:

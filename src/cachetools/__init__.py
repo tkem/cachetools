@@ -19,6 +19,7 @@ import collections.abc
 import functools
 import random
 import time
+from threading import RLock
 
 from .keys import hashkey
 
@@ -526,20 +527,33 @@ def cached(cache, key=hashkey, lock=None):
 
         else:
 
+            _key_level_locks = {}
+
             def wrapper(*args, **kwargs):
                 k = key(*args, **kwargs)
-                try:
-                    with lock:
+                with lock:
+                    try:
                         return cache[k]
-                except KeyError:
-                    pass  # key not found
-                v = func(*args, **kwargs)
-                # in case of a race, prefer the item already in the cache
-                try:
-                    with lock:
-                        return cache.setdefault(k, v)
-                except ValueError:
-                    return v  # value too large
+                    except KeyError:
+                        pass  # key not found
+                    _key_level_lock = _key_level_locks.setdefault(k, RLock())
+                # Only one caller may generate or retrieve a value for this key
+                with _key_level_lock:
+                    try:
+                        with lock:
+                            # In the case that this thread was blocked, retrieve and return the now computed value
+                            return cache[k]
+                    except KeyError:
+                        # Otherwise compute it on this thread since the key is not in the cache
+                        v = func(*args, **kwargs)
+                    finally:
+                        with lock:
+                            _key_level_locks.pop(k)
+                    try:
+                        with lock:
+                            return cache.setdefault(k, v)
+                    except ValueError:
+                        return v  # value too large
 
         return functools.update_wrapper(wrapper, func)
 
@@ -572,24 +586,36 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 return v
 
         else:
+            _key_level_locks = {}
 
             def wrapper(self, *args, **kwargs):
                 c = cache(self)
                 if c is None:
                     return method(self, *args, **kwargs)
                 k = key(*args, **kwargs)
-                try:
-                    with lock(self):
+                with lock(self):
+                    try:
                         return c[k]
-                except KeyError:
-                    pass  # key not found
-                v = method(self, *args, **kwargs)
-                # in case of a race, prefer the item already in the cache
-                try:
-                    with lock(self):
-                        return c.setdefault(k, v)
-                except ValueError:
-                    return v  # value too large
+                    except KeyError:
+                        pass
+                    _key_level_lock = _key_level_locks.setdefault(k, RLock())
+                # Only one caller may generate or retrieve a value for this key
+                with _key_level_lock:
+                    try:
+                        with lock(self):
+                            # In the case that this thread was blocked, retrieve and return the now computed value
+                            return c[k]
+                    except KeyError:
+                        # Otherwise compute it on this thread since the key is not in the cache
+                        v = method(self, *args, **kwargs)
+                    finally:
+                        with lock(self):
+                            _key_level_locks.pop(k)
+                    try:
+                        with lock(self):
+                            return c.setdefault(k, v)
+                    except ValueError:
+                        return v  # value too large
 
         return functools.update_wrapper(wrapper, method)
 

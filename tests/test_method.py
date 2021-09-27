@@ -140,11 +140,11 @@ class CachedMethodTest(unittest.TestCase):
     def test_locked_dict(self):
         cached = Locked({})
 
-        self.assertEqual(cached.get(0), 1)
-        self.assertEqual(cached.get(1), 3)
-        self.assertEqual(cached.get(1), 3)
-        self.assertEqual(cached.get(1.0), 3)
-        self.assertEqual(cached.get(2.0), 7)
+        self.assertEqual(cached.get(0), 2)
+        self.assertEqual(cached.get(1), 6)
+        self.assertEqual(cached.get(1), 6)
+        self.assertEqual(cached.get(1.0), 6)
+        self.assertEqual(cached.get(2.0), 12)
 
     def test_locked_nocache(self):
         cached = Locked(None)
@@ -158,8 +158,8 @@ class CachedMethodTest(unittest.TestCase):
     def test_locked_nospace(self):
         cached = Locked(LRUCache(maxsize=0))
 
-        self.assertEqual(cached.get(0), 1)
-        self.assertEqual(cached.get(1), 3)
-        self.assertEqual(cached.get(1), 5)
-        self.assertEqual(cached.get(1.0), 7)
-        self.assertEqual(cached.get(1.0), 9)
+        self.assertEqual(cached.get(0), 2)
+        self.assertEqual(cached.get(1), 6)
+        self.assertEqual(cached.get(1), 10)
+        self.assertEqual(cached.get(1.0), 14)
+        self.assertEqual(cached.get(1.0), 18)
