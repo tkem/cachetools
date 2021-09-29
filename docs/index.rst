@@ -26,7 +26,7 @@ calls are provided, too.
 .. testsetup:: *
 
    import operator
-   from cachetools import cached, cachedmethod, LRUCache
+   from cachetools import cached, cachedmethod, LRUCache, TTLCache
 
    from unittest import mock
    urllib = mock.MagicMock()
@@ -122,7 +122,17 @@ computed when the item is inserted into the cache.
 
    By default, the time-to-live is specified in seconds and
    :func:`time.monotonic` is used to retrieve the current time.  A
-   custom `timer` function can be supplied if needed.
+   custom `timer` function can also be supplied:
+
+   .. testcode::
+
+      from datetime import datetime, timedelta
+
+      cache = TTLCache(maxsize=10, ttl=timedelta(hours=12), timer=datetime.now)
+
+   The expression `timer() + ttl` at the time of insertion defines the
+   expiration time of a cache item, and must be comparable against
+   later results of `timer()`.
 
    .. method:: expire(self, time=None)
 
