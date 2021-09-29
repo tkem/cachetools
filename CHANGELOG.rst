@@ -1,3 +1,14 @@
+v4.2.3 (2021-09-29)
+===================
+
+- Add documentation and tests for using ``TTLCache`` with
+  ``datetime``.
+
+- Link to typeshed typing stubs.
+
+- Flatten package file hierarchy.
+
+
 v4.2.2 (2021-04-27)
 ===================
 
