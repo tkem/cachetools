@@ -72,6 +72,11 @@ cachetools is available from PyPI_ and can be installed by running::
 
   pip install cachetools
 
+Typing stubs for this package are provided by typeshed_ and can be
+installed by running::
+
+  pip install types-cachetools
+
 
 Project Resources
 ------------------------------------------------------------------------
@@ -96,6 +101,7 @@ Licensed under the `MIT License`_.
 .. _cache algorithm: https://en.wikipedia.org/wiki/Cache_algorithms
 
 .. _PyPI: https://pypi.org/project/cachetools/
+.. _typeshed: https://github.com/python/typeshed/
 .. _Documentation: https://cachetools.readthedocs.io/
 .. _Issue tracker: https://github.com/tkem/cachetools/issues/
 .. _Source code: https://github.com/tkem/cachetools/
