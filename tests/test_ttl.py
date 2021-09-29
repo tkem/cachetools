@@ -182,3 +182,15 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         with self.assertRaises(KeyError):
             cache[(1, 2, 3)]
         self.assertNotIn((1, 2, 3), cache)
+
+    def test_ttl_datetime(self):
+        from datetime import datetime, timedelta
+
+        cache = TTLCache(maxsize=1, ttl=timedelta(days=1), timer=datetime.now)
+
+        cache[1] = 1
+        self.assertEqual(1, len(cache))
+        cache.expire(datetime.now())
+        self.assertEqual(1, len(cache))
+        cache.expire(datetime.now() + timedelta(days=1))
+        self.assertEqual(0, len(cache))
