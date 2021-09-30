@@ -3,5 +3,7 @@ import warnings
 from . import FIFOCache
 
 warnings.warn(
-    "cachetools.fifo is deprecated, please use cachetools.FIFOCache", DeprecationWarning
+    "cachetools.fifo is deprecated, please use cachetools.FIFOCache",
+    DeprecationWarning,
+    stacklevel=2,
 )
