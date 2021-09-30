@@ -1,3 +1,9 @@
+v4.2.4 (2021-09-30)
+===================
+
+- Add submodule shims for backward compatibility.
+
+
 v4.2.3 (2021-09-29)
 ===================
 
