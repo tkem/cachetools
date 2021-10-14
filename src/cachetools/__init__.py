@@ -358,7 +358,7 @@ class TTLCache(Cache):
         except KeyError:
             return False
         else:
-            return not (link.expire < self.__timer())
+            return self.__timer() < link.expire
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         try:
@@ -366,7 +366,7 @@ class TTLCache(Cache):
         except KeyError:
             expired = False
         else:
-            expired = link.expire < self.__timer()
+            expired = not (self.__timer() < link.expire)
         if expired:
             return self.__missing__(key)
         else:
@@ -391,7 +391,7 @@ class TTLCache(Cache):
         cache_delitem(self, key)
         link = self.__links.pop(key)
         link.unlink()
-        if link.expire < self.__timer():
+        if not (self.__timer() < link.expire):
             raise KeyError(key)
 
     def __iter__(self):
@@ -400,7 +400,7 @@ class TTLCache(Cache):
         while curr is not root:
             # "freeze" time for iterator access
             with self.__timer as time:
-                if not (curr.expire < time):
+                if time < curr.expire:
                     yield curr.key
             curr = curr.next
 
@@ -409,7 +409,7 @@ class TTLCache(Cache):
         curr = root.next
         time = self.__timer()
         count = len(self.__links)
-        while curr is not root and curr.expire < time:
+        while curr is not root and not (time < curr.expire):
             count -= 1
             curr = curr.next
         return count
@@ -453,7 +453,7 @@ class TTLCache(Cache):
         curr = root.next
         links = self.__links
         cache_delitem = Cache.__delitem__
-        while curr is not root and curr.expire < time:
+        while curr is not root and not (time < curr.expire):
             cache_delitem(self, curr.key)
             del links[curr.key]
             next = curr.next

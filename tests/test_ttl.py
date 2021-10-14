@@ -1,3 +1,4 @@
+import math
 import unittest
 
 from cachetools import TTLCache
@@ -20,7 +21,7 @@ class Timer:
 
 
 class TTLTestCache(TTLCache):
-    def __init__(self, maxsize, ttl=0, **kwargs):
+    def __init__(self, maxsize, ttl=math.inf, **kwargs):
         TTLCache.__init__(self, maxsize, ttl=ttl, timer=Timer(), **kwargs)
 
 
@@ -29,9 +30,9 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = TTLTestCache
 
     def test_ttl(self):
-        cache = TTLCache(maxsize=2, ttl=1, timer=Timer())
+        cache = TTLCache(maxsize=2, ttl=2, timer=Timer())
         self.assertEqual(0, cache.timer())
-        self.assertEqual(1, cache.ttl)
+        self.assertEqual(2, cache.ttl)
 
         cache[1] = 1
         self.assertEqual({1}, set(cache))
@@ -84,7 +85,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
             del cache[3]
 
     def test_ttl_lru(self):
-        cache = TTLCache(maxsize=2, ttl=0, timer=Timer())
+        cache = TTLCache(maxsize=2, ttl=1, timer=Timer())
 
         cache[1] = 1
         cache[2] = 2
@@ -112,10 +113,10 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[5], 5)
 
     def test_ttl_expire(self):
-        cache = TTLCache(maxsize=3, ttl=2, timer=Timer())
+        cache = TTLCache(maxsize=3, ttl=3, timer=Timer())
         with cache.timer as time:
             self.assertEqual(time, cache.timer())
-        self.assertEqual(2, cache.ttl)
+        self.assertEqual(3, cache.ttl)
 
         cache[1] = 1
         cache.timer.tick()
@@ -159,7 +160,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(3, cache)
 
     def test_ttl_atomic(self):
-        cache = TTLCache(maxsize=1, ttl=1, timer=Timer(auto=True))
+        cache = TTLCache(maxsize=1, ttl=2, timer=Timer(auto=True))
         cache[1] = 1
         self.assertEqual(1, cache[1])
         cache[1] = 1
@@ -173,8 +174,8 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(0, len(cache))
 
     def test_ttl_tuple_key(self):
-        cache = TTLCache(maxsize=1, ttl=0, timer=Timer())
-        self.assertEqual(0, cache.ttl)
+        cache = TTLCache(maxsize=1, ttl=1, timer=Timer())
+        self.assertEqual(1, cache.ttl)
 
         cache[(1, 2, 3)] = 42
         self.assertEqual(42, cache[(1, 2, 3)])
