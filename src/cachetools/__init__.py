@@ -54,9 +54,9 @@ class Cache(collections.abc.MutableMapping):
         self.__maxsize = maxsize
 
     def __repr__(self):
-        return "%s(%r, maxsize=%r, currsize=%r)" % (
+        return "%s(%s, maxsize=%r, currsize=%r)" % (
             self.__class__.__name__,
-            list(self.__data.items()),
+            repr(self.__data),
             self.__maxsize,
             self.__currsize,
         )
