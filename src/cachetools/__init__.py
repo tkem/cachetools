@@ -17,6 +17,7 @@ __version__ = "4.2.4"
 import collections
 import collections.abc
 import functools
+import inspect
 import random
 import time
 
@@ -497,6 +498,34 @@ class TTLCache(Cache):
         return value
 
 
+def _get_function_value_from_cache(cache, key, lock=None):
+    if lock is not None:
+        try:
+            with lock:
+                return cache[key]
+        except KeyError:
+            return None
+    else:
+        try:
+            return cache[key]
+        except KeyError:
+            return None
+
+
+def _set_function_value_in_cache(cache, key, value, lock=None):
+    if lock is not None:
+        try:
+            with lock:
+                cache.setdefault(key, value)
+        except ValueError:
+            pass
+    else:
+        try:
+            cache[key] = value
+        except ValueError:
+            pass  # Value too large
+
+
 def cached(cache, key=hashkey, lock=None):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
@@ -504,46 +533,73 @@ def cached(cache, key=hashkey, lock=None):
     """
 
     def decorator(func):
-        if cache is None:
+        if inspect.iscoroutinefunction(func):
 
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
+            if cache is None:
 
-        elif lock is None:
+                async def wrapper(*args, **kwargs):
+                    return await func(*args, **kwargs)
 
-            def wrapper(*args, **kwargs):
-                k = key(*args, **kwargs)
-                try:
-                    return cache[k]
-                except KeyError:
-                    pass  # key not found
-                v = func(*args, **kwargs)
-                try:
-                    cache[k] = v
-                except ValueError:
-                    pass  # value too large
-                return v
+            else:
+
+                async def wrapper(*args, **kwargs):
+                    k = key(*args, **kwargs)
+                    v = _get_function_value_from_cache(cache, k, lock)
+                    if v:
+                        return v
+                    v = await func(*args, **kwargs)
+                    _set_function_value_in_cache(cache, k, v, lock)
+                    return v
 
         else:
 
-            def wrapper(*args, **kwargs):
-                k = key(*args, **kwargs)
-                try:
-                    with lock:
-                        return cache[k]
-                except KeyError:
-                    pass  # key not found
-                v = func(*args, **kwargs)
-                # in case of a race, prefer the item already in the cache
-                try:
-                    with lock:
-                        return cache.setdefault(k, v)
-                except ValueError:
-                    return v  # value too large
+            if cache is None:
+
+                def wrapper(*args, **kwargs):
+                    return func(*args, **kwargs)
+
+            else:
+
+                def wrapper(*args, **kwargs):
+                    k = key(*args, **kwargs)
+                    v = _get_function_value_from_cache(cache, k, lock)
+                    if v:
+                        return v
+                    v = func(*args, **kwargs)
+                    _set_function_value_in_cache(cache, k, v, lock)
+                    return v
 
         return functools.update_wrapper(wrapper, func)
 
     return decorator
+
+
+def _get_method_value_from_cache(self, cache, key, lock=None):
+    if lock is not None:
+        try:
+            with lock(self):
+                return cache[key]
+        except KeyError:
+            return None
+    else:
+        try:
+            return cache[key]
+        except KeyError:
+            return None
+
+
+def _set_method_value_in_cache(self, cache, key, value, lock=None):
+    if lock is not None:
+        try:
+            with lock(self):
+                cache.setdefault(key, value)
+        except ValueError:
+            pass
+    else:
+        try:
+            cache[key] = value
+        except ValueError:
+            pass  # Value too large
 
 
 def cachedmethod(cache, key=hashkey, lock=None):
@@ -553,22 +609,19 @@ def cachedmethod(cache, key=hashkey, lock=None):
     """
 
     def decorator(method):
-        if lock is None:
 
-            def wrapper(self, *args, **kwargs):
+        if inspect.iscoroutinefunction(method):
+
+            async def wrapper(self, *args, **kwargs):
                 c = cache(self)
                 if c is None:
-                    return method(self, *args, **kwargs)
+                    return await method(self, *args, **kwargs)
                 k = key(*args, **kwargs)
-                try:
-                    return c[k]
-                except KeyError:
-                    pass  # key not found
-                v = method(self, *args, **kwargs)
-                try:
-                    c[k] = v
-                except ValueError:
-                    pass  # value too large
+                v = _get_method_value_from_cache(self, c, k, lock)
+                if v:
+                    return v
+                v = await method(self, *args, **kwargs)
+                _set_method_value_in_cache(self, c, k, v, lock)
                 return v
 
         else:
@@ -578,18 +631,12 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 if c is None:
                     return method(self, *args, **kwargs)
                 k = key(*args, **kwargs)
-                try:
-                    with lock(self):
-                        return c[k]
-                except KeyError:
-                    pass  # key not found
+                v = _get_method_value_from_cache(self, c, k, lock)
+                if v:
+                    return v
                 v = method(self, *args, **kwargs)
-                # in case of a race, prefer the item already in the cache
-                try:
-                    with lock(self):
-                        return c.setdefault(k, v)
-                except ValueError:
-                    return v  # value too large
+                _set_method_value_in_cache(self, c, k, v, lock)
+                return v
 
         return functools.update_wrapper(wrapper, method)
 

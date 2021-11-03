@@ -1,3 +1,8 @@
+unrelease
+==========
+
+- Add async support to decorators
+
 v4.2.4 (2021-09-30)
 ===================
 
