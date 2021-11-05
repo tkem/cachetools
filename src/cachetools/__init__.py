@@ -16,6 +16,7 @@ __version__ = "4.2.4"
 
 import collections
 import collections.abc
+import contextlib
 import functools
 import inspect
 import random
@@ -499,31 +500,21 @@ class TTLCache(Cache):
 
 
 def _get_function_value_from_cache(cache, key, lock=None):
-    if lock is not None:
-        try:
-            with lock:
-                return cache[key]
-        except KeyError:
-            return None
-    else:
-        try:
+    lock = lock or contextlib.nullcontext()
+    try:
+        with lock:
             return cache[key]
-        except KeyError:
-            return None
+    except KeyError:
+        return None
 
 
 def _set_function_value_in_cache(cache, key, value, lock=None):
-    if lock is not None:
-        try:
-            with lock:
-                cache.setdefault(key, value)
-        except ValueError:
-            pass
-    else:
-        try:
-            cache[key] = value
-        except ValueError:
-            pass  # Value too large
+    lock = lock or contextlib.nullcontext()
+    try:
+        with lock:
+            cache.setdefault(key, value)
+    except ValueError:
+        pass
 
 
 def cached(cache, key=hashkey, lock=None):
@@ -575,31 +566,21 @@ def cached(cache, key=hashkey, lock=None):
 
 
 def _get_method_value_from_cache(self, cache, key, lock=None):
-    if lock is not None:
-        try:
-            with lock(self):
-                return cache[key]
-        except KeyError:
-            return None
-    else:
-        try:
+    lock = lock or contextlib.nullcontext
+    try:
+        with lock(self):
             return cache[key]
-        except KeyError:
-            return None
+    except KeyError:
+        return None
 
 
 def _set_method_value_in_cache(self, cache, key, value, lock=None):
-    if lock is not None:
-        try:
-            with lock(self):
-                cache.setdefault(key, value)
-        except ValueError:
-            pass
-    else:
-        try:
-            cache[key] = value
-        except ValueError:
-            pass  # Value too large
+    lock = lock or contextlib.nullcontext
+    try:
+        with lock(self):
+            cache.setdefault(key, value)
+    except ValueError:
+        pass
 
 
 def cachedmethod(cache, key=hashkey, lock=None):
