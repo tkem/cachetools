@@ -44,6 +44,14 @@ async def test_decorator():
     assert await wrapper(1.0) == 1.0
     assert len(cache) == 2
 
+    # Calling the cache with None inserts it.
+    assert await wrapper(None) is None
+    assert len(cache) == 3
+
+    # Calling the cache with None again returns it from cache.
+    assert await wrapper(None) is None
+    assert len(cache) == 3
+
 
 @pytest.mark.asyncio
 async def test_decorator_typed():

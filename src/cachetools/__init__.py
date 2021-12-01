@@ -25,6 +25,9 @@ import time
 from .keys import hashkey
 
 
+_DECORATOR_SENTINEL = object()
+
+
 class _DefaultSize:
 
     __slots__ = ()
@@ -499,16 +502,23 @@ class TTLCache(Cache):
         return value
 
 
-def _get_function_value_from_cache(cache, key, lock=None):
+def _get_decorator_value_from_cache(cache, key, lock=None):
+    """Returns the cached value for the given `key` from the given `cache`
+    instance.
+
+    In case the key is not found in the cache, a sentinel value is returned.
+    This is to avoid to reuse None as a "not found" marker since None is a
+    valid return value for decorated functions (in some cases it might take
+    an expensive computation to return None)."""
     lock = lock or contextlib.nullcontext()
     try:
         with lock:
             return cache[key]
     except KeyError:
-        return None
+        return _DECORATOR_SENTINEL
 
 
-def _set_function_value_in_cache(cache, key, value, lock=None):
+def _set_decorator_value_in_cache(cache, key, value, lock=None):
     lock = lock or contextlib.nullcontext()
     try:
         with lock:
@@ -535,11 +545,11 @@ def cached(cache, key=hashkey, lock=None):
 
                 async def wrapper(*args, **kwargs):
                     k = key(*args, **kwargs)
-                    v = _get_function_value_from_cache(cache, k, lock)
-                    if v:
+                    v = _get_decorator_value_from_cache(cache, k, lock)
+                    if v is not _DECORATOR_SENTINEL:
                         return v
                     v = await func(*args, **kwargs)
-                    _set_function_value_in_cache(cache, k, v, lock)
+                    _set_decorator_value_in_cache(cache, k, v, lock)
                     return v
 
         else:
@@ -553,34 +563,16 @@ def cached(cache, key=hashkey, lock=None):
 
                 def wrapper(*args, **kwargs):
                     k = key(*args, **kwargs)
-                    v = _get_function_value_from_cache(cache, k, lock)
-                    if v:
+                    v = _get_decorator_value_from_cache(cache, k, lock)
+                    if v is not _DECORATOR_SENTINEL:
                         return v
                     v = func(*args, **kwargs)
-                    _set_function_value_in_cache(cache, k, v, lock)
+                    _set_decorator_value_in_cache(cache, k, v, lock)
                     return v
 
         return functools.update_wrapper(wrapper, func)
 
     return decorator
-
-
-def _get_method_value_from_cache(self, cache, key, lock=None):
-    lock = lock or contextlib.nullcontext
-    try:
-        with lock(self):
-            return cache[key]
-    except KeyError:
-        return None
-
-
-def _set_method_value_in_cache(self, cache, key, value, lock=None):
-    lock = lock or contextlib.nullcontext
-    try:
-        with lock(self):
-            cache.setdefault(key, value)
-    except ValueError:
-        pass
 
 
 def cachedmethod(cache, key=hashkey, lock=None):
@@ -598,11 +590,14 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 if c is None:
                     return await method(self, *args, **kwargs)
                 k = key(*args, **kwargs)
-                v = _get_method_value_from_cache(self, c, k, lock)
-                if v:
+                lock_instance = None
+                if lock:
+                    lock_instance = lock(self)
+                v = _get_decorator_value_from_cache(c, k, lock_instance)
+                if v is not _DECORATOR_SENTINEL:
                     return v
                 v = await method(self, *args, **kwargs)
-                _set_method_value_in_cache(self, c, k, v, lock)
+                _set_decorator_value_in_cache(c, k, v, lock_instance)
                 return v
 
         else:
@@ -612,11 +607,14 @@ def cachedmethod(cache, key=hashkey, lock=None):
                 if c is None:
                     return method(self, *args, **kwargs)
                 k = key(*args, **kwargs)
-                v = _get_method_value_from_cache(self, c, k, lock)
-                if v:
+                lock_instance = None
+                if lock:
+                    lock_instance = lock(self)
+                v = _get_decorator_value_from_cache(c, k, lock_instance)
+                if v is not _DECORATOR_SENTINEL:
                     return v
                 v = method(self, *args, **kwargs)
-                _set_method_value_in_cache(self, c, k, v, lock)
+                _set_decorator_value_in_cache(c, k, v, lock_instance)
                 return v
 
         return functools.update_wrapper(wrapper, method)
