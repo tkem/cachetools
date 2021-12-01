@@ -151,3 +151,34 @@ class NoneWrapperTest(unittest.TestCase):
         self.assertEqual(wrapper(0), (0,))
         self.assertEqual(wrapper(1), (1,))
         self.assertEqual(wrapper(1, foo="bar"), (1, ("foo", "bar")))
+
+
+class CallForwardingTest(unittest.TestCase):
+    def test_payload_only_called_when_necessary(self):
+        cache = {}
+        calls = []
+
+        def target(val):
+            # return the pased-in value, and mutate calls via a closure
+            calls.append(val)
+            return val
+
+        wrapper = cachetools.cached(cache)(target)
+
+        # Calling the cache with None inserts it.
+        self.assertIsNone(wrapper(None))
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(len(calls), 1)  # the target was called once
+
+        # Calling the cache with None again returns it from cache.
+        self.assertIsNone(wrapper(None))
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(len(calls), 1)  # the target was not called again
+
+        self.assertEqual(wrapper(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(len(calls), 2)
+
+        self.assertEqual(wrapper(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(len(calls), 2)  # the target was not called again

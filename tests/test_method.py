@@ -8,6 +8,7 @@ class Cached:
     def __init__(self, cache, count=0):
         self.cache = cache
         self.count = count
+        self.calls_count = 0
 
     @cachedmethod(operator.attrgetter("cache"))
     def get(self, value):
@@ -20,6 +21,11 @@ class Cached:
         count = self.count
         self.count += 1
         return count
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def get_calls_counted(self, value):
+        self.calls_count += 1
+        return value
 
     # https://github.com/tkem/cachetools/issues/107
     def __hash__(self):
@@ -54,6 +60,32 @@ class CachedMethodTest(unittest.TestCase):
 
         cached.cache.clear()
         self.assertEqual(cached.get(1), 2)
+
+    def test_payload_is_only_called_when_necessary(self):
+        cached = Cached({})
+
+        # calling the wrapped method a first time with None inserts it in the
+        # cache
+        self.assertIsNone(cached.get_calls_counted(None))
+        self.assertEqual(len(cached.cache), 1)
+        self.assertEqual(cached.calls_count, 1)
+
+        # Calling it a second time with the same parameter does not call the
+        # decorated function.
+        self.assertIsNone(cached.get_calls_counted(None))
+        self.assertEqual(len(cached.cache), 1)
+        self.assertEqual(cached.calls_count, 1)
+
+        # We do forward the call to the underlying method for a different value
+        self.assertEqual(cached.get_calls_counted(1), 1)
+        self.assertEqual(len(cached.cache), 2)
+        self.assertEqual(cached.calls_count, 2)
+
+        # Calling the wrapped method again for the second value does not call
+        # the underlying method.
+        self.assertEqual(cached.get_calls_counted(1), 1)
+        self.assertEqual(len(cached.cache), 2)
+        self.assertEqual(cached.calls_count, 2)
 
     def test_typed_dict(self):
         cached = Cached(LRUCache(maxsize=2))

@@ -44,13 +44,39 @@ async def test_decorator():
     assert await wrapper(1.0) == 1.0
     assert len(cache) == 2
 
+
+@pytest.mark.asyncio
+async def test_payload_only_called_when_necessary():
+    cache = {}
+    calls = []
+
+    async def target(val):
+        # return the pased-in value, and mutate calls via a closure
+        calls.append(val)
+        return val
+
+    wrapper = cachetools.cached(cache)(target)
+
+    assert len(cache) == 0
+    assert wrapper.__wrapped__ == target
+
     # Calling the cache with None inserts it.
     assert await wrapper(None) is None
-    assert len(cache) == 3
+    assert len(cache) == 1
+    assert len(calls) == 1  # the target was called once.
 
     # Calling the cache with None again returns it from cache.
     assert await wrapper(None) is None
-    assert len(cache) == 3
+    assert len(cache) == 1
+    assert len(calls) == 1  # the target was not called again
+
+    assert await wrapper(1) == 1
+    assert len(cache) == 2
+    assert len(calls) == 2  # the target was called again for a different value
+
+    assert await wrapper(1) == 1
+    assert len(cache) == 2
+    assert len(calls) == 2  # the target was not called again for 1
 
 
 @pytest.mark.asyncio

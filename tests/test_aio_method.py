@@ -9,12 +9,18 @@ class Cached:
     def __init__(self, cache, count=0):
         self.cache = cache
         self.count = count
+        self.calls_count = 0
 
     @cachedmethod(operator.attrgetter("cache"))
     async def get(self, value):
         count = self.count
         self.count += 1
         return count
+
+    @cachedmethod(operator.attrgetter("cache"))
+    async def get_calls_counted(self, value):
+        self.calls_count += 1
+        return value
 
     @cachedmethod(operator.attrgetter("cache"), key=keys.typedkey)
     async def get_typed(self, value):
@@ -58,6 +64,34 @@ async def test_dict():
 
 
 @pytest.mark.asyncio
+async def test_payload_only_called_when_necessary():
+    cached = Cached({})
+
+    # calling the wrapped method a first time with None inserts it in the
+    # cache
+    assert await cached.get_calls_counted(None) is None
+    assert len(cached.cache) == 1
+    assert cached.calls_count == 1
+
+    # Calling it a second time with the same parameter does not call the
+    # decorated function.
+    assert await cached.get_calls_counted(None) is None
+    assert len(cached.cache) == 1
+    assert cached.calls_count == 1
+
+    # We do forward the call to the underlying method for a different value
+    assert await cached.get_calls_counted(1) == 1
+    assert len(cached.cache) == 2
+    assert cached.calls_count == 2
+
+    # Calling the wrapped method again for the second value does not call the
+    # underlying method.
+    assert await cached.get_calls_counted(1) == 1
+    assert len(cached.cache) == 2
+    assert cached.calls_count == 2
+
+
+@pytest.mark.asyncio
 async def test_typed_dict():
     cached = Cached(LRUCache(maxsize=2))
 
@@ -65,9 +99,6 @@ async def test_typed_dict():
     assert await cached.get_typed(1) == 1
     assert await cached.get_typed(1) == 1
     assert await cached.get_typed(1.0) == 2
-    assert await cached.get_typed(1.0) == 2
-    assert await cached.get_typed(0.0) == 3
-    assert await cached.get_typed(0) == 4
 
 
 @pytest.mark.asyncio
