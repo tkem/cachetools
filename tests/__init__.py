@@ -1,4 +1,3 @@
-import sys
 import unittest
 
 
@@ -108,7 +107,6 @@ class CacheTestMixin:
         with self.assertRaises(KeyError):
             cache.popitem()
 
-    @unittest.skipUnless(sys.version_info >= (3, 7), "requires Python 3.7")
     def test_popitem_exception_context(self):
         # since Python 3.7, MutableMapping.popitem() suppresses
         # exception context as implementation detail

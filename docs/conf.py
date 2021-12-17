@@ -3,8 +3,7 @@ def get_version():
     import pathlib
 
     cp = configparser.ConfigParser()
-    # Python 3.5 ConfigParser does not accept Path as filename
-    cp.read(str(pathlib.Path(__file__).parent.parent / "setup.cfg"))
+    cp.read(pathlib.Path(__file__).parent.parent / "setup.cfg")
     return cp["metadata"]["version"]
 
 
