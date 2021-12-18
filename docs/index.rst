@@ -11,17 +11,11 @@ function decorator.
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
 fixed maximum size.  When the cache is full, i.e. by adding another
 item the cache would exceed its maximum size, the cache must choose
-which item(s) to discard based on a suitable `cache algorithm`_.  In
-general, a cache's size is the total size of its items, and an item's
-size is a property or function of its value, e.g. the result of
-``sys.getsizeof(value)``.  For the trivial but common case that each
-item counts as :const:`1`, a cache's size is equal to the number of
-its items, or ``len(cache)``.
+which item(s) to discard based on a suitable `cache algorithm`_.
 
-Multiple cache classes based on different caching algorithms are
-implemented, and decorators for easily memoizing function and method
-calls are provided, too.
-
+This module provides multiple cache classes based on different cache
+algorithms, as well as decorators for easily memoizing function and
+method calls.
 
 .. testsetup:: *
 
@@ -44,8 +38,9 @@ of the cache.  When a cache is full, :meth:`Cache.__setitem__()` calls
 :meth:`self.popitem()` repeatedly until there is enough room for the
 item to be added.
 
-:class:`Cache` also features a :meth:`getsizeof` method, which returns
-the size of a given `value`.  The default implementation of
+In general, a cache's size is the total size of its item's values.
+Therefore, :class:`Cache` provides a :meth:`getsizeof` method, which
+returns the size of a given `value`.  The default implementation of
 :meth:`getsizeof` returns :const:`1` irrespective of its argument,
 making the cache's size equal to the number of its items, or
 ``len(cache)``.  For convenience, all cache classes accept an optional
@@ -260,7 +255,8 @@ often called with the same arguments:
       from cachetools.keys import hashkey
       from threading import Lock
 
-      cache = LRUCache(maxsize=32)
+      # 640K should be enough for anyone...
+      cache = LRUCache(maxsize=640*1024, getsizeof=len)
       lock = Lock()
 
       @cached(cache, key=hashkey, lock=lock)

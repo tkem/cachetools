@@ -53,16 +53,11 @@ function decorator.
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
 fixed maximum size.  When the cache is full, i.e. by adding another
 item the cache would exceed its maximum size, the cache must choose
-which item(s) to discard based on a suitable `cache algorithm`_.  In
-general, a cache's size is the total size of its items, and an item's
-size is a property or function of its value, e.g. the result of
-``sys.getsizeof(value)``.  For the trivial but common case that each
-item counts as ``1``, a cache's size is equal to the number of its
-items, or ``len(cache)``.
+which item(s) to discard based on a suitable `cache algorithm`_.
 
-Multiple cache classes based on different caching algorithms are
-implemented, and decorators for easily memoizing function and method
-calls are provided, too.
+This module provides multiple cache classes based on different cache
+algorithms, as well as decorators for easily memoizing function and
+method calls.
 
 
 Installation
