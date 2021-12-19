@@ -21,10 +21,6 @@ class Cached:
         self.count += 1
         return count
 
-    # https://github.com/tkem/cachetools/issues/107
-    def __hash__(self):
-        raise TypeError("unhashable type")
-
 
 class Locked:
     def __init__(self, cache):
@@ -40,6 +36,23 @@ class Locked:
 
     def __exit__(self, *exc):
         pass
+
+
+class Unhashable:
+    def __init__(self, cache):
+        self.cache = cache
+
+    @cachedmethod(operator.attrgetter("cache"))
+    def get_default(self, value):
+        return value
+
+    @cachedmethod(operator.attrgetter("cache"), key=keys.hashkey)
+    def get_hashkey(self, value):
+        return value
+
+    # https://github.com/tkem/cachetools/issues/107
+    def __hash__(self):
+        raise TypeError("unhashable type")
 
 
 class CachedMethodTest(unittest.TestCase):
@@ -163,3 +176,12 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 5)
         self.assertEqual(cached.get(1.0), 7)
         self.assertEqual(cached.get(1.0), 9)
+
+    def test_unhashable(self):
+        cached = Unhashable(LRUCache(maxsize=0))
+
+        self.assertEqual(cached.get_default(0), 0)
+        self.assertEqual(cached.get_default(1), 1)
+
+        with self.assertRaises(TypeError):
+            cached.get_hashkey(0)
