@@ -20,7 +20,7 @@ method calls.
 .. testsetup:: *
 
    import operator
-   from cachetools import cached, cachedmethod, LRUCache, TTLCache
+   from cachetools import cached, cachedmethod, LRUCache, TLRUCache, TTLCache
 
    from unittest import mock
    urllib = mock.MagicMock()
@@ -135,6 +135,46 @@ computed when the item is inserted into the cache.
       mutating operation, e.g. :meth:`__setitem__` or
       :meth:`__delitem__`, and therefore may still claim memory.
       Calling this method removes all items whose time-to-live would
+      have expired by `time`, so garbage collection is free to reuse
+      their memory.  If `time` is :const:`None`, this removes all
+      items that have expired by the current value returned by
+      :attr:`timer`.
+
+.. autoclass:: TLRUCache(maxsize, ttu, timer=time.monotonic, getsizeof=None)
+   :members: popitem, timer, ttu
+
+   Similar to :class:`TTLCache`, this class also associates an
+   expiration time with each item.  However, for :class:`TLRUCache`
+   items, expiration time is calculated by a user-provided time-to-use
+   (`ttu`) function, which is passed three arguments at the time of
+   insertion: the new item's key and value, as well as the current
+   value of `timer()`.
+
+   .. testcode::
+
+      from datetime import datetime, timedelta
+
+      def my_ttu(_key, value, now):
+          # assume value.ttl contains the item's time-to-live in hours
+          return now + timedelta(hours=value.ttl)
+
+      cache = TLRUCache(maxsize=10, ttu=my_ttu, timer=datetime.now)
+
+   The expression `ttu(key, value, timer())` defines the expiration
+   time of a cache item, and must be comparable against later results
+   of `timer()`.
+
+   Items that expire because they have exceeded their time-to-use will
+   be no longer accessible, and will be removed eventually.  If no
+   expired items are there to remove, the least recently used items
+   will be discarded first to make space when necessary.
+
+   .. method:: expire(self, time=None)
+
+      Expired items will be removed from a cache only at the next
+      mutating operation, e.g. :meth:`__setitem__` or
+      :meth:`__delitem__`, and therefore may still claim memory.
+      Calling this method removes all items whose time-to-use would
       have expired by `time`, so garbage collection is free to reuse
       their memory.  If `time` is :const:`None`, this removes all
       items that have expired by the current value returned by
