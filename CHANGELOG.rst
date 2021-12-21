@@ -1,4 +1,4 @@
-v5.0.0 (UNRELEASED)
+v5.0.0 (2021-12-21)
 ===================
 
 - Require Python 3.7 or later (breaking change).
