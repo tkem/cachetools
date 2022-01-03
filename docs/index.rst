@@ -111,8 +111,10 @@ computed when the item is inserted into the cache.
 
    This class associates a time-to-live value with each item.  Items
    that expire because they have exceeded their time-to-live will be
-   no longer accessible, and will be removed eventually.  If no
-   expired items are there to remove, the least recently used items
+   no longer accessible, and will be removed eventually.  
+   Items expire regardless of modifications or value access, 
+   an update of the items values will not reset their time-to-live.
+   If noexpired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
 
    By default, the time-to-live is specified in seconds and
