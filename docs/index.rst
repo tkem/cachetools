@@ -116,18 +116,24 @@ computed when the item is inserted into the cache.
    will be discarded first to make space when necessary.
 
    By default, the time-to-live is specified in seconds and
-   :func:`time.monotonic` is used to retrieve the current time.  A
-   custom `timer` function can also be supplied:
+   :func:`time.monotonic` is used to retrieve the current time.
+
+   .. testcode::
+
+      cache = TTLCache(maxsize=10, ttl=60)
+
+   A custom `timer` function can also be supplied, which does not have
+   to return seconds, or even a numeric value.  The expression
+   `timer() + ttl` at the time of insertion defines the expiration
+   time of a cache item and must be comparable against later results
+   of `timer()`, but `ttl` does not necessarily have to be a number,
+   either.
 
    .. testcode::
 
       from datetime import datetime, timedelta
 
       cache = TTLCache(maxsize=10, ttl=timedelta(hours=12), timer=datetime.now)
-
-   The expression `timer() + ttl` at the time of insertion defines the
-   expiration time of a cache item, and must be comparable against
-   later results of `timer()`.
 
    .. method:: expire(self, time=None)
 
