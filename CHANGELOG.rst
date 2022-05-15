@@ -1,3 +1,9 @@
+v5.1.0 (UNRELEASED)
+===================
+
+- Add cache decorator parameters as wrapper function attributes.
+
+
 v5.0.0 (2021-12-21)
 ===================
 

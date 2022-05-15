@@ -8,7 +8,7 @@ def get_version():
 
 
 project = "cachetools"
-copyright = "2014-2021 Thomas Kemmer"
+copyright = "2014-2022 Thomas Kemmer"
 version = get_version()
 release = version
 
