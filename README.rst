@@ -82,6 +82,15 @@ Project Resources
 - `Change log`_
 
 
+Related Projects
+------------------------------------------------------------------------
+
+- asyncache_: Helpers to use cachetools with async functions
+- CacheToolsUtils_: Cachetools Utilities
+- `kids.cache`_: Kids caching library
+- shelved-cache_: Persistent cache for Python cachetools
+
+
 License
 ------------------------------------------------------------------------
 
@@ -102,3 +111,8 @@ Licensed under the `MIT License`_.
 .. _Source code: https://github.com/tkem/cachetools/
 .. _Change log: https://github.com/tkem/cachetools/blob/master/CHANGELOG.rst
 .. _MIT License: https://raw.github.com/tkem/cachetools/master/LICENSE
+
+.. _asyncache: https://pypi.org/project/asyncache/
+.. _CacheToolsUtils: https://pypi.org/project/CacheToolsUtils/
+.. _kids.cache: https://pypi.org/project/kids.cache/
+.. _shelved-cache: https://pypi.org/project/shelved-cache/
