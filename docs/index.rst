@@ -286,26 +286,18 @@ often called with the same arguments:
       cache object.  The underlying wrapped function will be called
       outside the `with` statement, and must be thread-safe by itself.
 
-   The original underlying function is accessible through the
-   :attr:`__wrapped__` attribute of the memoizing wrapper function.
-   This can be used for introspection or for bypassing the cache.
-
-   To perform operations on the cache object, for example to clear the
-   cache during runtime, the cache should be assigned to a variable.
-   When a `lock` object is used, any access to the cache from outside
-   the function wrapper should also be performed within an appropriate
-   `with` statement:
+   The decorator's `cache`, `key` and `lock` parameters are also
+   available as :attr:`cache`, :attr:`cache_key` and
+   :attr:`cache_lock` attributes of the memoizing wrapper function.
+   These can be used for clearing the cache or invalidating individual
+   cache items, for example.
 
    .. testcode::
 
-      from cachetools.keys import hashkey
       from threading import Lock
 
       # 640K should be enough for anyone...
-      cache = LRUCache(maxsize=640*1024, getsizeof=len)
-      lock = Lock()
-
-      @cached(cache, key=hashkey, lock=lock)
+      @cached(cache=LRUCache(maxsize=640*1024, getsizeof=len), lock=Lock())
       def get_pep(num):
           'Retrieve text of a Python Enhancement Proposal'
           url = 'http://www.python.org/dev/peps/pep-%04d/' % num
@@ -313,12 +305,16 @@ often called with the same arguments:
               return s.read()
 
       # make sure access to cache is synchronized
-      with lock:
-          cache.clear()
+      with get_pep.cache_lock:
+          get_pep.cache.clear()
 
       # always use the key function for accessing cache items
-      with lock:
-          cache.pop(hashkey(42), None)
+      with get_pep.cache_lock:
+          get_pep.cache.pop(get_pep.cache_key(42), None)
+
+   The original underlying function is accessible through the
+   :attr:`__wrapped__` attribute.  This can be used for introspection
+   or for bypassing the cache.
 
    It is also possible to use a single shared cache object with
    multiple functions.  However, care must be taken that different
@@ -396,7 +392,6 @@ often called with the same arguments:
       :options: +ELLIPSIS
 
       PEP #1: ...
-
 
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when

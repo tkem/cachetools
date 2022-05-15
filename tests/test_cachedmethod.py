@@ -1,7 +1,7 @@
 import operator
 import unittest
 
-from cachetools import LRUCache, cachedmethod, keys
+from cachetools import LRUCache, _methodkey, cachedmethod, keys
 
 
 class Cached:
@@ -125,7 +125,7 @@ class CachedMethodTest(unittest.TestCase):
         import fractions
         import gc
 
-        # in Python 3.4, `int` does not support weak references even
+        # in Python 3.7, `int` does not support weak references even
         # when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
             def __add__(self, other):
@@ -185,3 +185,31 @@ class CachedMethodTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             cached.get_hashkey(0)
+
+    def test_wrapped(self):
+        cache = {}
+        cached = Cached(cache)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get.__wrapped__(cached, 0), 0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get(0), 1)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cached.get(0), 1)
+        self.assertEqual(len(cache), 1)
+
+    def test_attributes(self):
+        cache = {}
+        cached = Cached(cache)
+
+        self.assertIs(cached.get.cache(cached), cache)
+        self.assertIs(cached.get.cache_key, _methodkey)
+        self.assertIs(cached.get.cache_lock, None)
+
+    def test_attributes_lock(self):
+        cache = {}
+        cached = Locked(cache)
+
+        self.assertIs(cached.get.cache(cached), cache)
+        self.assertIs(cached.get.cache_key, _methodkey)
+        self.assertIs(cached.get.cache_lock(cached), cached)
