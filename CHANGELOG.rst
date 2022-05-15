@@ -1,4 +1,4 @@
-v5.1.0 (UNRELEASED)
+v5.1.0 (2022-05-15)
 ===================
 
 - Add cache decorator parameters as wrapper function attributes.
