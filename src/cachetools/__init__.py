@@ -663,6 +663,10 @@ def cached(cache, key=_defaultkey, lock=None):
                 except ValueError:
                     return v  # value too large
 
+        wrapper.cache = cache
+        wrapper.cache_key = key
+        wrapper.cache_lock = lock
+
         return functools.update_wrapper(wrapper, func)
 
     return decorator
@@ -712,6 +716,10 @@ def cachedmethod(cache, key=_methodkey, lock=None):
                         return c.setdefault(k, v)
                 except ValueError:
                     return v  # value too large
+
+        wrapper.cache = cache
+        wrapper.cache_key = key
+        wrapper.cache_lock = lock
 
         return functools.update_wrapper(wrapper, method)
 
