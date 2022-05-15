@@ -94,7 +94,7 @@ Related Projects
 License
 ------------------------------------------------------------------------
 
-Copyright (c) 2014-2021 Thomas Kemmer.
+Copyright (c) 2014-2022 Thomas Kemmer.
 
 Licensed under the `MIT License`_.
 
