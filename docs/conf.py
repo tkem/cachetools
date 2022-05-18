@@ -1,9 +1,16 @@
+import pathlib
+import sys
+
+basedir = pathlib.Path(__file__).parent.parent
+
+sys.path.insert(0, str((basedir / "src").resolve()))
+
+
 def get_version():
     import configparser
-    import pathlib
 
     cp = configparser.ConfigParser()
-    cp.read(pathlib.Path(__file__).parent.parent / "setup.cfg")
+    cp.read(basedir / "setup.cfg")
     return cp["metadata"]["version"]
 
 
