@@ -1,8 +1,18 @@
-import contextlib
 import unittest
 
 import cachetools
 import cachetools.keys
+
+
+class CountedLock:
+    def __init__(self):
+        self.count = 0
+
+    def __enter__(self):
+        self.count += 1
+
+    def __exit__(self, *exc):
+        pass
 
 
 class DecoratorTestMixin:
@@ -73,26 +83,17 @@ class DecoratorTestMixin:
         self.assertEqual(len(cache), 3)
 
     def test_decorator_lock(self):
-        class Lock:
-
-            count = 0
-
-            def __enter__(self):
-                Lock.count += 1
-
-            def __exit__(self, *exc):
-                pass
-
         cache = self.cache(2)
-        wrapper = cachetools.cached(cache, lock=Lock())(self.func)
+        lock = CountedLock()
+        wrapper = cachetools.cached(cache, lock=lock)(self.func)
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper(0), 0)
-        self.assertEqual(Lock.count, 2)
+        self.assertEqual(lock.count, 2)
         self.assertEqual(wrapper(1), 1)
-        self.assertEqual(Lock.count, 4)
+        self.assertEqual(lock.count, 4)
         self.assertEqual(wrapper(1), 1)
-        self.assertEqual(Lock.count, 5)
+        self.assertEqual(lock.count, 5)
 
     def test_decorator_wrapped(self):
         cache = self.cache(2)
@@ -118,12 +119,36 @@ class DecoratorTestMixin:
 
     def test_decorator_attributes_lock(self):
         cache = self.cache(2)
-        lock = contextlib.nullcontext()
+        lock = CountedLock()
         wrapper = cachetools.cached(cache, lock=lock)(self.func)
 
         self.assertIs(wrapper.cache, cache)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, lock)
+
+    def test_decorator_clear(self):
+        cache = self.cache(2)
+        wrapper = cachetools.cached(cache)(self.func)
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(len(cache), 1)
+        wrapper.cache_clear()
+        self.assertEqual(len(cache), 0)
+
+    def test_decorator_clear_lock(self):
+        cache = self.cache(2)
+        lock = CountedLock()
+        wrapper = cachetools.cached(cache, lock=lock)(self.func)
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(lock.count, 2)
+        wrapper.cache_clear()
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 3)
+
+    def test_decorator_clear_none(self):
+        cache = None
+        wrapper = cachetools.cached(cache)(self.func)
+        wrapper.cache_clear()  # no-op
 
 
 class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
@@ -139,23 +164,14 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(len(cache), 0)
 
     def test_zero_size_cache_decorator_lock(self):
-        class Lock:
-
-            count = 0
-
-            def __enter__(self):
-                Lock.count += 1
-
-            def __exit__(self, *exc):
-                pass
-
         cache = self.cache(0)
-        wrapper = cachetools.cached(cache, lock=Lock())(self.func)
+        lock = CountedLock()
+        wrapper = cachetools.cached(cache, lock=lock)(self.func)
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(len(cache), 0)
-        self.assertEqual(Lock.count, 2)
+        self.assertEqual(lock.count, 2)
 
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):

@@ -213,3 +213,23 @@ class CachedMethodTest(unittest.TestCase):
         self.assertIs(cached.get.cache(cached), cache)
         self.assertIs(cached.get.cache_key, keys.methodkey)
         self.assertIs(cached.get.cache_lock(cached), cached)
+
+    def test_clear(self):
+        cache = {}
+        cached = Cached(cache)
+
+        self.assertEqual(cached.get(0), 0)
+        self.assertEqual(len(cache), 1)
+        cached.get.cache_clear(cached)
+        self.assertEqual(len(cache), 0)
+
+    def test_clear_locked(self):
+        cache = {}
+        cached = Locked(cache)
+
+        self.assertEqual(cached.get(0), 1)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cached.count, 2)
+        cached.get.cache_clear(cached)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.count, 3)
