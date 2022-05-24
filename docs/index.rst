@@ -312,6 +312,15 @@ often called with the same arguments:
       with get_pep.cache_lock:
           get_pep.cache.pop(get_pep.cache_key(42), None)
 
+   For the common use case of clearing or invalidating the cache, the
+   decorator also provides a :func:`cache_clear()` function which
+   takes care of locking automatically, if needed:
+
+   .. testcode::
+
+      # no need for get_pep.cache_lock here
+      get_pep.cache_clear()
+
    The original underlying function is accessible through the
    :attr:`__wrapped__` attribute.  This can be used for introspection
    or for bypassing the cache.

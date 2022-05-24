@@ -627,6 +627,9 @@ def cached(cache, key=keys.hashkey, lock=None):
             def wrapper(*args, **kwargs):
                 return func(*args, **kwargs)
 
+            def clear():
+                pass
+
         elif lock is None:
 
             def wrapper(*args, **kwargs):
@@ -641,6 +644,9 @@ def cached(cache, key=keys.hashkey, lock=None):
                 except ValueError:
                     pass  # value too large
                 return v
+
+            def clear():
+                cache.clear()
 
         else:
 
@@ -659,9 +665,14 @@ def cached(cache, key=keys.hashkey, lock=None):
                 except ValueError:
                     return v  # value too large
 
+            def clear():
+                with lock:
+                    cache.clear()
+
         wrapper.cache = cache
         wrapper.cache_key = key
         wrapper.cache_lock = lock
+        wrapper.cache_clear = clear
 
         return functools.update_wrapper(wrapper, func)
 
@@ -693,6 +704,11 @@ def cachedmethod(cache, key=keys.methodkey, lock=None):
                     pass  # value too large
                 return v
 
+            def clear(self):
+                c = cache(self)
+                if c is not None:
+                    c.clear()
+
         else:
 
             def wrapper(self, *args, **kwargs):
@@ -713,9 +729,16 @@ def cachedmethod(cache, key=keys.methodkey, lock=None):
                 except ValueError:
                     return v  # value too large
 
+            def clear(self):
+                c = cache(self)
+                if c is not None:
+                    with lock(self):
+                        c.clear()
+
         wrapper.cache = cache
         wrapper.cache_key = key
         wrapper.cache_lock = lock
+        wrapper.cache_clear = clear
 
         return functools.update_wrapper(wrapper, method)
 
