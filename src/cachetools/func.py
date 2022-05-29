@@ -46,18 +46,19 @@ def _cache(cache, typed):
 
     def decorator(func):
         key = keys.typedkey if typed else keys.hashkey
+        hits = misses = 0
         lock = RLock()
-        stats = [0, 0]
 
         def wrapper(*args, **kwargs):
+            nonlocal hits, misses
             k = key(*args, **kwargs)
             with lock:
                 try:
                     v = cache[k]
-                    stats[0] += 1
+                    hits += 1
                     return v
                 except KeyError:
-                    stats[1] += 1
+                    misses += 1
             v = func(*args, **kwargs)
             # in case of a race, prefer the item already in the cache
             try:
@@ -68,17 +69,17 @@ def _cache(cache, typed):
 
         def cache_info():
             with lock:
-                hits, misses = stats
                 maxsize = cache.maxsize
                 currsize = cache.currsize
             return _CacheInfo(hits, misses, maxsize, currsize)
 
         def cache_clear():
+            nonlocal hits, misses
             with lock:
                 try:
                     cache.clear()
                 finally:
-                    stats[:] = [0, 0]
+                    hits = misses = 0
 
         wrapper.cache_info = cache_info
         wrapper.cache_clear = cache_clear
