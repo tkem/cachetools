@@ -5,17 +5,21 @@ cachetools
    :target: https://pypi.org/project/cachetools/
    :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/readthedocs/cachetools
-   :target: https://cachetools.readthedocs.io/
-   :alt: Documentation build status
-
 .. image:: https://img.shields.io/github/workflow/status/tkem/cachetools/CI
    :target: https://github.com/tkem/cachetools/actions/workflows/ci.yml
    :alt: CI build status
 
+.. image:: https://img.shields.io/readthedocs/cachetools
+   :target: https://cachetools.readthedocs.io/
+   :alt: Documentation build status
+
 .. image:: https://img.shields.io/codecov/c/github/tkem/cachetools/master.svg
    :target: https://codecov.io/gh/tkem/cachetools
    :alt: Test coverage
+
+.. image:: https://img.shields.io/librariesio/sourcerank/pypi/cachetools
+   :target: https://libraries.io/pypi/cachetools
+   :alt: Libraries.io SourceRank
 
 .. image:: https://img.shields.io/github/license/tkem/cachetools
    :target: https://raw.github.com/tkem/cachetools/master/LICENSE
@@ -24,6 +28,7 @@ cachetools
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
    :alt: Code style: black
+
 
 This module provides various memoizing collections and decorators,
 including variants of the Python Standard Library's `@lru_cache`_
