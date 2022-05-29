@@ -1,3 +1,15 @@
+v5.2.0 (UNRELEASED)
+===================
+
+- Add ``cachetools.keys.methodkey()``.
+
+- Add ``cache_clear()`` function to decorators.
+
+- Add ``src`` directory to ``sys.path`` for Sphinx autodoc.
+
+- Modernize ``func`` wrappers.
+
+
 v5.1.0 (2022-05-15)
 ===================
 
