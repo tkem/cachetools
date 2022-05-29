@@ -348,7 +348,7 @@ often called with the same arguments:
       [..., (('fib', 42), 267914296), ..., (('luc', 42), 599074578)]
 
 
-.. decorator:: cachedmethod(cache, key=cachetools.keys.hashkey, lock=None)
+.. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None)
 
    Decorator to wrap a class or instance method with a memoizing
    callable that saves results in a (possibly shared) cache.
@@ -365,6 +365,15 @@ often called with the same arguments:
       ``lock(self)`` will only guard access to the cache itself.  It
       is the user's responsibility to handle concurrent calls to the
       underlying wrapped method in a multithreaded environment.
+
+   The `key` function will be called as `key(self, *args, **kwargs)`
+   to retrieve a suitable cache key.  Note that the default `key`
+   function, :func:`cachetools.keys.methodkey`, ignores its first
+   argument, i.e. :const:`self`.  This has mostly historical reasons,
+   but also ensures that :const:`self` does not have to be hashable.
+   You may provide a different `key` function,
+   e.g. :func:`cachetools.keys.hashkey`, if you need :const:`self` to
+   be part of the cache key.
 
    One advantage of :func:`cachedmethod` over the :func:`cached`
    function decorator is that cache properties such as `maxsize` can
@@ -444,6 +453,12 @@ functions with the :func:`cached` and :func:`cachedmethod` decorators:
 
    This function returns a :class:`tuple` instance suitable as a cache
    key, provided the positional and keywords arguments are hashable.
+
+.. autofunction:: methodkey
+
+   This function is equivalent to :func:`hashkey`, but ignores its
+   first positional argument, i.e. `self` when used with the
+   :func:`cachedmethod` decorator.
 
 .. autofunction:: typedkey
 
