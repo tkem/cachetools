@@ -22,11 +22,7 @@ import heapq
 import random
 import time
 
-from .keys import hashkey as _defaultkey
-
-
-def _methodkey(_, *args, **kwargs):
-    return _defaultkey(*args, **kwargs)
+from . import keys
 
 
 class _DefaultSize:
@@ -619,7 +615,7 @@ class TLRUCache(_TimedCache):
         return value
 
 
-def cached(cache, key=_defaultkey, lock=None):
+def cached(cache, key=keys.hashkey, lock=None):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
@@ -672,7 +668,7 @@ def cached(cache, key=_defaultkey, lock=None):
     return decorator
 
 
-def cachedmethod(cache, key=_methodkey, lock=None):
+def cachedmethod(cache, key=keys.methodkey, lock=None):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a cache.
 

@@ -1,7 +1,7 @@
 import operator
 import unittest
 
-from cachetools import LRUCache, _methodkey, cachedmethod, keys
+from cachetools import LRUCache, cachedmethod, keys
 
 
 class Cached:
@@ -203,7 +203,7 @@ class CachedMethodTest(unittest.TestCase):
         cached = Cached(cache)
 
         self.assertIs(cached.get.cache(cached), cache)
-        self.assertIs(cached.get.cache_key, _methodkey)
+        self.assertIs(cached.get.cache_key, keys.methodkey)
         self.assertIs(cached.get.cache_lock, None)
 
     def test_attributes_lock(self):
@@ -211,5 +211,5 @@ class CachedMethodTest(unittest.TestCase):
         cached = Locked(cache)
 
         self.assertIs(cached.get.cache(cached), cache)
-        self.assertIs(cached.get.cache_key, _methodkey)
+        self.assertIs(cached.get.cache_key, keys.methodkey)
         self.assertIs(cached.get.cache_lock(cached), cached)
