@@ -1,4 +1,4 @@
-v5.2.0 (UNRELEASED)
+v5.2.0 (2022-05-29)
 ===================
 
 - Add ``cachetools.keys.methodkey()``.
