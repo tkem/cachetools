@@ -390,12 +390,13 @@ class TTLCache(_TimedCache):
             prev.next = next
             next.prev = prev
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None, reset_expire_on_access=False):
         _TimedCache.__init__(self, maxsize, timer, getsizeof)
         self.__root = root = TTLCache._Link()
         root.prev = root.next = root
         self.__links = collections.OrderedDict()
         self.__ttl = ttl
+        self.__rea = reset_expire_on_access
 
     def __contains__(self, key):
         try:
@@ -415,6 +416,8 @@ class TTLCache(_TimedCache):
         if expired:
             return self.__missing__(key)
         else:
+            if self.__rea:
+                link.expires = self.timer() + self.__ttl
             return cache_getitem(self, key)
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -463,6 +466,11 @@ class TTLCache(_TimedCache):
     def ttl(self):
         """The time-to-live value of the cache's items."""
         return self.__ttl
+
+    @property
+    def reset_expire_on_access(self):
+        """Reset-expire-on-access flag value of the cache's items."""
+        return self.__rea   
 
     def expire(self, time=None):
         """Remove expired items from the cache."""
