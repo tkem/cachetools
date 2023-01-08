@@ -5,7 +5,7 @@ cachetools
    :target: https://pypi.org/project/cachetools/
    :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/github/workflow/status/tkem/cachetools/CI
+.. image:: https://img.shields.io/github/actions/workflow/status/tkem/cachetools/ci.yml
    :target: https://github.com/tkem/cachetools/actions/workflows/ci.yml
    :alt: CI build status
 
