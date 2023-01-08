@@ -1,3 +1,13 @@
+v5.2.1 (UNRELEASED)
+===================
+
+- Add support for Python 3.11.
+
+- Correct version information in RTD documentation.
+
+- ``badges/shields``: Change to GitHub workflow badge routes.
+
+
 v5.2.0 (2022-05-29)
 ===================
 
