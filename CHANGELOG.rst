@@ -1,4 +1,4 @@
-v5.2.1 (UNRELEASED)
+v5.2.1 (2023-01-08)
 ===================
 
 - Add support for Python 3.11.
