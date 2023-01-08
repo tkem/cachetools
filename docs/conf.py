@@ -5,19 +5,10 @@ basedir = pathlib.Path(__file__).parent.parent
 
 sys.path.insert(0, str((basedir / "src").resolve()))
 
-
-def get_version():
-    import configparser
-
-    cp = configparser.ConfigParser()
-    cp.read(basedir / "setup.cfg")
-    return cp["metadata"]["version"]
-
-
 project = "cachetools"
 copyright = "2014-2022 Thomas Kemmer"
-version = get_version()
-release = version
+version = "5.2"
+release = "5.2.0"
 
 extensions = [
     "sphinx.ext.autodoc",
