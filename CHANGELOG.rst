@@ -1,4 +1,4 @@
-v5.3.0 (UNRELEASED)
+v5.3.0 (2023-01-22)
 ===================
 
 - Add ``cache_info()`` function to ``@cached`` decorator.
