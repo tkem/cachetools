@@ -145,15 +145,24 @@ class DecoratorTestMixin:
         self.assertEqual(len(cache), 0)
         self.assertEqual(lock.count, 3)
 
-    def test_decorator_clear_none(self):
-        cache = None
-        wrapper = cachetools.cached(cache)(self.func)
-        wrapper.cache_clear()  # no-op
-
 
 class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
         return cachetools.Cache(maxsize=minsize)
+
+    def test_decorator_info(self):
+        cache = self.cache(2)
+        wrapper = cachetools.cached(cache, info=True)(self.func)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(wrapper(1), 1)
+        self.assertEqual(wrapper.cache_info(), (0, 2, 2, 2))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (1, 2, 2, 2))
+        wrapper.cache_clear()
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
 
     def test_zero_size_cache_decorator(self):
         cache = self.cache(0)
@@ -173,10 +182,32 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(len(cache), 0)
         self.assertEqual(lock.count, 2)
 
+    def test_zero_size_cache_decorator_info(self):
+        cache = self.cache(0)
+        wrapper = cachetools.cached(cache, info=True)(self.func)
+
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
+
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
         return dict()
+
+    def test_decorator_info(self):
+        cache = self.cache(2)
+        wrapper = cachetools.cached(cache, info=True)(self.func)
+        self.assertEqual(wrapper.cache_info(), (0, 0, None, 0))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 1, None, 1))
+        self.assertEqual(wrapper(1), 1)
+        self.assertEqual(wrapper.cache_info(), (0, 2, None, 2))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (1, 2, None, 2))
+        wrapper.cache_clear()
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 0, None, 0))
 
 
 class NoneWrapperTest(unittest.TestCase):
@@ -189,3 +220,26 @@ class NoneWrapperTest(unittest.TestCase):
         self.assertEqual(wrapper(0), (0,))
         self.assertEqual(wrapper(1), (1,))
         self.assertEqual(wrapper(1, foo="bar"), (1, ("foo", "bar")))
+
+    def test_decorator_attributes(self):
+        wrapper = cachetools.cached(None)(self.func)
+
+        self.assertIs(wrapper.cache, None)
+        self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
+        self.assertIs(wrapper.cache_lock, None)
+
+    def test_decorator_clear(self):
+        wrapper = cachetools.cached(None)(self.func)
+
+        wrapper.cache_clear()  # no-op
+
+    def test_decorator_info(self):
+        wrapper = cachetools.cached(None, info=True)(self.func)
+
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(wrapper(0), (0,))
+        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
+        self.assertEqual(wrapper(1), (1,))
+        self.assertEqual(wrapper.cache_info(), (0, 2, 0, 0))
+        wrapper.cache_clear()
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
