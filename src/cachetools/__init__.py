@@ -748,18 +748,20 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
 
                 def wrapper(*args, **kwargs):
                     k = key(*args, **kwargs)
-                    try:
-                        with lock:
-                            return cache[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = func(*args, **kwargs)
+
+                    with lock:
+                        value = cache.get(k)
+
+                        if value is not None:
+                            return value
+
+                    value = func(*args, **kwargs)
                     # in case of a race, prefer the item already in the cache
                     try:
                         with lock:
-                            return cache.setdefault(k, v)
+                            return cache.setdefault(k, value)
                     except ValueError:
-                        return v  # value too large
+                        return value  # value too large
 
                 def cache_clear():
                     with lock:
