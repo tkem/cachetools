@@ -327,7 +327,10 @@ class _TimedCache(Cache):
         def __getattr__(self, name):
             return getattr(self.__timer, name)
 
-    def __init__(self, maxsize, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, timer=None, getsizeof=None):
+        if timer is None:
+            timer = time.monotonic
+
         Cache.__init__(self, maxsize, getsizeof)
         self.__timer = _TimedCache._Timer(timer)
 
@@ -390,7 +393,10 @@ class TTLCache(_TimedCache):
             prev.next = next
             next.prev = prev
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=None, getsizeof=None):
+        if timer is None:
+            timer = time.monotonic
+
         _TimedCache.__init__(self, maxsize, timer, getsizeof)
         self.__root = root = TTLCache._Link()
         root.prev = root.next = root
@@ -515,7 +521,10 @@ class TLRUCache(_TimedCache):
         def __lt__(self, other):
             return self.expires < other.expires
 
-    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, ttu, timer=None, getsizeof=None):
+        if timer is None:
+            timer = time.monotonic
+
         _TimedCache.__init__(self, maxsize, timer, getsizeof)
         self.__items = collections.OrderedDict()
         self.__order = []
