@@ -816,14 +816,14 @@ def cachedmethod(cache, key=keys.methodkey, lock=None):
                     return method(self, *args, **kwargs)
                 k = key(self, *args, **kwargs)
                 try:
-                    with lock(self):
+                    with lock:
                         return c[k]
                 except KeyError:
                     pass  # key not found
                 v = method(self, *args, **kwargs)
                 # in case of a race, prefer the item already in the cache
                 try:
-                    with lock(self):
+                    with lock:
                         return c.setdefault(k, v)
                 except ValueError:
                     return v  # value too large
@@ -831,7 +831,7 @@ def cachedmethod(cache, key=keys.methodkey, lock=None):
             def clear(self):
                 c = cache(self)
                 if c is not None:
-                    with lock(self):
+                    with lock:
                         c.clear()
 
         wrapper.cache = cache
