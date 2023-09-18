@@ -69,7 +69,7 @@ v5.0.0 (2021-12-21)
 
   ``TTLCache`` items now get expired if their expiration time is less
   than *or equal to* ``timer()``.  For applications using the default
-  ``timer()``, this should be barely noticable, but it may affect the
+  ``timer()``, this should be barely noticeable, but it may affect the
   use of custom timers with larger tick intervals.  Note that this
   also implies that a ``TTLCache`` with ``ttl=0`` can no longer hold
   any items, since they will expire immediately.
@@ -294,7 +294,7 @@ v1.1.0 (2015-08-28)
 
 - Add ``@cached`` function decorator.
 
-- Add ``hashkey`` and ``typedkey`` fuctions.
+- Add ``hashkey`` and ``typedkey`` functions.
 
 - Add `key` and `lock` arguments to ``@cachedmethod``.
 
