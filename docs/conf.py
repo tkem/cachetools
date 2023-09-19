@@ -18,4 +18,4 @@ extensions = [
 ]
 exclude_patterns = ["_build"]
 master_doc = "index"
-html_theme = "default"
+html_theme = "classic"
