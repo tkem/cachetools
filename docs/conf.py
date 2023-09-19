@@ -1,14 +1,26 @@
 import pathlib
 import sys
 
-basedir = pathlib.Path(__file__).parent.parent
+src_directory = (pathlib.Path(__file__).parent.parent / "src").resolve()
+sys.path.insert(0, str(src_directory))
 
-sys.path.insert(0, str((basedir / "src").resolve()))
+
+# Extract the current version from the source.
+def get_version():
+    """Get the version and release from the source code."""
+
+    text = (src_directory / "cachetools/__init__.py").read_text()
+    for line in text.splitlines():
+        if not line.strip().startswith("__version__"):
+            continue
+        full_version = line.partition("=")[2].strip().strip("\"'")
+        partial_version = ".".join(full_version.split(".")[:2])
+        return full_version, partial_version
+
 
 project = "cachetools"
 copyright = "2014-2023 Thomas Kemmer"
-version = "5.3"
-release = "5.3.1"
+release, version = get_version()
 
 extensions = [
     "sphinx.ext.autodoc",
