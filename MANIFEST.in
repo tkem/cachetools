@@ -3,6 +3,7 @@ include LICENSE
 include MANIFEST.in
 include README.rst
 include tox.ini
+exclude .readthedocs.yaml
 
 recursive-include docs *
 prune docs/_build
