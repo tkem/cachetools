@@ -8,7 +8,7 @@ sys.path.insert(0, str((basedir / "src").resolve()))
 project = "cachetools"
 copyright = "2014-2023 Thomas Kemmer"
 version = "5.3"
-release = "5.3.0"
+release = "5.3.1"
 
 extensions = [
     "sphinx.ext.autodoc",
