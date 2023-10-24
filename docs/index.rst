@@ -190,7 +190,7 @@ computed when the item is inserted into the cache.
 
 
 Extending cache classes
------------------------
+=======================
 
 Sometimes it may be desirable to notice when and what cache items are
 evicted, i.e. removed from a cache to make room for new items.  Since
