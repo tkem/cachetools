@@ -1,3 +1,11 @@
+v5.3.2 (2023-10-24)
+===================
+
+- Add support for Python 3.12.
+
+- Various documentation improvements.
+
+
 v5.3.1 (2023-05-27)
 ===================
 
