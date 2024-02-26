@@ -21,7 +21,6 @@ method calls.
 
 .. testsetup:: *
 
-   import operator
    from cachetools import cached, cachedmethod, LRUCache, TLRUCache, TTLCache
 
    from unittest import mock
@@ -422,7 +421,7 @@ often called with the same arguments:
           def __init__(self, cachesize):
               self.cache = LRUCache(maxsize=cachesize)
 
-          @cachedmethod(operator.attrgetter('cache'))
+          @cachedmethod(lambda self: self.cache)
           def get(self, num):
               """Retrieve text of a Python Enhancement Proposal"""
               url = 'http://www.python.org/dev/peps/pep-%04d/' % num
