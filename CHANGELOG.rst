@@ -1,3 +1,11 @@
+v5.3.3 (2024-02-26)
+===================
+
+- Documentation improvements.
+
+- Update CI environment.
+
+
 v5.3.2 (2023-10-24)
 ===================
 
