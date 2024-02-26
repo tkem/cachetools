@@ -1,4 +1,3 @@
-import operator
 import unittest
 
 from cachetools import LRUCache, cachedmethod, keys
@@ -9,13 +8,13 @@ class Cached:
         self.cache = cache
         self.count = count
 
-    @cachedmethod(operator.attrgetter("cache"))
+    @cachedmethod(lambda self: self.cache)
     def get(self, value):
         count = self.count
         self.count += 1
         return count
 
-    @cachedmethod(operator.attrgetter("cache"), key=keys.typedkey)
+    @cachedmethod(lambda self: self.cache, key=keys.typedkey)
     def get_typed(self, value):
         count = self.count
         self.count += 1
@@ -27,7 +26,7 @@ class Locked:
         self.cache = cache
         self.count = 0
 
-    @cachedmethod(operator.attrgetter("cache"), lock=lambda self: self)
+    @cachedmethod(lambda self: self.cache, lock=lambda self: self)
     def get(self, value):
         return self.count
 
@@ -42,11 +41,11 @@ class Unhashable:
     def __init__(self, cache):
         self.cache = cache
 
-    @cachedmethod(operator.attrgetter("cache"))
+    @cachedmethod(lambda self: self.cache)
     def get_default(self, value):
         return value
 
-    @cachedmethod(operator.attrgetter("cache"), key=keys.hashkey)
+    @cachedmethod(lambda self: self.cache, key=keys.hashkey)
     def get_hashkey(self, value):
         return value
 
