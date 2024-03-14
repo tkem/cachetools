@@ -416,7 +416,7 @@ often called with the same arguments:
 
    .. testcode::
 
-      class CachedPEPs(object):
+      class CachedPEPs:
 
           def __init__(self, cachesize):
               self.cache = LRUCache(maxsize=cachesize)
@@ -444,7 +444,7 @@ often called with the same arguments:
 
    .. testcode::
 
-      class CachedReferences(object):
+      class CachedReferences:
 
           def __init__(self, cachesize):
               self.cache = LRUCache(maxsize=cachesize)
