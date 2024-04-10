@@ -14,8 +14,8 @@ class Cached:
         self.count += 1
         return count
 
-    @cachedmethod(lambda self: self.cache, key=keys.typedkey)
-    def get_typed(self, value):
+    @cachedmethod(lambda self: self.cache, key=keys.typedmethodkey)
+    def get_typedmethod(self, value):
         count = self.count
         self.count += 1
         return count
@@ -67,16 +67,16 @@ class CachedMethodTest(unittest.TestCase):
         cached.cache.clear()
         self.assertEqual(cached.get(1), 2)
 
-    def test_typed_dict(self):
+    def test_typedmethod_dict(self):
         cached = Cached(LRUCache(maxsize=2))
 
-        self.assertEqual(cached.get_typed(0), 0)
-        self.assertEqual(cached.get_typed(1), 1)
-        self.assertEqual(cached.get_typed(1), 1)
-        self.assertEqual(cached.get_typed(1.0), 2)
-        self.assertEqual(cached.get_typed(1.0), 2)
-        self.assertEqual(cached.get_typed(0.0), 3)
-        self.assertEqual(cached.get_typed(0), 4)
+        self.assertEqual(cached.get_typedmethod(0), 0)
+        self.assertEqual(cached.get_typedmethod(1), 1)
+        self.assertEqual(cached.get_typedmethod(1), 1)
+        self.assertEqual(cached.get_typedmethod(1.0), 2)
+        self.assertEqual(cached.get_typedmethod(1.0), 2)
+        self.assertEqual(cached.get_typedmethod(0.0), 3)
+        self.assertEqual(cached.get_typedmethod(0), 4)
 
     def test_lru(self):
         cached = Cached(LRUCache(maxsize=2))
@@ -90,16 +90,16 @@ class CachedMethodTest(unittest.TestCase):
         cached.cache.clear()
         self.assertEqual(cached.get(1), 2)
 
-    def test_typed_lru(self):
+    def test_typedmethod_lru(self):
         cached = Cached(LRUCache(maxsize=2))
 
-        self.assertEqual(cached.get_typed(0), 0)
-        self.assertEqual(cached.get_typed(1), 1)
-        self.assertEqual(cached.get_typed(1), 1)
-        self.assertEqual(cached.get_typed(1.0), 2)
-        self.assertEqual(cached.get_typed(1.0), 2)
-        self.assertEqual(cached.get_typed(0.0), 3)
-        self.assertEqual(cached.get_typed(0), 4)
+        self.assertEqual(cached.get_typedmethod(0), 0)
+        self.assertEqual(cached.get_typedmethod(1), 1)
+        self.assertEqual(cached.get_typedmethod(1), 1)
+        self.assertEqual(cached.get_typedmethod(1.0), 2)
+        self.assertEqual(cached.get_typedmethod(1.0), 2)
+        self.assertEqual(cached.get_typedmethod(0.0), 3)
+        self.assertEqual(cached.get_typedmethod(0), 4)
 
     def test_nospace(self):
         cached = Cached(LRUCache(maxsize=0))
@@ -141,10 +141,10 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 2)
         self.assertEqual(cached.get(1.0), 2)
 
-        ref = cached.get_typed(1)
+        ref = cached.get_typedmethod(1)
         self.assertEqual(ref, 3)
-        self.assertEqual(cached.get_typed(1), 3)
-        self.assertEqual(cached.get_typed(1.0), 4)
+        self.assertEqual(cached.get_typedmethod(1), 3)
+        self.assertEqual(cached.get_typedmethod(1.0), 4)
 
         cached.cache.clear()
         self.assertEqual(cached.get(1), 5)
