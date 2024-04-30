@@ -2,17 +2,18 @@
 
 __all__ = ("fifo_cache", "lfu_cache", "lru_cache", "mru_cache", "rr_cache", "ttl_cache")
 
+import functools
 import math
 import random
 import time
 
 try:
-    from threading import RLock
+    from threading import Condition
 except ImportError:  # pragma: no cover
-    from dummy_threading import RLock
+    from dummy_threading import Condition
 
 from . import FIFOCache, LFUCache, LRUCache, MRUCache, RRCache, TTLCache
-from . import cached
+from . import _CacheInfo
 from . import keys
 
 
@@ -26,11 +27,65 @@ class _UnboundTTLCache(TTLCache):
 
 
 def _cache(cache, maxsize, typed):
+    key = keys.typedkey if typed else keys.hashkey
+
     def decorator(func):
-        key = keys.typedkey if typed else keys.hashkey
-        wrapper = cached(cache=cache, key=key, lock=RLock(), info=True)(func)
+        cond = Condition()
+        pending = set()
+        hits = misses = 0
+
+        def wrapper(*args, **kwargs):
+            nonlocal hits, misses
+            k = key(*args, **kwargs)
+            with cond:
+                cond.wait_for(lambda: k not in pending)
+                try:
+                    result = cache[k]
+                    hits += 1
+                    return result
+                except KeyError:
+                    pass
+                misses += 1
+                pending.add(k)
+            try:
+                v = func(*args, **kwargs)
+                try:
+                    with cond:
+                        cache[k] = v
+                except ValueError:
+                    pass  # value too large
+                return v
+            finally:
+                with cond:
+                    pending.remove(k)
+                    cond.notify_all()
+
+        def cache_clear():
+            nonlocal hits, misses
+            with cond:
+                cache.clear()
+                hits = misses = 0
+
+        if isinstance(cache, dict):
+
+            def cache_info():
+                with cond:
+                    return _CacheInfo(hits, misses, None, len(cache))
+
+        else:
+
+            def cache_info():
+                with cond:
+                    return _CacheInfo(hits, misses, cache.maxsize, cache.currsize)
+
+        wrapper.cache = cache
+        wrapper.cache_key = key
+        wrapper.cache_lock = cond
+        wrapper.cache_clear = cache_clear
+        wrapper.cache_info = cache_info
         wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
-        return wrapper
+
+        return functools.update_wrapper(wrapper, func)
 
     return decorator
 
