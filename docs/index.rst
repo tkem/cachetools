@@ -491,7 +491,7 @@ functions with the :func:`cached` and :func:`cachedmethod` decorators:
 
 .. autofunction:: methodkey
 
-   This function is equivalent to :func:`hashkey`, but ignores its
+   This function is similar to :func:`hashkey`, but ignores its
    first positional argument, i.e. `self` when used with the
    :func:`cachedmethod` decorator.
 
@@ -501,6 +501,12 @@ functions with the :func:`cached` and :func:`cachedmethod` decorators:
    different types will yield distinct cache keys.  For example,
    ``typedkey(3)`` and ``typedkey(3.0)`` will return different
    results.
+
+.. autofunction:: typedmethodkey
+
+   This function is similar to :func:`typedkey`, but ignores its
+   first positional argument, i.e. `self` when used with the
+   :func:`cachedmethod` decorator.
 
 These functions can also be helpful when implementing custom key
 functions for handling some non-hashable arguments.  For example,
