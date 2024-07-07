@@ -390,12 +390,13 @@ class TTLCache(_TimedCache):
             prev.next = next
             next.prev = prev
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None, on_expire_callback=None):
         _TimedCache.__init__(self, maxsize, timer, getsizeof)
         self.__root = root = TTLCache._Link()
         root.prev = root.next = root
         self.__links = collections.OrderedDict()
         self.__ttl = ttl
+        self.on_expire_callback = on_expire_callback
 
     def __contains__(self, key):
         try:
@@ -464,6 +465,11 @@ class TTLCache(_TimedCache):
         """The time-to-live value of the cache's items."""
         return self.__ttl
 
+    def __on_expire_callback(self, _key):
+        """Override this method or pass it in the init"""
+        if self.on_expire_callback:
+            self.on_expire_callback(self, _key, Cache.__getitem__(self, _key))
+
     def expire(self, time=None):
         """Remove expired items from the cache."""
         if time is None:
@@ -473,6 +479,7 @@ class TTLCache(_TimedCache):
         links = self.__links
         cache_delitem = Cache.__delitem__
         while curr is not root and not (time < curr.expires):
+            self.__on_expire_callback(curr.key)
             cache_delitem(self, curr.key)
             del links[curr.key]
             next = curr.next
@@ -515,11 +522,12 @@ class TLRUCache(_TimedCache):
         def __lt__(self, other):
             return self.expires < other.expires
 
-    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None):
+    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None, on_expire_callback=None):
         _TimedCache.__init__(self, maxsize, timer, getsizeof)
         self.__items = collections.OrderedDict()
         self.__order = []
         self.__ttu = ttu
+        self.on_expire_callback = on_expire_callback
 
     def __contains__(self, key):
         try:
@@ -578,6 +586,11 @@ class TLRUCache(_TimedCache):
         """The local time-to-use function used by the cache."""
         return self.__ttu
 
+    def __on_expire_callback(self, _key):
+        """Override this method or pass it in the init"""
+        if self.on_expire_callback:
+            self.on_expire_callback(self, _key, Cache.__getitem__(self, _key))
+
     def expire(self, time=None):
         """Remove expired items from the cache."""
         if time is None:
@@ -592,6 +605,7 @@ class TLRUCache(_TimedCache):
         while order and (order[0].removed or not (time < order[0].expires)):
             item = heapq.heappop(order)
             if not item.removed:
+                self.__on_expire_callback(item.key)
                 cache_delitem(self, item.key)
                 del items[item.key]
 
