@@ -96,6 +96,12 @@ computed when the item is inserted into the cache.
    This class discards the most recently used items first to make
    space when necessary.
 
+   .. deprecated:: 5.4
+
+   `MRUCache` has been deprecated due to lack of use, to reduce
+   maintenance.  Please choose another cache implementation that suits
+   your needs.
+
 .. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
    :members: choice, popitem
 
