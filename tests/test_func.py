@@ -118,7 +118,7 @@ class MRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             d = cachetools.func.mru_cache(maxsize, **kwargs)
-        self.assertEqual(len(w), 1)
+        self.assertNotEqual(len(w), 0)
         self.assertIs(w[0].category, DeprecationWarning)
         return d
 

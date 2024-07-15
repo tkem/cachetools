@@ -241,6 +241,10 @@ class MRUCache(Cache):
     """Most Recently Used (MRU) cache implementation."""
 
     def __init__(self, maxsize, getsizeof=None):
+        from warnings import warn
+
+        warn("MRUCache is deprecated", DeprecationWarning, stacklevel=2)
+
         Cache.__init__(self, maxsize, getsizeof)
         self.__order = collections.OrderedDict()
 

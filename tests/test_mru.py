@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 from cachetools import MRUCache
 
@@ -7,10 +8,16 @@ from . import CacheTestMixin
 
 class MRUCacheTest(unittest.TestCase, CacheTestMixin):
 
+    # TODO: method to create cache that can be overridden
     Cache = MRUCache
 
     def test_evict__writes_only(self):
-        cache = MRUCache(maxsize=2)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cache = MRUCache(maxsize=2)
+        self.assertEqual(len(w), 1)
+        self.assertIs(w[0].category, DeprecationWarning)
 
         cache[1] = 1
         cache[2] = 2
@@ -22,7 +29,11 @@ class MRUCacheTest(unittest.TestCase, CacheTestMixin):
         assert 3 in cache
 
     def test_evict__with_access(self):
-        cache = MRUCache(maxsize=2)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cache = MRUCache(maxsize=2)
+        self.assertEqual(len(w), 1)
+        self.assertIs(w[0].category, DeprecationWarning)
 
         cache[1] = 1
         cache[2] = 2
@@ -34,7 +45,11 @@ class MRUCacheTest(unittest.TestCase, CacheTestMixin):
         assert 3 in cache
 
     def test_evict__with_delete(self):
-        cache = MRUCache(maxsize=2)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            cache = MRUCache(maxsize=2)
+        self.assertEqual(len(w), 1)
+        self.assertIs(w[0].category, DeprecationWarning)
 
         cache[1] = 1
         cache[2] = 2
