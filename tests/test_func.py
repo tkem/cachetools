@@ -100,30 +100,32 @@ class DecoratorTestMixin:
 
 
 class FIFODecoratorTest(unittest.TestCase, DecoratorTestMixin):
-
     DECORATOR = staticmethod(cachetools.func.fifo_cache)
 
 
 class LFUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
-
     DECORATOR = staticmethod(cachetools.func.lfu_cache)
 
 
 class LRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
-
     DECORATOR = staticmethod(cachetools.func.lru_cache)
 
 
 class MRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
+    def decorator(self, maxsize, **kwargs):
+        import warnings
 
-    DECORATOR = staticmethod(cachetools.func.mru_cache)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            d = cachetools.func.mru_cache(maxsize, **kwargs)
+        self.assertEqual(len(w), 1)
+        self.assertIs(w[0].category, DeprecationWarning)
+        return d
 
 
 class RRDecoratorTest(unittest.TestCase, DecoratorTestMixin):
-
     DECORATOR = staticmethod(cachetools.func.rr_cache)
 
 
 class TTLDecoratorTest(unittest.TestCase, DecoratorTestMixin):
-
     DECORATOR = staticmethod(cachetools.func.ttl_cache)
