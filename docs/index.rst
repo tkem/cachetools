@@ -604,6 +604,11 @@ all the decorators in this module are thread-safe by default.
    saves up to `maxsize` results based on a Most Recently Used (MRU)
    algorithm.
 
+   .. deprecated:: 5.4
+
+   The `mru_cache` decorator has been deprecated due to lack of use.
+   Please choose a decorator based on some other algorithm.
+
 .. decorator:: rr_cache(user_function)
                rr_cache(maxsize=128, choice=random.choice, typed=False)
 
