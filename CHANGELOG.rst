@@ -1,3 +1,15 @@
+v5.4.0 (2024-07-15)
+===================
+
+- Add the ``keys.typedmethodkey`` decorator.
+
+- Deprecate ``MRUCache`` class.
+
+- Deprecate ``@func.mru_cache`` decorator.
+
+- Update CI environment.
+
+
 v5.3.3 (2024-02-26)
 ===================
 
