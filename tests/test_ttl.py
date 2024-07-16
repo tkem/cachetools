@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from cachetools import TTLCache
+from cachetools import TTLCache, Cache
 
 from . import CacheTestMixin
 
@@ -21,8 +21,8 @@ class Timer:
 
 
 class TTLTestCache(TTLCache):
-    def __init__(self, maxsize, ttl=math.inf, **kwargs):
-        TTLCache.__init__(self, maxsize, ttl=ttl, timer=Timer(), **kwargs)
+    def __init__(self, maxsize, ttl=math.inf, on_expire_callback=None, **kwargs):
+        TTLCache.__init__(self, maxsize, ttl=ttl, timer=Timer(), on_expire_callback=on_expire_callback, **kwargs)
 
 
 class TTLCacheTest(unittest.TestCase, CacheTestMixin):
@@ -196,3 +196,22 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(1, len(cache))
         cache.expire(datetime.now() + timedelta(days=1))
         self.assertEqual(0, len(cache))
+
+    def on_expire_callback(self, cach_obj, _key, _value):
+        self.assertEqual(Cache.__getitem__(cach_obj, _key), _value)
+        self.array.append({_key: _value})
+
+    def test_on_expire(self):
+        self.array = []
+        def _on_expire_callback(cach_obj, _key, _value):
+            self.on_expire_callback(cach_obj, _key, _value)
+        
+        cache = TTLCache(maxsize=1, 
+                         ttl=1, 
+                         timer=Timer(), 
+                         on_expire_callback=_on_expire_callback)
+        cache[1] = 1
+        cache.timer.tick()
+        cache.expire(5)
+        self.assertEqual(1, len(self.array))
+        
