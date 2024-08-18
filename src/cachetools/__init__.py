@@ -720,24 +720,6 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
                 def cache_clear():
                     pass
 
-            elif lock is None:
-
-                def wrapper(*args, **kwargs):
-                    k = key(*args, **kwargs)
-                    try:
-                        return cache[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = func(*args, **kwargs)
-                    try:
-                        cache[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
-
-                def cache_clear():
-                    cache.clear()
-
             else:
 
                 def wrapper(*args, **kwargs):
