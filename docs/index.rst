@@ -26,6 +26,8 @@ method calls.
    from unittest import mock
    urllib = mock.MagicMock()
 
+   import time
+
 
 Cache implementations
 =====================
@@ -153,6 +155,8 @@ computed when the item is inserted into the cache.
       items that have expired by the current value returned by
       :attr:`timer`.
 
+      :returns: An iterable of expired `(key, value)` pairs.
+
 .. autoclass:: TLRUCache(maxsize, ttu, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttu
 
@@ -193,6 +197,8 @@ computed when the item is inserted into the cache.
       items that have expired by the current value returned by
       :attr:`timer`.
 
+      :returns: An iterable of expired `(key, value)` pairs.
+
 
 Extending cache classes
 =======================
@@ -216,6 +222,31 @@ cache, this can be achieved by overriding this method in a subclass:
    >>> c['b'] = 2
    >>> c['c'] = 3
    Key "a" evicted with value "1"
+
+With :class:`TTLCache` and :class:`TLRUCache`, items may also be
+removed after they expire.  In this case, :meth:`popitem` will *not*
+be called, but :meth:`expire` will be called from the next mutating
+operation and will return an iterable of the expired `(key, value)`
+pairs.  By overrding :meth:`expire`, a subclass will be able to track
+expired items:
+
+.. doctest::
+   :pyversion: >= 3
+
+   >>> class ExpCache(TTLCache):
+   ...     def expire(self, time=None):
+   ...         items = super().expire(time)
+   ...         print(f"Expired items: {items}")
+   ...         return items
+
+   >>> c = ExpCache(maxsize=10, ttl=1.0)
+   >>> c['a'] = 1
+   Expired items: []
+   >>> c['b'] = 2
+   Expired items: []
+   >>> time.sleep(1.5)
+   >>> c['c'] = 3
+   Expired items: [('a', 1), ('b', 2)]
 
 Similar to the standard library's :class:`collections.defaultdict`,
 subclasses of :class:`Cache` may implement a :meth:`__missing__`
