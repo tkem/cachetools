@@ -587,7 +587,10 @@ class TLRUCache(_TimedCache):
         return self.__ttu
 
     def expire(self, time=None):
-        """Remove expired items from the cache."""
+        """Remove expired items from the cache and return an iterable of the
+        expired `(key, value)` pairs.
+
+        """
         if time is None:
             time = self.timer()
         items = self.__items
@@ -596,12 +599,16 @@ class TLRUCache(_TimedCache):
         if len(order) > len(items) * 2:
             self.__order = order = [item for item in order if not item.removed]
             heapq.heapify(order)
+        expired = []
         cache_delitem = Cache.__delitem__
+        cache_getitem = Cache.__getitem__
         while order and (order[0].removed or not (time < order[0].expires)):
             item = heapq.heappop(order)
             if not item.removed:
+                expired.append((item.key, cache_getitem(self, item.key)))
                 cache_delitem(self, item.key)
                 del items[item.key]
+        return expired
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least recently used that
