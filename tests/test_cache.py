@@ -6,5 +6,4 @@ from . import CacheTestMixin
 
 
 class CacheTest(unittest.TestCase, CacheTestMixin):
-
     Cache = cachetools.Cache

@@ -6,7 +6,6 @@ from . import CacheTestMixin
 
 
 class LFUCacheTest(unittest.TestCase, CacheTestMixin):
-
     Cache = LFUCache
 
     def test_lfu(self):
