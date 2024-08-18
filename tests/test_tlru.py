@@ -29,7 +29,6 @@ class TLRUTestCache(TLRUCache):
 
 
 class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
-
     Cache = TLRUTestCache
 
     def test_ttu(self):
@@ -157,28 +156,32 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire()
+        items = cache.expire()
+        self.assertEqual(set(), set(items))
         self.assertEqual({1, 2, 3}, set(cache))
         self.assertEqual(3, len(cache))
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire(3)
+        items = cache.expire(3)
+        self.assertEqual({(1, 1)}, set(items))
         self.assertEqual({2, 3}, set(cache))
         self.assertEqual(2, len(cache))
         self.assertNotIn(1, cache)
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire(4)
+        items = cache.expire(4)
+        self.assertEqual({(2, 2)}, set(items))
         self.assertEqual({3}, set(cache))
         self.assertEqual(1, len(cache))
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertEqual(3, cache[3])
 
-        cache.expire(5)
+        items = cache.expire(5)
+        self.assertEqual({(3, 3)}, set(items))
         self.assertEqual(set(), set(cache))
         self.assertEqual(0, len(cache))
         self.assertNotIn(1, cache)
