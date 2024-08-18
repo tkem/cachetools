@@ -115,7 +115,8 @@ class DecoratorTestMixin:
 
         self.assertIs(wrapper.cache, cache)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
-        self.assertIs(wrapper.cache_lock, None)
+        # self.assertIs(wrapper.cache_lock, None)
+        self.assertIsInstance(wrapper.cache_lock, cachetools._NoLock)
 
     def test_decorator_attributes_lock(self):
         cache = self.cache(2)
@@ -226,7 +227,7 @@ class NoneWrapperTest(unittest.TestCase):
 
         self.assertIs(wrapper.cache, None)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
-        self.assertIs(wrapper.cache_lock, None)
+        self.assertIsInstance(wrapper.cache_lock, cachetools._NoLock)
 
     def test_decorator_clear(self):
         wrapper = cachetools.cached(None)(self.func)

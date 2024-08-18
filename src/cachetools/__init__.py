@@ -624,11 +624,26 @@ _CacheInfo = collections.namedtuple(
 )
 
 
+class _NoLock:
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *exc):
+        pass
+
+    def acquire(self, *args, **kwargs):
+        pass
+
+    def release(self):
+        pass
+
+
 def cached(cache, key=keys.hashkey, lock=None, info=False):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
     """
+    lock = lock or _NoLock()
 
     def decorator(func):
         if info:
@@ -661,31 +676,6 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
 
                 def cache_clear():
                     nonlocal hits, misses
-                    hits = misses = 0
-
-                cache_info = getinfo
-
-            elif lock is None:
-
-                def wrapper(*args, **kwargs):
-                    nonlocal hits, misses
-                    k = key(*args, **kwargs)
-                    try:
-                        result = cache[k]
-                        hits += 1
-                        return result
-                    except KeyError:
-                        misses += 1
-                    v = func(*args, **kwargs)
-                    try:
-                        cache[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
-
-                def cache_clear():
-                    nonlocal hits, misses
-                    cache.clear()
                     hits = misses = 0
 
                 cache_info = getinfo
