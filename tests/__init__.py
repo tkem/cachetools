@@ -2,7 +2,6 @@ import unittest
 
 
 class CacheTestMixin:
-
     Cache = None
 
     def test_defaults(self):

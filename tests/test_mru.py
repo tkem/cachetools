@@ -7,12 +7,10 @@ from . import CacheTestMixin
 
 
 class MRUCacheTest(unittest.TestCase, CacheTestMixin):
-
     # TODO: method to create cache that can be overridden
     Cache = MRUCache
 
     def test_evict__writes_only(self):
-
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             cache = MRUCache(maxsize=2)

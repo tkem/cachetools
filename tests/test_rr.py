@@ -6,7 +6,6 @@ from . import CacheTestMixin
 
 
 class RRCacheTest(unittest.TestCase, CacheTestMixin):
-
     Cache = RRCache
 
     def test_rr(self):
