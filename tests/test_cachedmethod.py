@@ -1,5 +1,5 @@
 import unittest
-
+import cachetools
 from cachetools import LRUCache, cachedmethod, keys
 
 
@@ -203,7 +203,7 @@ class CachedMethodTest(unittest.TestCase):
 
         self.assertIs(cached.get.cache(cached), cache)
         self.assertIs(cached.get.cache_key, keys.methodkey)
-        self.assertIs(cached.get.cache_lock, None)
+        self.assertIsInstance(cached.get.cache_lock, cachetools._NoLock)
 
     def test_attributes_lock(self):
         cache = {}

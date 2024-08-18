@@ -115,7 +115,6 @@ class DecoratorTestMixin:
 
         self.assertIs(wrapper.cache, cache)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
-        # self.assertIs(wrapper.cache_lock, None)
         self.assertIsInstance(wrapper.cache_lock, cachetools._NoLock)
 
     def test_decorator_attributes_lock(self):
