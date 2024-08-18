@@ -1,3 +1,17 @@
+v5.5.0 (2024-08-18)
+===================
+
+- ``TTLCache.expire()`` returns iterable of expired ``(key, value)``
+  pairs.
+
+- ``TLRUCache.expire()`` returns iterable of expired ``(key, value)``
+  pairs.
+
+- Documentation improvements.
+
+- Update CI environment.
+
+
 v5.4.0 (2024-07-15)
 ===================
 
