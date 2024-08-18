@@ -168,18 +168,29 @@ computed when the item is inserted into the cache.
    value of `timer()`.
 
    .. testcode::
-
-      from datetime import datetime, timedelta
-
+   
       def my_ttu(_key, value, now):
-          # assume value.ttl contains the item's time-to-live in hours
-          return now + timedelta(hours=value.ttl)
+          # assume value.ttu contains the item's time-to-use in seconds
+          # note that the _key argument is ignored in this example
+          return now + value.ttu
 
-      cache = TLRUCache(maxsize=10, ttu=my_ttu, timer=datetime.now)
+      cache = TLRUCache(maxsize=10, ttu=my_ttu)
 
    The expression `ttu(key, value, timer())` defines the expiration
    time of a cache item, and must be comparable against later results
-   of `timer()`.
+   of `timer()`.  As with :class:`TTLCache`, a custom `timer` function
+   can be supplied, which does not have to return a numeric value.
+
+   .. testcode::
+
+      from datetime import datetime, timedelta
+
+      def datetime_ttu(_key, value, now):
+          # assume now to be of type datetime.datetime, and
+          # value.hours to contain the item's time-to-use in hours
+          return now + timedelta(hours=value.hours)
+
+      cache = TLRUCache(maxsize=10, ttu=datetime_ttu, timer=datetime.now)
 
    Items that expire because they have exceeded their time-to-use will
    be no longer accessible, and will be removed eventually.  If no
