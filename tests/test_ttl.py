@@ -26,7 +26,6 @@ class TTLTestCache(TTLCache):
 
 
 class TTLCacheTest(unittest.TestCase, CacheTestMixin):
-
     Cache = TTLTestCache
 
     def test_ttl(self):
@@ -132,28 +131,32 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire()
+        items = cache.expire()
+        self.assertEqual(set(), set(items))
         self.assertEqual({1, 2, 3}, set(cache))
         self.assertEqual(3, len(cache))
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire(3)
+        items = cache.expire(3)
+        self.assertEqual({(1, 1)}, set(items))
         self.assertEqual({2, 3}, set(cache))
         self.assertEqual(2, len(cache))
         self.assertNotIn(1, cache)
         self.assertEqual(2, cache[2])
         self.assertEqual(3, cache[3])
 
-        cache.expire(4)
+        items = cache.expire(4)
+        self.assertEqual({(2, 2)}, set(items))
         self.assertEqual({3}, set(cache))
         self.assertEqual(1, len(cache))
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertEqual(3, cache[3])
 
-        cache.expire(5)
+        items = cache.expire(5)
+        self.assertEqual({(3, 3)}, set(items))
         self.assertEqual(set(), set(cache))
         self.assertEqual(0, len(cache))
         self.assertNotIn(1, cache)
@@ -192,7 +195,9 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
 
         cache[1] = 1
         self.assertEqual(1, len(cache))
-        cache.expire(datetime.now())
+        items = cache.expire(datetime.now())
+        self.assertEqual([], list(items))
         self.assertEqual(1, len(cache))
-        cache.expire(datetime.now() + timedelta(days=1))
+        items = cache.expire(datetime.now() + timedelta(days=1))
+        self.assertEqual([(1, 1)], list(items))
         self.assertEqual(0, len(cache))
