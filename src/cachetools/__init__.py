@@ -635,12 +635,32 @@ _CacheInfo = collections.namedtuple(
 )
 
 
+class _NoLock:
+
+    __slots__ = ()
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, *exc):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return self
+
+    def acquire(self, *args, **kwargs):
+        pass
+
+    def release(self):
+        pass
+
+
 def cached(cache, key=keys.hashkey, lock=None, info=False):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
     """
-
+    lock = lock or _NoLock()
     def decorator(func):
         if info:
             hits = misses = 0
@@ -672,31 +692,6 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
 
                 def cache_clear():
                     nonlocal hits, misses
-                    hits = misses = 0
-
-                cache_info = getinfo
-
-            elif lock is None:
-
-                def wrapper(*args, **kwargs):
-                    nonlocal hits, misses
-                    k = key(*args, **kwargs)
-                    try:
-                        result = cache[k]
-                        hits += 1
-                        return result
-                    except KeyError:
-                        misses += 1
-                    v = func(*args, **kwargs)
-                    try:
-                        cache[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
-
-                def cache_clear():
-                    nonlocal hits, misses
-                    cache.clear()
                     hits = misses = 0
 
                 cache_info = getinfo
@@ -741,24 +736,6 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
                 def cache_clear():
                     pass
 
-            elif lock is None:
-
-                def wrapper(*args, **kwargs):
-                    k = key(*args, **kwargs)
-                    try:
-                        return cache[k]
-                    except KeyError:
-                        pass  # key not found
-                    v = func(*args, **kwargs)
-                    try:
-                        cache[k] = v
-                    except ValueError:
-                        pass  # value too large
-                    return v
-
-                def cache_clear():
-                    cache.clear()
-
             else:
 
                 def wrapper(*args, **kwargs):
@@ -798,56 +775,31 @@ def cachedmethod(cache, key=keys.methodkey, lock=None):
     callable that saves results in a cache.
 
     """
-
+    lock = lock or _NoLock()
     def decorator(method):
-        if lock is None:
-
-            def wrapper(self, *args, **kwargs):
-                c = cache(self)
-                if c is None:
-                    return method(self, *args, **kwargs)
-                k = key(self, *args, **kwargs)
-                try:
+        def wrapper(self, *args, **kwargs):
+            c = cache(self)
+            if c is None:
+                return method(self, *args, **kwargs)
+            k = key(self, *args, **kwargs)
+            try:
+                with lock(self):
                     return c[k]
-                except KeyError:
-                    pass  # key not found
-                v = method(self, *args, **kwargs)
-                try:
-                    c[k] = v
-                except ValueError:
-                    pass  # value too large
-                return v
+            except KeyError:
+                pass  # key not found
+            v = method(self, *args, **kwargs)
+            # in case of a race, prefer the item already in the cache
+            try:
+                with lock(self):
+                    return c.setdefault(k, v)
+            except ValueError:
+                return v  # value too large
 
-            def clear(self):
-                c = cache(self)
-                if c is not None:
+        def clear(self):
+            c = cache(self)
+            if c is not None:
+                with lock(self):
                     c.clear()
-
-        else:
-
-            def wrapper(self, *args, **kwargs):
-                c = cache(self)
-                if c is None:
-                    return method(self, *args, **kwargs)
-                k = key(self, *args, **kwargs)
-                try:
-                    with lock(self):
-                        return c[k]
-                except KeyError:
-                    pass  # key not found
-                v = method(self, *args, **kwargs)
-                # in case of a race, prefer the item already in the cache
-                try:
-                    with lock(self):
-                        return c.setdefault(k, v)
-                except ValueError:
-                    return v  # value too large
-
-            def clear(self):
-                c = cache(self)
-                if c is not None:
-                    with lock(self):
-                        c.clear()
 
         wrapper.cache = cache
         wrapper.cache_key = key
