@@ -1,3 +1,13 @@
+v5.5.1 (2025-01-21)
+===================
+
+- Add documentation regarding caching of exceptions.
+
+- Officially support Python 3.13.
+
+- Update CI environment.
+
+
 v5.5.0 (2024-08-18)
 ===================
 
