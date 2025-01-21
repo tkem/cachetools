@@ -431,6 +431,43 @@ often called with the same arguments:
       [..., (('fib', 42), 267914296), ..., (('luc', 42), 599074578)]
 
 
+   Function invocations are _not_ cached if any exception are raised.
+   To cache some (or all) calls raising exceptions, additional
+   function wrappers may be introduced which wrap exceptions as
+   regular function results for caching purposes:
+
+   .. testcode::
+
+      @cached(cache=LRUCache(maxsize=10), info=True)
+      def _get_pep_wrapped(num):
+          url = "http://www.python.org/dev/peps/pep-%04d/" % num
+          try:
+              with urllib.request.urlopen(url) as s:
+                  return s.read()
+          except urllib.error.HTTPError as e:
+              # note that only HTTPError instances are cached
+              return e
+
+      def get_pep(num):
+          "Retrieve text of a Python Enhancement Proposal"
+
+          res = _get_pep_wrapped(num)
+          if isinstance(res, Exception):
+              raise res
+          else:
+              return res
+
+      try:
+          get_pep(100_000_000)
+      except Exception as e:
+          print(e, "-", _get_pep_wrapped.cache_info())
+
+      try:
+          get_pep(100_000_000)
+      except Exception as e:
+          print(e, "-", _get_pep_wrapped.cache_info())
+
+
 .. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None)
 
    Decorator to wrap a class or instance method with a memoizing
