@@ -164,6 +164,34 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
 
+    def test_decorator_lock_info(self):
+        # hit: lock.count += 1
+        # miss: lock.count += 3 (get, update missed, set)
+        # info: lock.count += 1
+        # clear: lock.count += 1
+        cache = self.cache(2)
+        lock = CountedLock()
+        wrapper = cachetools.cached(cache, lock=lock, info=True)(self.func)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
+        self.assertEqual(lock.count, 1)
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(lock.count, 4)
+        self.assertEqual(wrapper.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(lock.count, 5)
+        self.assertEqual(wrapper(1), 1)
+        self.assertEqual(lock.count, 8)
+        self.assertEqual(wrapper.cache_info(), (0, 2, 2, 2))
+        self.assertEqual(lock.count, 9)
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(lock.count, 10)
+        self.assertEqual(wrapper.cache_info(), (1, 2, 2, 2))
+        self.assertEqual(lock.count, 11)
+        wrapper.cache_clear()
+        self.assertEqual(lock.count, 12)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
+        self.assertEqual(lock.count, 13)
+
     def test_zero_size_cache_decorator(self):
         cache = self.cache(0)
         wrapper = cachetools.cached(cache)(self.func)
