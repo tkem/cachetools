@@ -19,7 +19,7 @@ def get_version():
 
 
 project = "cachetools"
-copyright = "2014-2024 Thomas Kemmer"
+copyright = "2014-2025 Thomas Kemmer"
 release, version = get_version()
 
 extensions = [
