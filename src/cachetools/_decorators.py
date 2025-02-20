@@ -7,21 +7,20 @@ def _cached_locked_info(func, cache, key, lock, info):
     def wrapper(*args, **kwargs):
         nonlocal hits, misses
         k = key(*args, **kwargs)
-        try:
-            with lock:
+        with lock:
+            try:
                 result = cache[k]
                 hits += 1
                 return result
-        except KeyError:
-            with lock:
+            except KeyError:
                 misses += 1
         v = func(*args, **kwargs)
-        # in case of a race, prefer the item already in the cache
-        try:
-            with lock:
+        with lock:
+            try:
+                # in case of a race, prefer the item already in the cache
                 return cache.setdefault(k, v)
-        except ValueError:
-            return v  # value too large
+            except ValueError:
+                return v  # value too large
 
     def cache_clear():
         nonlocal hits, misses
@@ -87,18 +86,18 @@ def _uncached_info(func, info):
 def _cached_locked(func, cache, key, lock):
     def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
-        try:
-            with lock:
+        with lock:
+            try:
                 return cache[k]
-        except KeyError:
-            pass  # key not found
+            except KeyError:
+                pass  # key not found
         v = func(*args, **kwargs)
-        # in case of a race, prefer the item already in the cache
-        try:
-            with lock:
+        with lock:
+            try:
+                # in case of a race, prefer the item already in the cache
                 return cache.setdefault(k, v)
-        except ValueError:
-            return v  # value too large
+            except ValueError:
+                return v  # value too large
 
     def cache_clear():
         with lock:
