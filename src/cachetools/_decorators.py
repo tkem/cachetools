@@ -1,6 +1,50 @@
 """Extensible memoizing decorator helpers."""
 
 
+def _cached_cond_info(func, cache, key, cond, info):
+    hits = misses = 0
+    pending = set()
+
+    def wrapper(*args, **kwargs):
+        nonlocal hits, misses
+        k = key(*args, **kwargs)
+        with cond:
+            cond.wait_for(lambda: k not in pending)
+            try:
+                result = cache[k]
+                hits += 1
+                return result
+            except KeyError:
+                pending.add(k)
+                misses += 1
+        try:
+            v = func(*args, **kwargs)
+            with cond:
+                try:
+                    cache[k] = v
+                except ValueError:
+                    pass  # value too large
+                return v
+        finally:
+            with cond:
+                pending.remove(k)
+                cond.notify_all()
+
+    def cache_clear():
+        nonlocal hits, misses
+        with cond:
+            cache.clear()
+            hits = misses = 0
+
+    def cache_info():
+        with cond:
+            return info(hits, misses)
+
+    wrapper.cache_clear = cache_clear
+    wrapper.cache_info = cache_info
+    return wrapper
+
+
 def _cached_locked_info(func, cache, key, lock, info):
     hits = misses = 0
 
@@ -133,12 +177,14 @@ def _uncached(func):
     return wrapper
 
 
-def _cached_wrapper(func, cache, key, lock, info):
+def _cached_wrapper(func, cache, key, lock=None, cond=None, info=None):
     if info is not None:
         if cache is None:
             wrapper = _uncached_info(func, info)
         elif lock is None:
             wrapper = _cached_unlocked_info(func, cache, key, info)
+        elif hasattr(lock, "wait_for") and hasattr(lock, "notify_all"):
+            wrapper = _cached_cond_info(func, cache, key, lock, info)
         else:
             wrapper = _cached_locked_info(func, cache, key, lock, info)
     else:
