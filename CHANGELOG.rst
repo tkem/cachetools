@@ -1,3 +1,13 @@
+v5.5.2 (2025-02-20)
+===================
+
+- Reduce number of ``@cached`` lock/unlock operations.
+
+- Improve documentation.
+
+- Update CI environment.
+
+
 v5.5.1 (2025-01-21)
 ===================
 
