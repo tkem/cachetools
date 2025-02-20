@@ -617,9 +617,9 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
                 def make_info(hits, misses):
                     return _CacheInfo(hits, misses, 0, 0)
 
-            wrapper = _cached_wrapper(func, cache, key, lock, make_info)
+            wrapper = _cached_wrapper(func, cache, key, lock, info=make_info)
         else:
-            wrapper = _cached_wrapper(func, cache, key, lock, None)
+            wrapper = _cached_wrapper(func, cache, key, lock)
 
         wrapper.cache = cache
         wrapper.cache_key = key

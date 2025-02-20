@@ -2,14 +2,15 @@
 
 __all__ = ("fifo_cache", "lfu_cache", "lru_cache", "rr_cache", "ttl_cache")
 
+import functools
 import math
 import random
 import time
 
 try:
-    from threading import RLock
+    from threading import Condition
 except ImportError:  # pragma: no cover
-    from dummy_threading import RLock
+    from dummy_threading import Condition
 
 from . import FIFOCache, LFUCache, LRUCache, RRCache, TTLCache
 from . import cached
@@ -28,7 +29,7 @@ class _UnboundTTLCache(TTLCache):
 def _cache(cache, maxsize, typed):
     def decorator(func):
         key = keys.typedkey if typed else keys.hashkey
-        wrapper = cached(cache=cache, key=key, lock=RLock(), info=True)(func)
+        wrapper = cached(cache=cache, key=key, lock=Condition(), info=True)(func)
         wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
         return wrapper
 
