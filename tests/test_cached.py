@@ -214,6 +214,20 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
 
+    def test_zero_size_cache_decorator_lock_info(self):
+        cache = self.cache(0)
+        lock = CountedLock()
+        wrapper = cachetools.cached(cache, lock=lock, info=True)(self.func)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(lock.count, 1)
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 3)
+        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
+        self.assertEqual(lock.count, 4)
+
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
