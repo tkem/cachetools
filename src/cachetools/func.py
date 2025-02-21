@@ -1,6 +1,6 @@
 """`functools.lru_cache` compatible memoizing function decorators."""
 
-__all__ = ("fifo_cache", "lfu_cache", "lru_cache", "mru_cache", "rr_cache", "ttl_cache")
+__all__ = ("fifo_cache", "lfu_cache", "lru_cache", "rr_cache", "ttl_cache")
 
 import math
 import random
@@ -11,7 +11,7 @@ try:
 except ImportError:  # pragma: no cover
     from dummy_threading import RLock
 
-from . import FIFOCache, LFUCache, LRUCache, MRUCache, RRCache, TTLCache
+from . import FIFOCache, LFUCache, LRUCache, RRCache, TTLCache
 from . import cached
 from . import keys
 
@@ -75,23 +75,6 @@ def lru_cache(maxsize=128, typed=False):
         return _cache(LRUCache(128), 128, typed)(maxsize)
     else:
         return _cache(LRUCache(maxsize), maxsize, typed)
-
-
-def mru_cache(maxsize=128, typed=False):
-    """Decorator to wrap a function with a memoizing callable that saves
-    up to `maxsize` results based on a Most Recently Used (MRU)
-    algorithm.
-    """
-    from warnings import warn
-
-    warn("@mru_cache is deprecated", DeprecationWarning, stacklevel=2)
-
-    if maxsize is None:
-        return _cache({}, None, typed)
-    elif callable(maxsize):
-        return _cache(MRUCache(128), 128, typed)(maxsize)
-    else:
-        return _cache(MRUCache(maxsize), maxsize, typed)
 
 
 def rr_cache(maxsize=128, choice=random.choice, typed=False):

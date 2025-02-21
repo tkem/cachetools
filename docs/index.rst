@@ -98,18 +98,6 @@ inserted into the cache.
    This class discards the least recently used items first to make
    space when necessary.
 
-.. autoclass:: MRUCache(maxsize, getsizeof=None)
-   :members: popitem
-
-   This class discards the most recently used items first to make
-   space when necessary.
-
-   .. deprecated:: 5.4
-
-   `MRUCache` has been deprecated due to lack of use, to reduce
-   maintenance.  Please choose another cache implementation that suits
-   your needs.
-
 .. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
    :members: choice, popitem
 
@@ -174,7 +162,7 @@ inserted into the cache.
    value of `timer()`.
 
    .. testcode::
-   
+
       def my_ttu(_key, value, now):
           # assume value.ttu contains the item's time-to-use in seconds
           # note that the _key argument is ignored in this example
@@ -687,18 +675,6 @@ all the decorators in this module are thread-safe by default.
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
-
-.. decorator:: mru_cache(user_function)
-               mru_cache(maxsize=128, typed=False)
-
-   Decorator that wraps a function with a memoizing callable that
-   saves up to `maxsize` results based on a Most Recently Used (MRU)
-   algorithm.
-
-   .. deprecated:: 5.4
-
-   The `mru_cache` decorator has been deprecated due to lack of use.
-   Please choose a decorator based on some other algorithm.
 
 .. decorator:: rr_cache(user_function)
                rr_cache(maxsize=128, choice=random.choice, typed=False)
