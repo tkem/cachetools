@@ -111,18 +111,6 @@ class LRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.lru_cache)
 
 
-class MRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
-    def decorator(self, maxsize, **kwargs):
-        import warnings
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            d = cachetools.func.mru_cache(maxsize, **kwargs)
-        self.assertNotEqual(len(w), 0)
-        self.assertIs(w[0].category, DeprecationWarning)
-        return d
-
-
 class RRDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.rr_cache)
 
