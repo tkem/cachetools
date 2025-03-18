@@ -22,7 +22,7 @@ import random
 import time
 
 from . import keys
-from ._decorators import _cached_wrapper
+from ._decorators import _cached_wrapper, _cachedmethod_wrapper
 
 
 class _DefaultSize:
@@ -637,59 +637,11 @@ def cachedmethod(cache, key=keys.methodkey, lock=None):
     """
 
     def decorator(method):
-        if lock is None:
-
-            def wrapper(self, *args, **kwargs):
-                c = cache(self)
-                if c is None:
-                    return method(self, *args, **kwargs)
-                k = key(self, *args, **kwargs)
-                try:
-                    return c[k]
-                except KeyError:
-                    pass  # key not found
-                v = method(self, *args, **kwargs)
-                try:
-                    c[k] = v
-                except ValueError:
-                    pass  # value too large
-                return v
-
-            def clear(self):
-                c = cache(self)
-                if c is not None:
-                    c.clear()
-
-        else:
-
-            def wrapper(self, *args, **kwargs):
-                c = cache(self)
-                if c is None:
-                    return method(self, *args, **kwargs)
-                k = key(self, *args, **kwargs)
-                try:
-                    with lock(self):
-                        return c[k]
-                except KeyError:
-                    pass  # key not found
-                v = method(self, *args, **kwargs)
-                # in case of a race, prefer the item already in the cache
-                try:
-                    with lock(self):
-                        return c.setdefault(k, v)
-                except ValueError:
-                    return v  # value too large
-
-            def clear(self):
-                c = cache(self)
-                if c is not None:
-                    with lock(self):
-                        c.clear()
+        wrapper = _cachedmethod_wrapper(method, cache, key, lock)
 
         wrapper.cache = cache
         wrapper.cache_key = key
         wrapper.cache_lock = lock
-        wrapper.cache_clear = clear
 
         return functools.update_wrapper(wrapper, method)
 
