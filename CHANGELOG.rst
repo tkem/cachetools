@@ -1,3 +1,20 @@
+v6.0.0 (UNRELEASED)
+===================
+
+- Require Python 3.9 or later (breaking change).
+
+- Remove ``MRUCache`` and the ``@func.mru_cache`` decorator (breaking
+  change).
+
+- Improve the way ``cachetools.func`` decorators deal with `cache
+  stampede <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues in
+  massively parallel environments.  Note that this comes at a small
+  (your mileage may vary) performance penalty, and therefore is not
+  supported by the ``@cached`` and ``@cachedmethod`` decorators yet.
+
+- Update CI environment.
+
+
 v5.5.2 (2025-02-20)
 ===================
 
