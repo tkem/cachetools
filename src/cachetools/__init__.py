@@ -45,6 +45,8 @@ class Cache(collections.abc.MutableMapping):
 
     __size = _DefaultSize()
 
+    # Add on_evict callback parameter, accepting a key, value. The on_evict callback
+    # will be called when an item is evicted from the cache. It is optional item. AI!
     def __init__(self, maxsize, getsizeof=None):
         if getsizeof:
             self.getsizeof = getsizeof
