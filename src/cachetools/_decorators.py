@@ -1,14 +1,14 @@
 """Extensible memoizing decorator helpers."""
 
 
-def _cached_cond_info(func, cache, key, cond, info):
+def _cached_condition_info(func, cache, key, lock, cond, info):
     hits = misses = 0
     pending = set()
 
     def wrapper(*args, **kwargs):
         nonlocal hits, misses
         k = key(*args, **kwargs)
-        with cond:
+        with lock:
             cond.wait_for(lambda: k not in pending)
             try:
                 result = cache[k]
@@ -19,25 +19,25 @@ def _cached_cond_info(func, cache, key, cond, info):
                 misses += 1
         try:
             v = func(*args, **kwargs)
-            with cond:
+            with lock:
                 try:
                     cache[k] = v
                 except ValueError:
                     pass  # value too large
                 return v
         finally:
-            with cond:
+            with lock:
                 pending.remove(k)
                 cond.notify_all()
 
     def cache_clear():
         nonlocal hits, misses
-        with cond:
+        with lock:
             cache.clear()
             hits = misses = 0
 
     def cache_info():
-        with cond:
+        with lock:
             return info(hits, misses)
 
     wrapper.cache_clear = cache_clear
@@ -124,6 +124,39 @@ def _uncached_info(func, info):
 
     wrapper.cache_clear = cache_clear
     wrapper.cache_info = lambda: info(0, misses)
+    return wrapper
+
+
+def _cached_condition(func, cache, key, lock, cond):
+    pending = set()
+
+    def wrapper(*args, **kwargs):
+        k = key(*args, **kwargs)
+        with lock:
+            cond.wait_for(lambda: k not in pending)
+            try:
+                result = cache[k]
+                return result
+            except KeyError:
+                pending.add(k)
+        try:
+            v = func(*args, **kwargs)
+            with lock:
+                try:
+                    cache[k] = v
+                except ValueError:
+                    pass  # value too large
+                return v
+        finally:
+            with lock:
+                pending.remove(k)
+                cond.notify_all()
+
+    def cache_clear():
+        with lock:
+            cache.clear()
+
+    wrapper.cache_clear = cache_clear
     return wrapper
 
 
@@ -236,19 +269,25 @@ def _cached_wrapper(func, cache, key, lock=None, cond=None, info=None):
     if info is not None:
         if cache is None:
             wrapper = _uncached_info(func, info)
-        elif lock is None:
-            wrapper = _cached_unlocked_info(func, cache, key, info)
-        elif hasattr(lock, "wait_for") and hasattr(lock, "notify_all"):
-            wrapper = _cached_cond_info(func, cache, key, lock, info)
-        else:
+        elif cond is not None and lock is not None:
+            wrapper = _cached_condition_info(func, cache, key, lock, cond, info)
+        elif cond is not None:
+            wrapper = _cached_condition_info(func, cache, key, cond, cond, info)
+        elif lock is not None:
             wrapper = _cached_locked_info(func, cache, key, lock, info)
+        else:
+            wrapper = _cached_unlocked_info(func, cache, key, info)
     else:
         if cache is None:
             wrapper = _uncached(func)
-        elif lock is None:
-            wrapper = _cached_unlocked(func, cache, key)
-        else:
+        elif cond is not None and lock is not None:
+            wrapper = _cached_condition(func, cache, key, lock, cond)
+        elif cond is not None:
+            wrapper = _cached_condition(func, cache, key, cond, cond)
+        elif lock is not None:
             wrapper = _cached_locked(func, cache, key, lock)
+        else:
+            wrapper = _cached_unlocked(func, cache, key)
         wrapper.cache_info = None
     return wrapper
 

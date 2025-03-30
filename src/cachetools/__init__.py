@@ -594,11 +594,21 @@ _CacheInfo = collections.namedtuple(
 )
 
 
-def cached(cache, key=keys.hashkey, lock=None, info=False):
+def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
     """
+    if isinstance(condition, bool):
+        from warnings import warn
+
+        warn(
+            "passing `info` as positional parameter is deprecated",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        info = condition
+        condition = None
 
     def decorator(func):
         if info:
@@ -617,9 +627,9 @@ def cached(cache, key=keys.hashkey, lock=None, info=False):
                 def make_info(hits, misses):
                     return _CacheInfo(hits, misses, 0, 0)
 
-            wrapper = _cached_wrapper(func, cache, key, lock, info=make_info)
+            wrapper = _cached_wrapper(func, cache, key, lock, condition, info=make_info)
         else:
-            wrapper = _cached_wrapper(func, cache, key, lock)
+            wrapper = _cached_wrapper(func, cache, key, lock, condition)
 
         wrapper.cache = cache
         wrapper.cache_key = key
