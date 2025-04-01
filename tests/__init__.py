@@ -131,7 +131,8 @@ class CacheTestMixin:
         self.assertEqual(1, cache[1])
         self.assertEqual(2, cache[2])
         self.assertEqual(2, len(cache))
-        self.assertTrue(1 in cache and 2 in cache)
+        self.assertTrue(1 in cache)
+        self.assertTrue(2 in cache)
 
         self.assertEqual(3, cache[3])
         self.assertEqual(2, len(cache))
