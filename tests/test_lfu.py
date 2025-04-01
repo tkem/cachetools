@@ -18,8 +18,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
 
         self.assertEqual(len(cache), 2)
         self.assertEqual(cache[1], 1)
-        self.assertTrue(2 in cache or 3 in cache)
-        self.assertTrue(2 not in cache or 3 not in cache)
+        self.assertTrue((2 in cache) ^ (3 in cache))
 
         cache[4] = 4
         self.assertEqual(len(cache), 2)

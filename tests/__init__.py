@@ -136,8 +136,7 @@ class CacheTestMixin:
         self.assertEqual(3, cache[3])
         self.assertEqual(2, len(cache))
         self.assertTrue(3 in cache)
-        self.assertTrue(1 in cache or 2 in cache)
-        self.assertTrue(1 not in cache or 2 not in cache)
+        self.assertTrue((1 in cache) ^ (2 in cache))
 
         self.assertEqual(4, cache[4])
         self.assertEqual(2, len(cache))
@@ -173,8 +172,7 @@ class CacheTestMixin:
         self.assertEqual(None, cache.setdefault(3))
         self.assertEqual(2, len(cache))
         self.assertTrue(3 in cache)
-        self.assertTrue(1 in cache or 2 in cache)
-        self.assertTrue(1 not in cache or 2 not in cache)
+        self.assertTrue((1 in cache) ^ (2 in cache))
 
     def test_missing_getsizeof(self):
         class DefaultCache(self.Cache):
