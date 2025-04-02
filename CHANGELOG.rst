@@ -6,11 +6,18 @@ v6.0.0 (UNRELEASED)
 - Remove ``MRUCache`` and the ``@func.mru_cache`` decorator (breaking
   change).
 
-- Improve the way ``cachetools.func`` decorators deal with `cache
-  stampede <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues in
-  massively parallel environments.  Note that this comes at a small
-  (your mileage may vary) performance penalty, and therefore is not
-  supported by the ``@cached`` and ``@cachedmethod`` decorators yet.
+- Add an optional ``condition`` parameter to the ``@cached`` and
+  ``@cachedmethod`` decorators, which, when used with a
+  ``threading.Condition`` instance, should improve `cache stampede
+  <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues in massively
+  parallel environments.  Note that this will incur some performance
+  penalty, and therefore has to be enabled explicitly.
+
+- Convert the ``cachetools.func`` decorators to use a
+  ``threading.Condition`` instance to deal with `cache stampede
+  <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues.  Note that
+  this *may* result in a noticable performance degradation, depending
+  on your actual use case.
 
 - Update CI environment.
 
