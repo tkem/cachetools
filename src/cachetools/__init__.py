@@ -22,7 +22,8 @@ import random
 import time
 
 from . import keys
-from ._decorators import _cached_wrapper, _cachedmethod_wrapper
+from ._cached import _cached_wrapper
+from ._cachedmethod import _cachedmethod_wrapper
 
 
 class _DefaultSize:
