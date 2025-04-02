@@ -641,14 +641,14 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     return decorator
 
 
-def cachedmethod(cache, key=keys.methodkey, lock=None):
+def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a cache.
 
     """
 
     def decorator(method):
-        wrapper = _cachedmethod_wrapper(method, cache, key, lock)
+        wrapper = _cachedmethod_wrapper(method, cache, key, lock, condition)
 
         wrapper.cache = cache
         wrapper.cache_key = key
