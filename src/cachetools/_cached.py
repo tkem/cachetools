@@ -1,7 +1,7 @@
 """Function decorator helpers."""
 
 
-def _cached_condition_info(func, cache, key, lock, cond, info):
+def _cached_condition_info(*, func, cache, key, lock, condition, info):
     hits = misses = 0
     pending = set()
 
@@ -9,7 +9,7 @@ def _cached_condition_info(func, cache, key, lock, cond, info):
         nonlocal hits, misses
         k = key(*args, **kwargs)
         with lock:
-            cond.wait_for(lambda: k not in pending)
+            condition.wait_for(lambda: k not in pending)
             try:
                 result = cache[k]
                 hits += 1
@@ -28,7 +28,7 @@ def _cached_condition_info(func, cache, key, lock, cond, info):
         finally:
             with lock:
                 pending.remove(k)
-                cond.notify_all()
+                condition.notify_all()
 
     def cache_clear():
         nonlocal hits, misses
@@ -45,7 +45,7 @@ def _cached_condition_info(func, cache, key, lock, cond, info):
     return wrapper
 
 
-def _cached_locked_info(func, cache, key, lock, info):
+def _cached_locked_info(*, func, cache, key, lock, info):
     hits = misses = 0
 
     def wrapper(*args, **kwargs):
@@ -81,7 +81,7 @@ def _cached_locked_info(func, cache, key, lock, info):
     return wrapper
 
 
-def _cached_unlocked_info(func, cache, key, info):
+def _cached_unlocked_info(*, func, cache, key, info):
     hits = misses = 0
 
     def wrapper(*args, **kwargs):
@@ -127,13 +127,13 @@ def _uncached_info(func, info):
     return wrapper
 
 
-def _cached_condition(func, cache, key, lock, cond):
+def _cached_condition(*, func, cache, key, lock, condition):
     pending = set()
 
     def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
         with lock:
-            cond.wait_for(lambda: k not in pending)
+            condition.wait_for(lambda: k not in pending)
             try:
                 result = cache[k]
                 return result
@@ -150,7 +150,7 @@ def _cached_condition(func, cache, key, lock, cond):
         finally:
             with lock:
                 pending.remove(k)
-                cond.notify_all()
+                condition.notify_all()
 
     def cache_clear():
         with lock:
@@ -160,7 +160,7 @@ def _cached_condition(func, cache, key, lock, cond):
     return wrapper
 
 
-def _cached_locked(func, cache, key, lock):
+def _cached_locked(*, func, cache, key, lock):
     def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
         with lock:
@@ -184,7 +184,7 @@ def _cached_locked(func, cache, key, lock):
     return wrapper
 
 
-def _cached_unlocked(func, cache, key):
+def _cached_unlocked(*, func, cache, key):
     def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
         try:
@@ -202,7 +202,7 @@ def _cached_unlocked(func, cache, key):
     return wrapper
 
 
-def _uncached(func):
+def _uncached(*, func):
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
 
@@ -210,28 +210,50 @@ def _uncached(func):
     return wrapper
 
 
-def _cached_wrapper(func, cache, key, lock=None, cond=None, info=None):
+def _cached_wrapper(*, func, cache, key, lock=None, condition=None, info=None):
     if info is not None:
         if cache is None:
-            wrapper = _uncached_info(func, info)
-        elif cond is not None and lock is not None:
-            wrapper = _cached_condition_info(func, cache, key, lock, cond, info)
-        elif cond is not None:
-            wrapper = _cached_condition_info(func, cache, key, cond, cond, info)
+            wrapper = _uncached_info(func=func, info=info)
+        elif condition is not None and lock is not None:
+            wrapper = _cached_condition_info(
+                func=func,
+                cache=cache,
+                key=key,
+                lock=lock,
+                condition=condition,
+                info=info,
+            )
+        elif condition is not None:
+            # passing lock=condition because _cached_condition_info does 'with lock'
+            wrapper = _cached_condition_info(
+                func=func,
+                cache=cache,
+                key=key,
+                lock=condition,
+                condition=condition,
+                info=info,
+            )
         elif lock is not None:
-            wrapper = _cached_locked_info(func, cache, key, lock, info)
+            wrapper = _cached_locked_info(
+                func=func, cache=cache, key=key, lock=lock, info=info
+            )
         else:
-            wrapper = _cached_unlocked_info(func, cache, key, info)
+            wrapper = _cached_unlocked_info(func=func, cache=cache, key=key, info=info)
     else:
         if cache is None:
-            wrapper = _uncached(func)
-        elif cond is not None and lock is not None:
-            wrapper = _cached_condition(func, cache, key, lock, cond)
-        elif cond is not None:
-            wrapper = _cached_condition(func, cache, key, cond, cond)
+            wrapper = _uncached(func=func)
+        elif condition is not None and lock is not None:
+            wrapper = _cached_condition(
+                func=func, cache=cache, key=key, lock=lock, condition=condition
+            )
+        elif condition is not None:
+            # passing lock=condition because _cached_condition does 'with lock'
+            wrapper = _cached_condition(
+                func=func, cache=cache, key=key, lock=condition, condition=condition
+            )
         elif lock is not None:
-            wrapper = _cached_locked(func, cache, key, lock)
+            wrapper = _cached_locked(func=func, cache=cache, key=key, lock=lock)
         else:
-            wrapper = _cached_unlocked(func, cache, key)
+            wrapper = _cached_unlocked(func=func, cache=cache, key=key)
         wrapper.cache_info = None
     return wrapper

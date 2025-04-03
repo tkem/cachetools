@@ -46,7 +46,7 @@ class Cache(collections.abc.MutableMapping):
 
     __size = _DefaultSize()
 
-    def __init__(self, maxsize, getsizeof=None):
+    def __init__(self, maxsize, *, getsizeof=None):
         if getsizeof:
             self.getsizeof = getsizeof
         if self.getsizeof is not Cache.getsizeof:
@@ -144,8 +144,8 @@ class Cache(collections.abc.MutableMapping):
 class FIFOCache(Cache):
     """First In First Out (FIFO) cache implementation."""
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, *, getsizeof=None):
+        Cache.__init__(self, maxsize=maxsize, getsizeof=getsizeof)
         self.__order = collections.OrderedDict()
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -172,8 +172,8 @@ class FIFOCache(Cache):
 class LFUCache(Cache):
     """Least Frequently Used (LFU) cache implementation."""
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, *, getsizeof=None):
+        Cache.__init__(self, maxsize=maxsize, getsizeof=getsizeof)
         self.__counter = collections.Counter()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
@@ -203,8 +203,8 @@ class LFUCache(Cache):
 class LRUCache(Cache):
     """Least Recently Used (LRU) cache implementation."""
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, *, getsizeof=None):
+        Cache.__init__(self, maxsize=maxsize, getsizeof=getsizeof)
         self.__order = collections.OrderedDict()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
@@ -240,8 +240,8 @@ class LRUCache(Cache):
 class RRCache(Cache):
     """Random Replacement (RR) cache implementation."""
 
-    def __init__(self, maxsize, choice=random.choice, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, *, choice=random.choice, getsizeof=None):
+        Cache.__init__(self, maxsize=maxsize, getsizeof=getsizeof)
         self.__choice = choice
 
     @property
@@ -290,9 +290,9 @@ class _TimedCache(Cache):
         def __getattr__(self, name):
             return getattr(self.__timer, name)
 
-    def __init__(self, maxsize, timer=time.monotonic, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
-        self.__timer = _TimedCache._Timer(timer)
+    def __init__(self, maxsize, *, timer=time.monotonic, getsizeof=None):
+        Cache.__init__(self, maxsize=maxsize, getsizeof=getsizeof)
+        self.__timer = self._Timer(timer)
 
     def __repr__(self, cache_repr=Cache.__repr__):
         with self.__timer as time:
@@ -352,8 +352,8 @@ class TTLCache(_TimedCache):
             prev.next = next
             next.prev = prev
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
-        _TimedCache.__init__(self, maxsize, timer, getsizeof)
+    def __init__(self, maxsize, *, ttl, timer=time.monotonic, getsizeof=None):
+        _TimedCache.__init__(self, maxsize=maxsize, timer=timer, getsizeof=getsizeof)
         self.__root = root = TTLCache._Link()
         root.prev = root.next = root
         self.__links = collections.OrderedDict()
@@ -483,8 +483,8 @@ class TLRUCache(_TimedCache):
         def __lt__(self, other):
             return self.expires < other.expires
 
-    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None):
-        _TimedCache.__init__(self, maxsize, timer, getsizeof)
+    def __init__(self, maxsize, *, ttu, timer=time.monotonic, getsizeof=None):
+        _TimedCache.__init__(self, maxsize=maxsize, timer=timer, getsizeof=getsizeof)
         self.__items = collections.OrderedDict()
         self.__order = []
         self.__ttu = ttu
@@ -595,21 +595,11 @@ _CacheInfo = collections.namedtuple(
 )
 
 
-def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
+def cached(cache, *, key=keys.hashkey, lock=None, condition=None, info=False):
     """Decorator to wrap a function with a memoizing callable that saves
     results in a cache.
 
     """
-    if isinstance(condition, bool):
-        from warnings import warn
-
-        warn(
-            "passing `info` as positional parameter is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        info = condition
-        condition = None
 
     def decorator(func):
         if info:
@@ -628,9 +618,22 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
                 def make_info(hits, misses):
                     return _CacheInfo(hits, misses, 0, 0)
 
-            wrapper = _cached_wrapper(func, cache, key, lock, condition, info=make_info)
+            wrapper = _cached_wrapper(
+                func=func,
+                cache=cache,
+                key=key,
+                lock=lock,
+                condition=condition,
+                info=make_info,
+            )
         else:
-            wrapper = _cached_wrapper(func, cache, key, lock, condition)
+            wrapper = _cached_wrapper(
+                func=func,
+                cache=cache,
+                key=key,
+                lock=lock,
+                condition=condition,
+            )
 
         wrapper.cache = cache
         wrapper.cache_key = key
@@ -641,14 +644,20 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     return decorator
 
 
-def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None):
+def cachedmethod(cache, *, key=keys.methodkey, lock=None, condition=None):
     """Decorator to wrap a class or instance method with a memoizing
     callable that saves results in a cache.
 
     """
 
     def decorator(method):
-        wrapper = _cachedmethod_wrapper(method, cache, key, lock, condition)
+        wrapper = _cachedmethod_wrapper(
+            method=method,
+            cache=cache,
+            key=key,
+            lock=lock,
+            condition=condition,
+        )
 
         wrapper.cache = cache
         wrapper.cache_key = key

@@ -3,7 +3,7 @@
 import weakref
 
 
-def _cachedmethod_condition(method, cache, key, lock, cond):
+def _cachedmethod_condition(*, method, cache, key, lock, condition):
     pending = weakref.WeakKeyDictionary()
 
     def wrapper(self, *args, **kwargs):
@@ -13,7 +13,7 @@ def _cachedmethod_condition(method, cache, key, lock, cond):
         k = key(self, *args, **kwargs)
         with lock(self):
             p = pending.setdefault(self, set())
-            cond(self).wait_for(lambda: k not in p)
+            condition(self).wait_for(lambda: k not in p)
             try:
                 return c[k]
             except KeyError:
@@ -29,7 +29,7 @@ def _cachedmethod_condition(method, cache, key, lock, cond):
         finally:
             with lock(self):
                 pending[self].remove(k)
-                cond(self).notify_all()
+                condition(self).notify_all()
 
     def cache_clear(self):
         c = cache(self)
@@ -41,7 +41,7 @@ def _cachedmethod_condition(method, cache, key, lock, cond):
     return wrapper
 
 
-def _cachedmethod_locked(method, cache, key, lock):
+def _cachedmethod_locked(*, method, cache, key, lock):
     def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
@@ -70,7 +70,7 @@ def _cachedmethod_locked(method, cache, key, lock):
     return wrapper
 
 
-def _cachedmethod_unlocked(method, cache, key):
+def _cachedmethod_unlocked(*, method, cache, key):
     def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
@@ -96,13 +96,18 @@ def _cachedmethod_unlocked(method, cache, key):
     return wrapper
 
 
-def _cachedmethod_wrapper(func, cache, key, lock=None, cond=None):
-    if cond is not None and lock is not None:
-        wrapper = _cachedmethod_condition(func, cache, key, lock, cond)
-    elif cond is not None:
-        wrapper = _cachedmethod_condition(func, cache, key, cond, cond)
+def _cachedmethod_wrapper(*, method, cache, key, lock=None, condition=None):
+    if condition is not None and lock is not None:
+        wrapper = _cachedmethod_condition(
+            method=method, cache=cache, key=key, lock=lock, condition=condition
+        )
+    elif condition is not None:
+        # passing lock=condition because _cachedmethod_condition does 'with lock(self)'
+        wrapper = _cachedmethod_condition(
+            method=method, cache=cache, key=key, lock=condition, condition=condition
+        )
     elif lock is not None:
-        wrapper = _cachedmethod_locked(func, cache, key, lock)
+        wrapper = _cachedmethod_locked(method=method, cache=cache, key=key, lock=lock)
     else:
-        wrapper = _cachedmethod_unlocked(func, cache, key)
+        wrapper = _cachedmethod_unlocked(method=method, cache=cache, key=key)
     return wrapper

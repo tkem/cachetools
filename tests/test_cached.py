@@ -252,18 +252,6 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
         self.assertEqual(lock.count, 11)
 
-    def test_decorator_lock_info_deprecated(self):
-        cache = self.cache(2)
-        key = cachetools.keys.hashkey
-        lock = CountedLock()
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            # passing `ìnfo` as positional parameter is deprecated
-            wrapper = cachetools.cached(cache, key, lock, True)(self.func)
-        self.assertEqual(len(w), 1)
-        self.assertIs(w[0].category, DeprecationWarning)
-        self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
-
     def test_decorator_condition_info(self):
         cache = self.cache(2)
         lock = cond = CountedCondition()
