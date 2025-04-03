@@ -5,7 +5,7 @@ import cachetools.func
 
 class DecoratorTestMixin:
     def decorator(self, maxsize, **kwargs):
-        return self.DECORATOR(maxsize, **kwargs)
+        return self.DECORATOR(maxsize, info=True, **kwargs)
 
     def test_decorator(self):
         cached = self.decorator(maxsize=2)(lambda n: n)

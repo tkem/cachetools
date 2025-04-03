@@ -25,7 +25,7 @@ class TLRUTestCache(TLRUCache):
         return math.inf
 
     def __init__(self, maxsize, ttu=default_ttu, **kwargs):
-        TLRUCache.__init__(self, maxsize, ttu, timer=Timer(), **kwargs)
+        TLRUCache.__init__(self, maxsize=maxsize, ttu=ttu, timer=Timer(), **kwargs)
 
 
 class TLRUCacheTest(unittest.TestCase, CacheTestMixin):

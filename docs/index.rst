@@ -70,7 +70,7 @@ inserted into the cache.
    synchronized, e.g. by using one of the memoizing decorators with a
    suitable `lock` object.
 
-.. autoclass:: Cache(maxsize, getsizeof=None)
+.. autoclass:: Cache(maxsize, *, getsizeof=None)
    :members: currsize, getsizeof, maxsize
 
    This class discards arbitrary items using :meth:`popitem` to make
@@ -80,25 +80,25 @@ inserted into the cache.
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
 
-.. autoclass:: FIFOCache(maxsize, getsizeof=None)
+.. autoclass:: FIFOCache(maxsize, *, getsizeof=None)
    :members: popitem
 
    This class evicts items in the order they were added to make space
    when necessary.
 
-.. autoclass:: LFUCache(maxsize, getsizeof=None)
+.. autoclass:: LFUCache(maxsize, *, getsizeof=None)
    :members: popitem
 
    This class counts how often an item is retrieved, and discards the
    items used least often to make space when necessary.
 
-.. autoclass:: LRUCache(maxsize, getsizeof=None)
+.. autoclass:: LRUCache(maxsize, *, getsizeof=None)
    :members: popitem
 
    This class discards the least recently used items first to make
    space when necessary.
 
-.. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
+.. autoclass:: RRCache(maxsize, *, choice=random.choice, getsizeof=None)
    :members: choice, popitem
 
    This class randomly selects candidate items and discards them to
@@ -109,7 +109,7 @@ inserted into the cache.
    an alternative function that returns an arbitrary element from a
    non-empty sequence.
 
-.. autoclass:: TTLCache(maxsize, ttl, timer=time.monotonic, getsizeof=None)
+.. autoclass:: TTLCache(maxsize, *, ttl, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttl
 
    This class associates a time-to-live value with each item.  Items
@@ -151,7 +151,7 @@ inserted into the cache.
 
       :returns: An iterable of expired `(key, value)` pairs.
 
-.. autoclass:: TLRUCache(maxsize, ttu, timer=time.monotonic, getsizeof=None)
+.. autoclass:: TLRUCache(maxsize, *, ttu, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttu
 
    Similar to :class:`TTLCache`, this class also associates an
@@ -299,7 +299,7 @@ often called with the same arguments:
    >>> fib(42)
    267914296
 
-.. decorator:: cached(cache, key=cachetools.keys.hashkey, lock=None, info=False)
+.. decorator:: cached(cache, *, key=cachetools.keys.hashkey, lock=None, info=False)
 
    Decorator to wrap a function with a memoizing callable that saves
    results in a cache.
@@ -462,7 +462,7 @@ often called with the same arguments:
           print(e, "-", _get_pep_wrapped.cache_info())
 
 
-.. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None)
+.. decorator:: cachedmethod(cache, *, key=cachetools.keys.methodkey, lock=None)
 
    Decorator to wrap a class or instance method with a memoizing
    callable that saves results in a (possibly shared) cache.
@@ -656,35 +656,35 @@ all the decorators in this module are thread-safe by default.
 
 
 .. decorator:: fifo_cache(user_function)
-               fifo_cache(maxsize=128, typed=False)
+               fifo_cache(maxsize=128, *, typed=False, lock=None, condition=None, info=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a First In First Out
    (FIFO) algorithm.
 
 .. decorator:: lfu_cache(user_function)
-               lfu_cache(maxsize=128, typed=False)
+               lfu_cache(maxsize=128, *, typed=False, lock=None, condition=None, info=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Frequently Used
    (LFU) algorithm.
 
 .. decorator:: lru_cache(user_function)
-               lru_cache(maxsize=128, typed=False)
+               lru_cache(maxsize=128, *, typed=False, lock=None, condition=None, info=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
 
 .. decorator:: rr_cache(user_function)
-               rr_cache(maxsize=128, choice=random.choice, typed=False)
+               rr_cache(maxsize=128, *, choice=random.choice, typed=False, lock=None, condition=None, info=False)
 
    Decorator that wraps a function with a memoizing callable that
    saves up to `maxsize` results based on a Random Replacement (RR)
    algorithm.
 
 .. decorator:: ttl_cache(user_function)
-               ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
+               ttl_cache(maxsize=128, *, ttl=600, timer=time.monotonic, typed=False, lock=None, condition=None, info=False)
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
