@@ -51,7 +51,7 @@ class Cache(collections.abc.MutableMapping):
             self.getsizeof = getsizeof
         if self.getsizeof is not Cache.getsizeof:
             self.__size = dict()
-        self.__data = dict()
+        self.__data = collections.OrderedDict()
         self.__currsize = 0
         self.__maxsize = maxsize
 
@@ -124,6 +124,9 @@ class Cache(collections.abc.MutableMapping):
         else:
             self[key] = value = default
         return value
+
+    def move_to_end(self, key):
+        self.__data.move_to_end(key)
 
     @property
     def maxsize(self):
