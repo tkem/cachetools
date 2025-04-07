@@ -6,11 +6,7 @@ import functools
 import math
 import random
 import time
-
-try:
-    from threading import Condition
-except ImportError:  # pragma: no cover
-    from dummy_threading import Condition
+from threading import Condition
 
 from . import FIFOCache, LFUCache, LRUCache, RRCache, TTLCache
 from . import cached
