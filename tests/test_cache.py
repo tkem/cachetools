@@ -15,7 +15,8 @@ class CacheTest(unittest.TestCase, CacheTestMixin):
         def on_evict(key, value):
             evicted_items[key] = value
         
-        cache = self.Cache(maxsize=2, on_evict=on_evict)
+        # Create the cache directly from cachetools.Cache, not through self.Cache
+        cache = cachetools.Cache(maxsize=2, on_evict=on_evict)
         
         # Fill the cache
         cache[1] = 'one'
@@ -39,7 +40,8 @@ class CacheTest(unittest.TestCase, CacheTestMixin):
         def on_evict_error(key, value):
             raise ValueError("Test exception")
         
-        cache = self.Cache(maxsize=2, on_evict=on_evict_error)
+        # Create the cache directly from cachetools.Cache, not through self.Cache
+        cache = cachetools.Cache(maxsize=2, on_evict=on_evict_error)
         
         # Fill the cache
         cache[1] = 'one'
