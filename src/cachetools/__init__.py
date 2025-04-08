@@ -81,8 +81,6 @@ class Cache(collections.abc.MutableMapping):
         if key not in self.__data or self.__size[key] < size:
             while self.__currsize + size > maxsize:
                 k, v = self.popitem()
-                # I've added in my branch the on_evict callback functionality. Can you add tests to the
-                # the test class AI!
                 if self.__on_evict:
                     try:
                         self.__on_evict(k, v)
