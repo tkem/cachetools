@@ -19,6 +19,8 @@ v6.0.0 (UNRELEASED)
   this *may* result in a noticable performance degradation, depending
   on your actual use case.
 
+- Improve documentation.
+
 - Update CI environment.
 
 
