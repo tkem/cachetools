@@ -15,18 +15,14 @@ class CacheTest(unittest.TestCase, CacheTestMixin):
         def on_evict(key, value):
             evicted_items[key] = value
         
-        # Create a new Cache directly for testing on_evict
-        cache = cachetools.Cache(2)
-        cache._Cache__on_evict = on_evict
-        
-        # Add a concrete implementation for popitem since Cache is abstract
-        cache.popitem = lambda: cache.pop(next(iter(cache)))
+        # Create a FIFOCache which has a concrete popitem implementation
+        cache = cachetools.FIFOCache(2, on_evict=on_evict)
         
         # Fill the cache
         cache[1] = 'one'
         cache[2] = 'two'
         
-        # This should evict key 1
+        # This should evict key 1 when cache is full
         cache[3] = 'three'
         
         # Check that the callback was called with the correct key and value
@@ -44,12 +40,8 @@ class CacheTest(unittest.TestCase, CacheTestMixin):
         def on_evict_error(key, value):
             raise ValueError("Test exception")
         
-        # Create a new Cache directly for testing on_evict
-        cache = cachetools.Cache(2)
-        cache._Cache__on_evict = on_evict_error
-        
-        # Add a concrete implementation for popitem since Cache is abstract
-        cache.popitem = lambda: cache.pop(next(iter(cache)))
+        # Create a FIFOCache which has a concrete popitem implementation
+        cache = cachetools.FIFOCache(2, on_evict=on_evict_error)
         
         # Fill the cache
         cache[1] = 'one'
