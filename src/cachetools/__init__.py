@@ -154,8 +154,8 @@ class Cache(collections.abc.MutableMapping):
 class FIFOCache(Cache):
     """First In First Out (FIFO) cache implementation."""
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, getsizeof=None, on_evict=None):
+        Cache.__init__(self, maxsize, getsizeof, on_evict)
         self.__order = collections.OrderedDict()
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -182,8 +182,8 @@ class FIFOCache(Cache):
 class LFUCache(Cache):
     """Least Frequently Used (LFU) cache implementation."""
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, getsizeof=None, on_evict=None):
+        Cache.__init__(self, maxsize, getsizeof, on_evict)
         self.__counter = collections.Counter()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
@@ -213,8 +213,8 @@ class LFUCache(Cache):
 class LRUCache(Cache):
     """Least Recently Used (LRU) cache implementation."""
 
-    def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, getsizeof=None, on_evict=None):
+        Cache.__init__(self, maxsize, getsizeof, on_evict)
         self.__order = collections.OrderedDict()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
@@ -250,8 +250,8 @@ class LRUCache(Cache):
 class RRCache(Cache):
     """Random Replacement (RR) cache implementation."""
 
-    def __init__(self, maxsize, choice=random.choice, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, choice=random.choice, getsizeof=None, on_evict=None):
+        Cache.__init__(self, maxsize, getsizeof, on_evict)
         self.__choice = choice
 
     @property
@@ -300,8 +300,8 @@ class _TimedCache(Cache):
         def __getattr__(self, name):
             return getattr(self.__timer, name)
 
-    def __init__(self, maxsize, timer=time.monotonic, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+    def __init__(self, maxsize, timer=time.monotonic, getsizeof=None, on_evict=None):
+        Cache.__init__(self, maxsize, getsizeof, on_evict)
         self.__timer = _TimedCache._Timer(timer)
 
     def __repr__(self, cache_repr=Cache.__repr__):
@@ -362,8 +362,8 @@ class TTLCache(_TimedCache):
             prev.next = next
             next.prev = prev
 
-    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
-        _TimedCache.__init__(self, maxsize, timer, getsizeof)
+    def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None, on_evict=None):
+        _TimedCache.__init__(self, maxsize, timer, getsizeof, on_evict)
         self.__root = root = TTLCache._Link()
         root.prev = root.next = root
         self.__links = collections.OrderedDict()
@@ -493,8 +493,8 @@ class TLRUCache(_TimedCache):
         def __lt__(self, other):
             return self.expires < other.expires
 
-    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None):
-        _TimedCache.__init__(self, maxsize, timer, getsizeof)
+    def __init__(self, maxsize, ttu, timer=time.monotonic, getsizeof=None, on_evict=None):
+        _TimedCache.__init__(self, maxsize, timer, getsizeof, on_evict)
         self.__items = collections.OrderedDict()
         self.__order = []
         self.__ttu = ttu
