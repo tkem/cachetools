@@ -495,6 +495,9 @@ often called with the same arguments:
 
    .. testcode::
 
+      from cachetools.keys import hashkey
+      from functools import partial
+
       class CachedPEPs:
 
           def __init__(self, cachesize):
@@ -523,19 +526,22 @@ often called with the same arguments:
 
    .. testcode::
 
+      from cachetools.keys import methodkey
+      from functools import partial
+
       class CachedReferences:
 
           def __init__(self, cachesize):
               self.cache = LRUCache(maxsize=cachesize)
 
-          @cachedmethod(lambda self: self.cache, key=partial(hashkey, 'pep'))
+          @cachedmethod(lambda self: self.cache, key=partial(methodkey, method='pep'))
           def get_pep(self, num):
               """Retrieve text of a Python Enhancement Proposal"""
               url = 'http://www.python.org/dev/peps/pep-%04d/' % num
               with urllib.request.urlopen(url) as s:
                   return s.read()
 
-          @cachedmethod(lambda self: self.cache, key=partial(hashkey, 'rfc'))
+          @cachedmethod(lambda self: self.cache, key=partial(methodkey, method='rfc'))
           def get_rfc(self, num):
               """Retrieve text of an IETF Request for Comments"""
               url = 'https://tools.ietf.org/rfc/rfc%d.txt' % num
@@ -543,15 +549,21 @@ often called with the same arguments:
                   return s.read()
 
       docs = CachedReferences(cachesize=100)
-      print("PEP #1: %s" % docs.get_pep(1))
-      print("RFC #1: %s" % docs.get_rfc(1))
+      print("PEP #20: %s" % docs.get_pep(20))
+      print("RFC #20: %s" % docs.get_rfc(20))
+      assert len(docs.cache) == 2
 
    .. testoutput::
       :hide:
       :options: +ELLIPSIS
 
-      PEP #1: ...
-      RFC #1: ...
+      PEP #20: ...
+      RFC #20: ...
+
+
+Note how keyword arguments are used with :func:`functools.partial`
+to create distinct cache keys, to avoid issues with :func:`methodkey`
+skipping its initial `self` argument.
 
 
 *****************************************************************
