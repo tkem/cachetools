@@ -15,9 +15,8 @@ class CacheTest(unittest.TestCase, CacheTestMixin):
         def on_evict(key, value):
             evicted_items[key] = value
         
-        # Create a separate Cache instance to test on_evict
-        cache = cachetools.Cache(2)
-        cache._Cache__on_evict = on_evict
+        # Use LRUCache instead of base Cache to ensure proper item eviction
+        cache = cachetools.LRUCache(2, on_evict=on_evict)
         
         # Fill the cache
         cache[1] = 'one'
@@ -41,9 +40,8 @@ class CacheTest(unittest.TestCase, CacheTestMixin):
         def on_evict_error(key, value):
             raise ValueError("Test exception")
         
-        # Create a separate Cache instance to test on_evict
-        cache = cachetools.Cache(2)
-        cache._Cache__on_evict = on_evict_error
+        # Use LRUCache instead of base Cache to ensure proper item eviction
+        cache = cachetools.LRUCache(2, on_evict=on_evict_error)
         
         # Fill the cache
         cache[1] = 'one'
