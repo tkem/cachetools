@@ -1,6 +1,6 @@
 import unittest
 
-
+# . AI
 class CacheTestMixin:
     Cache = None
 
@@ -299,3 +299,45 @@ class CacheTestMixin:
             cache = pickle.loads(pickle.dumps(source))
             self.assertEqual(n, len(cache))
             self.assertEqual(source, cache)
+
+    def test_on_evict_callback(self):
+        # Test that the on_evict callback is called when items are evicted
+        evicted_items = {}
+
+        def on_evict(key, value):
+            evicted_items[key] = value
+
+        cache = self.Cache(2, on_evict=on_evict)
+
+        cache[1] = 'one'
+        cache[2] = 'two'
+
+        # This should evict key 1 when cache is full
+        cache[3] = 'three'
+        self.assertEqual(evicted_items, {1: 'one'})
+
+        # Add another item to evict key 2
+        cache[4] = 'four'
+        self.assertEqual(evicted_items, {1: 'one', 2: 'two'})
+
+    def test_on_evict_exception(self):
+        # Test that exceptions in the on_evict callback are caught
+
+        def on_evict_error(key, value):
+            raise ValueError("Test exception")
+
+        cache = self.Cache(2, on_evict=on_evict_error)
+
+        # Fill the cache
+        cache[1] = 'one'
+        cache[2] = 'two'
+
+        # This should evict key 1 and call the callback which raises an exception
+        # The exception should be caught and not propagate
+        try:
+            cache[3] = 'three'
+        except ValueError:
+            self.fail("Exception from on_evict callback was not caught")
+
+        # Verify the item was still added despite the callback exception
+        self.assertEqual(cache[3], 'three')
