@@ -20,6 +20,7 @@ import functools
 import heapq
 import random
 import time
+from logging import getLogger
 
 from . import keys
 from ._decorators import _cached_wrapper, _cachedmethod_wrapper
@@ -45,6 +46,8 @@ class Cache(collections.abc.MutableMapping):
 
     __size = _DefaultSize()
 
+    __logger = getLogger("cachetools.Cache")
+
     def __init__(self, maxsize, getsizeof=None, on_evict=None):
         if getsizeof:
             self.getsizeof = getsizeof
@@ -69,6 +72,7 @@ class Cache(collections.abc.MutableMapping):
         except KeyError:
             return self.__missing__(key)
 
+    # noinspection PyBroadException
     def __setitem__(self, key, value):
         maxsize = self.__maxsize
         size = self.getsizeof(value)
@@ -77,8 +81,14 @@ class Cache(collections.abc.MutableMapping):
         if key not in self.__data or self.__size[key] < size:
             while self.__currsize + size > maxsize:
                 k, v = self.popitem()
-                if self.__on_evict is not None:
-                    self.__on_evict(k, v)
+                # I've added in my branch the on_evict callback functionality. Can you add tests to the
+                # the test class AI!
+                if self.__on_evict:
+                    try:
+                        self.__on_evict(k, v)
+                    except Exception:
+                        self.__logger.error(
+                            "Exception in on_evict callback for %s", k, exc_info=True)
         if key in self.__data:
             diffsize = size - self.__size[key]
         else:
@@ -89,9 +99,8 @@ class Cache(collections.abc.MutableMapping):
 
     def __delitem__(self, key):
         size = self.__size.pop(key)
-        value = self.__data.pop(key)
+        del self.__data[key]
         self.__currsize -= size
-        return value
 
     def __contains__(self, key):
         return key in self.__data
@@ -114,12 +123,12 @@ class Cache(collections.abc.MutableMapping):
     def pop(self, key, default=__marker):
         if key in self:
             value = self[key]
-            self.__delitem__(key)
-            return value
+            del self[key]
         elif default is self.__marker:
             raise KeyError(key)
         else:
-            return default
+            value = default
+        return value
 
     def setdefault(self, key, default=None):
         if key in self:
@@ -169,10 +178,7 @@ class FIFOCache(Cache):
         except StopIteration:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
-            value = self.pop(key)
-            if self._Cache__on_evict is not None:
-                self._Cache__on_evict(key, value)
-            return (key, value)
+            return (key, self.pop(key))
 
 
 class LFUCache(Cache):
@@ -203,10 +209,7 @@ class LFUCache(Cache):
         except ValueError:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
-            value = self.pop(key)
-            if self._Cache__on_evict is not None:
-                self._Cache__on_evict(key, value)
-            return (key, value)
+            return (key, self.pop(key))
 
 
 class LRUCache(Cache):
@@ -237,10 +240,7 @@ class LRUCache(Cache):
         except StopIteration:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
-            value = self.pop(key)
-            if self._Cache__on_evict is not None:
-                self._Cache__on_evict(key, value)
-            return (key, value)
+            return (key, self.pop(key))
 
     def __update(self, key):
         try:
@@ -268,10 +268,7 @@ class RRCache(Cache):
         except IndexError:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
-            value = self.pop(key)
-            if self._Cache__on_evict is not None:
-                self._Cache__on_evict(key, value)
-            return (key, value)
+            return (key, self.pop(key))
 
 
 class _TimedCache(Cache):
@@ -455,16 +452,12 @@ class TTLCache(_TimedCache):
         cache_delitem = Cache.__delitem__
         cache_getitem = Cache.__getitem__
         while curr is not root and not (time < curr.expires):
-            key = curr.key
-            value = cache_getitem(self, key)
-            expired.append((key, value))
-            cache_delitem(self, key)
-            del links[key]
+            expired.append((curr.key, cache_getitem(self, curr.key)))
+            cache_delitem(self, curr.key)
+            del links[curr.key]
             next = curr.next
             curr.unlink()
             curr = next
-            if self._Cache__on_evict is not None:
-                self._Cache__on_evict(key, value)
         return expired
 
     def popitem(self):
@@ -479,10 +472,7 @@ class TTLCache(_TimedCache):
             except StopIteration:
                 raise KeyError("%s is empty" % type(self).__name__) from None
             else:
-                value = self.pop(key)
-                if self._Cache__on_evict is not None:
-                    self._Cache__on_evict(key, value)
-                return (key, value)
+                return (key, self.pop(key))
 
     def __getlink(self, key):
         value = self.__links[key]
@@ -587,13 +577,9 @@ class TLRUCache(_TimedCache):
         while order and (order[0].removed or not (time < order[0].expires)):
             item = heapq.heappop(order)
             if not item.removed:
-                key = item.key
-                value = cache_getitem(self, key)
-                expired.append((key, value))
-                cache_delitem(self, key)
-                del items[key]
-                if self._Cache__on_evict is not None:
-                    self._Cache__on_evict(key, value)
+                expired.append((item.key, cache_getitem(self, item.key)))
+                cache_delitem(self, item.key)
+                del items[item.key]
         return expired
 
     def popitem(self):
@@ -608,10 +594,7 @@ class TLRUCache(_TimedCache):
             except StopIteration:
                 raise KeyError("%s is empty" % self.__class__.__name__) from None
             else:
-                value = self.pop(key)
-                if self._Cache__on_evict is not None:
-                    self._Cache__on_evict(key, value)
-                return (key, value)
+                return (key, self.pop(key))
 
     def __getitem(self, key):
         value = self.__items[key]
