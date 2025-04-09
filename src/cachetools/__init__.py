@@ -22,8 +22,6 @@ import random
 import time
 
 from . import keys
-from ._cached import _cached_wrapper
-from ._cachedmethod import _cachedmethod_wrapper
 
 
 class _DefaultSize:
@@ -601,6 +599,8 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     results in a cache.
 
     """
+    from ._cached import _cached_wrapper
+
     if isinstance(condition, bool):
         from warnings import warn
 
@@ -647,6 +647,7 @@ def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None):
     callable that saves results in a cache.
 
     """
+    from ._cachedmethod import _cachedmethod_wrapper
 
     def decorator(method):
         wrapper = _cachedmethod_wrapper(method, cache, key, lock, condition)
