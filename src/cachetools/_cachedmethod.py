@@ -4,6 +4,10 @@ import weakref
 
 
 def _cachedmethod_condition(method, cache, key, lock, cond):
+    # though not stated explicitly in the docs (yet), this *should* be
+    # thread-safe even for free-threaded builds, especially since we
+    # don't iterate over it; see
+    # e.g. https://github.com/python/cpython/issues/89967
     pending = weakref.WeakKeyDictionary()
 
     def wrapper(self, *args, **kwargs):
