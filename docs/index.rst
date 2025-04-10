@@ -666,6 +666,10 @@ performance and clear the cache.  Please see the
 :func:`functools.lru_cache` documentation for details.  Also note that
 all the decorators in this module are thread-safe by default.
 
+.. note::
+
+   In contrast to the top-level classes, these decorators *are* thread-safe.
+   They instantiate a :class:`threading.Lock` before wrapping your function.
 
 .. decorator:: fifo_cache(user_function)
                fifo_cache(maxsize=128, typed=False)

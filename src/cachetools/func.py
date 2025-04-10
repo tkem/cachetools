@@ -6,7 +6,7 @@ import functools
 import math
 import random
 import time
-from threading import Condition
+from threading import Condition, Lock
 
 from . import FIFOCache, LFUCache, LRUCache, RRCache, TTLCache
 from . import cached
@@ -25,7 +25,7 @@ class _UnboundTTLCache(TTLCache):
 def _cache(cache, maxsize, typed):
     def decorator(func):
         key = keys.typedkey if typed else keys.hashkey
-        wrapper = cached(cache=cache, key=key, condition=Condition(), info=True)(func)
+        wrapper = cached(cache=cache, key=key, lock=Lock(), info=True)(func)
         wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
         return wrapper
 
