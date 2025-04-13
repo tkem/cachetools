@@ -20,6 +20,12 @@ class Cached:
         self.count += 1
         return count
 
+    @cachedmethod(lambda self: self.cache, info=True)
+    def get_info(self, value):
+        count = self.count
+        self.count += 1
+        return count
+
 
 class Locked:
     def __init__(self, cache):
@@ -29,6 +35,12 @@ class Locked:
 
     @cachedmethod(lambda self: self.cache, lock=lambda self: self)
     def get(self, value):
+        count = self.count
+        self.count += 1
+        return count
+
+    @cachedmethod(lambda self: self.cache, lock=lambda self: self, info=True)
+    def get_info(self, value):
         count = self.count
         self.count += 1
         return count
@@ -55,6 +67,23 @@ class Conditioned(Locked):
     )
     def get_lock(self, value):
         return Locked.get.__wrapped__(self, value)
+
+    @cachedmethod(
+        lambda self: self.cache,
+        condition=lambda self: self,
+        info=True,
+    )
+    def get_info(self, value):
+        return Locked.get_info.__wrapped__(self, value)
+
+    @cachedmethod(
+        lambda self: self.cache,
+        lock=lambda self: self,
+        condition=lambda self: self,
+        info=True,
+    )
+    def get_info_lock(self, value):
+        return Locked.get_info.__wrapped__(self, value)
 
     def wait_for(self, predicate):
         self.wait_count += 1
@@ -350,3 +379,169 @@ class CachedMethodTest(unittest.TestCase):
         cached.get.cache_clear(cached)
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.lock_count, 4)
+
+    def test_info(self):
+        cache = {}
+        cached = Cached(cache)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, None, 0))
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 1, None, 1))
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 2, None, 2))
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cached.get_info.cache_info(cached), (1, 2, None, 2))
+        cached.get_info.cache_clear(cached)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, None, 0))
+
+    def test_info_locked(self):
+        cache = {}
+        cached = Locked(cache)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, None, 0))
+        self.assertEqual(cached.lock_count, 1)
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cached.lock_count, 3)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 1, None, 1))
+        self.assertEqual(cached.lock_count, 4)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cached.lock_count, 6)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 2, None, 2))
+        self.assertEqual(cached.lock_count, 7)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cached.lock_count, 8)
+        self.assertEqual(cached.get_info.cache_info(cached), (1, 2, None, 2))
+        self.assertEqual(cached.lock_count, 9)
+        cached.get_info.cache_clear(cached)
+        self.assertEqual(cached.lock_count, 10)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, None, 0))
+
+    def test_info_condition(self):
+        cache = {}
+        cached = Conditioned(cache)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, None, 0))
+        self.assertEqual(cached.lock_count, 1)
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cached.lock_count, 4)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 1, None, 1))
+        self.assertEqual(cached.lock_count, 5)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cached.lock_count, 8)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 2, None, 2))
+        self.assertEqual(cached.lock_count, 9)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cached.lock_count, 10)
+        self.assertEqual(cached.get_info.cache_info(cached), (1, 2, None, 2))
+        self.assertEqual(cached.lock_count, 11)
+        cached.get_info.cache_clear(cached)
+        self.assertEqual(cached.lock_count, 12)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, None, 0))
+
+    def test_info_lru(self):
+        cache = LRUCache(maxsize=2)
+        cached = Cached(cache)
+
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, 2, 0))
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 1, 2, 1))
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 2, 2, 2))
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.get_info.cache_info(cached), (1, 2, 2, 2))
+
+    def test_info_nospace(self):
+        cached = Cached(LRUCache(maxsize=0))
+
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.get_info(1), 2)
+        self.assertEqual(cached.get_info(1.0), 3)
+        self.assertEqual(cached.get_info(1.0), 4)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 5, 0, 0))
+
+    def test_info_locked_nospace(self):
+        cached = Locked(LRUCache(maxsize=0))
+
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.lock_count, 2)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.lock_count, 4)
+        self.assertEqual(cached.get_info(1), 2)
+        self.assertEqual(cached.lock_count, 6)
+        self.assertEqual(cached.get_info(1.0), 3)
+        self.assertEqual(cached.lock_count, 8)
+        self.assertEqual(cached.get_info(1.0), 4)
+        self.assertEqual(cached.lock_count, 10)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 5, 0, 0))
+
+    def test_info_condition_nospace(self):
+        cached = Conditioned(LRUCache(maxsize=0))
+
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.lock_count, 3)
+        self.assertEqual(cached.wait_count, 1)
+        self.assertEqual(cached.notify_count, 1)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.lock_count, 6)
+        self.assertEqual(cached.wait_count, 2)
+        self.assertEqual(cached.notify_count, 2)
+        self.assertEqual(cached.get_info(1), 2)
+        self.assertEqual(cached.lock_count, 9)
+        self.assertEqual(cached.wait_count, 3)
+        self.assertEqual(cached.notify_count, 3)
+        self.assertEqual(cached.get_info(1.0), 3)
+        self.assertEqual(cached.lock_count, 12)
+        self.assertEqual(cached.wait_count, 4)
+        self.assertEqual(cached.notify_count, 4)
+        self.assertEqual(cached.get_info(1.0), 4)
+        self.assertEqual(cached.lock_count, 15)
+        self.assertEqual(cached.wait_count, 5)
+        self.assertEqual(cached.notify_count, 5)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 5, 0, 0))
+
+    def test_info_nocache(self):
+        cached = Cached(None)
+
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 0, 0, 0))
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 1, 0, 0))
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 2, 0, 0))
+        self.assertEqual(cached.get_info(1), 2)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 3, 0, 0))
+
+    def test_info_locked_nocache(self):
+        cached = Locked(None)
+
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.get_info(1), 2)
+        self.assertEqual(cached.lock_count, 3)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 3, 0, 0))
+
+    def test_info_condition_nocache(self):
+        cached = Conditioned(None)
+
+        self.assertEqual(cached.get_info(0), 0)
+        self.assertEqual(cached.get_info(1), 1)
+        self.assertEqual(cached.get_info(1), 2)
+        self.assertEqual(cached.lock_count, 3)
+        self.assertEqual(cached.wait_count, 0)
+        self.assertEqual(cached.notify_count, 0)
+        self.assertEqual(cached.get_info.cache_info(cached), (0, 3, 0, 0))
