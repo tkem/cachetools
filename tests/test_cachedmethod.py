@@ -297,7 +297,7 @@ class CachedMethodTest(unittest.TestCase):
         cached = Cached(cache)
 
         self.assertEqual(len(cache), 0)
-        self.assertEqual(cached.get.__wrapped__(cached, 0), 0)
+        self.assertEqual(Cached.get.__wrapped__(cached, 0), 0)
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.get(0), 1)
         self.assertEqual(len(cache), 1)
@@ -308,17 +308,17 @@ class CachedMethodTest(unittest.TestCase):
         cache = {}
         cached = Cached(cache)
 
-        self.assertIs(cached.get.cache(cached), cache)
-        self.assertIs(cached.get.cache_key, keys.methodkey)
-        self.assertIs(cached.get.cache_lock, None)
+        self.assertIs(Cached.get.cache(cached), cache)
+        self.assertIs(Cached.get.cache_key, keys.methodkey)
+        self.assertIs(Cached.get.cache_lock, None)
 
     def test_attributes_lock(self):
         cache = {}
         cached = Locked(cache)
 
-        self.assertIs(cached.get.cache(cached), cache)
-        self.assertIs(cached.get.cache_key, keys.methodkey)
-        self.assertIs(cached.get.cache_lock(cached), cached)
+        self.assertIs(Locked.get.cache(cached), cache)
+        self.assertIs(Locked.get.cache_key, keys.methodkey)
+        self.assertIs(Locked.get.cache_lock(cached), cached)
 
     def test_clear(self):
         cache = {}
@@ -326,7 +326,7 @@ class CachedMethodTest(unittest.TestCase):
 
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(len(cache), 1)
-        cached.get.cache_clear(cached)
+        Cached.get.cache_clear(cached)
         self.assertEqual(len(cache), 0)
 
     def test_clear_locked(self):
@@ -336,7 +336,7 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(len(cache), 1)
         self.assertEqual(cached.lock_count, 2)
-        cached.get.cache_clear(cached)
+        Locked.get.cache_clear(cached)
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.lock_count, 3)
 
@@ -347,6 +347,6 @@ class CachedMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(0), 0)
         self.assertEqual(len(cache), 1)
         self.assertEqual(cached.lock_count, 3)
-        cached.get.cache_clear(cached)
+        Conditioned.get.cache_clear(cached)
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.lock_count, 4)
