@@ -22,8 +22,6 @@ import random
 import time
 
 from . import keys
-from ._cached import _cached_wrapper
-from ._cachedmethod import _cachedmethod_wrapper
 
 
 class _DefaultSize:
@@ -601,6 +599,8 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     results in a cache.
 
     """
+    from ._cached import _wrapper
+
     if isinstance(condition, bool):
         from warnings import warn
 
@@ -629,15 +629,9 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
                 def make_info(hits, misses):
                     return _CacheInfo(hits, misses, 0, 0)
 
-            wrapper = _cached_wrapper(func, cache, key, lock, condition, info=make_info)
+            return _wrapper(func, cache, key, lock, condition, info=make_info)
         else:
-            wrapper = _cached_wrapper(func, cache, key, lock, condition)
-
-        wrapper.cache = cache
-        wrapper.cache_key = key
-        wrapper.cache_lock = lock
-
-        return functools.update_wrapper(wrapper, func)
+            return _wrapper(func, cache, key, lock, condition)
 
     return decorator
 
@@ -647,14 +641,9 @@ def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None):
     callable that saves results in a cache.
 
     """
+    from ._cachedmethod import _wrapper
 
     def decorator(method):
-        wrapper = _cachedmethod_wrapper(method, cache, key, lock, condition)
-
-        wrapper.cache = cache
-        wrapper.cache_key = key
-        wrapper.cache_lock = lock
-
-        return functools.update_wrapper(wrapper, method)
+        return _wrapper(method, cache, key, lock, condition)
 
     return decorator
