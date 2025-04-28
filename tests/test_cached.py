@@ -169,6 +169,7 @@ class DecoratorTestMixin:
         self.assertIs(wrapper.cache, cache)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, None)
+        self.assertIs(wrapper.cache_condition, None)
 
     def test_decorator_attributes_lock(self):
         cache = self.cache(2)
@@ -178,6 +179,17 @@ class DecoratorTestMixin:
         self.assertIs(wrapper.cache, cache)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, lock)
+        self.assertIs(wrapper.cache_condition, None)
+
+    def test_decorator_attributes_condition(self):
+        cache = self.cache(2)
+        lock = cond = CountedCondition()
+        wrapper = cachetools.cached(cache, condition=cond)(self.func)
+
+        self.assertIs(wrapper.cache, cache)
+        self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
+        self.assertIs(wrapper.cache_lock, lock)
+        self.assertIs(wrapper.cache_condition, cond)
 
     def test_decorator_clear(self):
         cache = self.cache(2)

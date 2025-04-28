@@ -1,14 +1,26 @@
 """Method decorator helpers."""
 
+import functools
 import weakref
 
 
-def _cachedmethod_condition(method, cache, key, lock, cond):
+def warn_cache_none():
+    from warnings import warn
+
+    warn(
+        "returning `None` from `cache(self)` is deprecated",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
+def _condition(method, cache, key, lock, cond):
     pending = weakref.WeakKeyDictionary()
 
     def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
+            warn_cache_none()
             return method(self, *args, **kwargs)
         k = key(self, *args, **kwargs)
         with lock(self):
@@ -41,10 +53,11 @@ def _cachedmethod_condition(method, cache, key, lock, cond):
     return wrapper
 
 
-def _cachedmethod_locked(method, cache, key, lock):
+def _locked(method, cache, key, lock):
     def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
+            warn_cache_none()
             return method(self, *args, **kwargs)
         k = key(self, *args, **kwargs)
         with lock(self):
@@ -70,10 +83,11 @@ def _cachedmethod_locked(method, cache, key, lock):
     return wrapper
 
 
-def _cachedmethod_unlocked(method, cache, key):
+def _unlocked(method, cache, key):
     def wrapper(self, *args, **kwargs):
         c = cache(self)
         if c is None:
+            warn_cache_none()
             return method(self, *args, **kwargs)
         k = key(self, *args, **kwargs)
         try:
@@ -96,13 +110,19 @@ def _cachedmethod_unlocked(method, cache, key):
     return wrapper
 
 
-def _cachedmethod_wrapper(func, cache, key, lock=None, cond=None):
+def _wrapper(method, cache, key, lock=None, cond=None):
     if cond is not None and lock is not None:
-        wrapper = _cachedmethod_condition(func, cache, key, lock, cond)
+        wrapper = _condition(method, cache, key, lock, cond)
     elif cond is not None:
-        wrapper = _cachedmethod_condition(func, cache, key, cond, cond)
+        wrapper = _condition(method, cache, key, cond, cond)
     elif lock is not None:
-        wrapper = _cachedmethod_locked(func, cache, key, lock)
+        wrapper = _locked(method, cache, key, lock)
     else:
-        wrapper = _cachedmethod_unlocked(func, cache, key)
-    return wrapper
+        wrapper = _unlocked(method, cache, key)
+
+    wrapper.cache = cache
+    wrapper.cache_key = key
+    wrapper.cache_lock = lock if lock is not None else cond
+    wrapper.cache_condition = cond
+
+    return functools.update_wrapper(wrapper, method)
