@@ -10,7 +10,7 @@ v6.0.0 (UNRELEASED)
   ``@cachedmethod`` decorators, which, when used with a
   ``threading.Condition`` instance, should improve `cache stampede
   <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues in massively
-  parallel environments.  Note that this will incur some performance
+  parallel environments.  Note that this will inflict some performance
   penalty, and therefore has to be enabled explicitly.
 
 - Convert the ``cachetools.func`` decorators to use a
@@ -18,6 +18,9 @@ v6.0.0 (UNRELEASED)
   <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues.  Note that
   this *may* result in a noticable performance degradation, depending
   on your actual use case.
+
+- Deprecate support for ``cache(self)`` returning ``None`` to suppress
+  caching with the ``@cachedmethod`` decorator.
 
 - Improve documentation.
 
