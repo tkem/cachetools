@@ -4,39 +4,42 @@ from time import sleep
 
 import cachetools
 
+NUM_VALUES = 5
 NUM_THREADS = 1000
-CACHE_TTL_SECONDS = 3600  # one hour
+SLEEP_SECONDS = 1.0
+TTL_SECONDS = 3600
 # INFO = True
 
 
 class Cached:
 
     def __init__(self):
-        self.cache = cachetools.TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS)
+        self.cache = cachetools.TTLCache(maxsize=NUM_VALUES, ttl=TTL_SECONDS)
         self.cond = threading.Condition()
 
     @cachetools.cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
-    def get_value(self):
-        print("get_value")
-        sleep(1)
-        return 42
+    def get_value(self, n):
+        print("get_value:", n)
+        sleep(SLEEP_SECONDS)
+        return n
 
 
 class MyThread(threading.Thread):
-    def __init__(self, id, cached):
+    def __init__(self, id, cached, value):
         threading.Thread.__init__(self)
         self.thread_name = str(id)
         self.thread_ID = id
         self.cached = cached
+        self.value = value
 
     def run(self):
-        self.cached.get_value()
+        self.cached.get_value(self.value)
 
 
 cached = Cached()
 threads = []
 for i in range(0, NUM_THREADS):
-    t = MyThread(i, cached)
+    t = MyThread(i, cached, i % NUM_VALUES)
     threads.append(t)
     t.start()
 for t in threads:
