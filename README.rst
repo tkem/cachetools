@@ -90,11 +90,12 @@ Project Resources
 Related Projects
 ------------------------------------------------------------------------
 
-- asyncache_: Helpers to use cachetools with async functions
-- cacheing_: Pure Python Cacheing Library
-- CacheToolsUtils_: Cachetools Utilities
-- kids.cache_: Kids caching library
-- shelved-cache_: Persistent cache for Python cachetools
+- asyncache_: Helpers to use cachetools_ with asyncio.
+- cacheing_: Pure Python Cacheing Library.
+- CacheToolsUtils_: Stackable cache classes for sharing, encryption,
+  statistics *and more* on top of cachetools_, redis_ and memcached_.
+- shelved-cache_: Persistent cache implementation for Python
+  cachetools_.
 
 
 License
@@ -119,7 +120,9 @@ Licensed under the `MIT License`_.
 .. _MIT License: https://raw.github.com/tkem/cachetools/master/LICENSE
 
 .. _asyncache: https://pypi.org/project/asyncache/
-.. _cacheing: https://github.com/breid48/cacheing
+.. _cacheing: https://pypi.org/project/cacheing/
 .. _CacheToolsUtils: https://pypi.org/project/CacheToolsUtils/
-.. _kids.cache: https://pypi.org/project/kids.cache/
 .. _shelved-cache: https://pypi.org/project/shelved-cache/
+.. _cachetools: https://pypi.org/project/cachetools/
+.. _redis: https://redis.io/
+.. _memcached: https://memcached.org/
