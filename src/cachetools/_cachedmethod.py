@@ -110,6 +110,55 @@ def _unlocked(method, cache, key):
     return wrapper
 
 
+class _UnlockedWrapper:
+
+    def __init__(self, method, cache, key):
+        # print("init", self, method, cache, key)
+        self.method = method
+        self.cache = cache
+        self.cache_key = key
+        self.cache_lock = None
+        self.cache_condition = None
+        functools.update_wrapper(self, method)
+
+    def __get__(self, obj, objtype=None):
+        from functools import partial
+
+        # print("get", self, obj, objtype)
+        wrapper = partial(self.__call__, obj)
+        wrapper.cache = self.cache
+        wrapper.cache_key = self.cache_key
+        wrapper.cache_lock = None
+        wrapper.cache_condition = None
+        wrapper.cache_clear = self.cache_clear
+        functools.update_wrapper(wrapper, self.method)
+        return wrapper
+
+    def __call__(self, obj, *args, **kwargs):
+        # print("call", self, obj, args, kwargs)
+        c = self.cache(obj)
+        if c is None:
+            warn_cache_none()
+            return self.method(obj, *args, **kwargs)
+        k = self.cache_key(obj, *args, **kwargs)
+        try:
+            return c[k]
+        except KeyError:
+            pass  # key not found
+        v = self.method(obj, *args, **kwargs)
+        try:
+            c[k] = v
+        except ValueError:
+            pass  # value too large
+        return v
+
+    def cache_clear(self, obj=None):
+        # print("clear", self, obj)
+        c = self.cache(obj)
+        if c is not None:
+            c.clear()
+
+
 def _wrapper(method, cache, key, lock=None, cond=None):
     if cond is not None and lock is not None:
         wrapper = _condition(method, cache, key, lock, cond)
@@ -118,7 +167,8 @@ def _wrapper(method, cache, key, lock=None, cond=None):
     elif lock is not None:
         wrapper = _locked(method, cache, key, lock)
     else:
-        wrapper = _unlocked(method, cache, key)
+        return _UnlockedWrapper(method, cache, key)
+        # wrapper = _unlocked(method, cache, key)
 
     wrapper.cache = cache
     wrapper.cache_key = key
