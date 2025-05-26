@@ -7,5 +7,6 @@ exclude .readthedocs.yaml
 
 recursive-include docs *
 prune docs/_build
+prune gists
 
 recursive-include tests *.py
