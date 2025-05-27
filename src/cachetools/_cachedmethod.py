@@ -11,15 +11,14 @@ class BaseDescriptor:
         self.method = method
         self.cache = cache
         self.cache_key = key
+        # TODO: always present? check @cached!
         self.cache_lock = lock
         self.cache_condition = cond
         functools.update_wrapper(self, method)
 
     def __get__(self, obj, objtype=None):
-        from functools import partial
-
         # print("get", self, obj, objtype)
-        wrapper = partial(self.__call__, obj)
+        wrapper = functools.partial(self.__call__, obj)
         wrapper.cache = self.cache
         wrapper.cache_key = self.cache_key
         wrapper.cache_lock = self.cache_lock
@@ -150,7 +149,7 @@ class InfoDescriptor:
         return self.info(self.cache(obj), hits, misses)
 
 
-class LockedInfoDescriptor(BaseDescriptor):
+class LockedInfoDescriptor(InfoDescriptor):
 
     def __call__(self, obj, *args, **kwargs):
         # print("call", self, obj, args, kwargs)
