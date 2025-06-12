@@ -5,6 +5,7 @@ __all__ = (
     "FIFOCache",
     "LFUCache",
     "LRUCache",
+    "LFUCacheOld",
     "RRCache",
     "TLRUCache",
     "TTLCache",
@@ -211,6 +212,7 @@ class LFUCache(Cache):
         _ = self.__data.pop(key)
         self.__currsize -= self.__size[key]
         del self.__counter[key]
+        del self.__size[key]
         if not self.__freq[self.__min_freq]:
             del self.__freq[self.__min_freq]
             self.__min_freq = min(self.__freq) if self.__freq else 0
