@@ -210,9 +210,8 @@ class LFUCache(Cache):
     def _remove_least_freq(self):
         key, _ = self.__freq[self.__min_freq].popitem(last=False)
         _ = self.__data.pop(key)
-        self.__currsize -= self.__size[key]
+        self.__currsize -= self.__size.pop(key)
         del self.__counter[key]
-        del self.__size[key]
         if not self.__freq[self.__min_freq]:
             del self.__freq[self.__min_freq]
             self.__min_freq = min(self.__freq) if self.__freq else 0
@@ -267,7 +266,7 @@ class LFUCache(Cache):
             del self.__freq[freq]
             self.__min_freq = min(self.__freq) if self.__freq else 0
         value = self.__data.pop(key)
-        self.__currsize -= self.__size[key]
+        self.__currsize -= self.__size.pop(key)
 
     def __contains__(self, key):
         return key in self.__data
