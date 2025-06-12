@@ -168,34 +168,153 @@ class FIFOCache(Cache):
 
 
 class LFUCache(Cache):
-    """Least Frequently Used (LFU) cache implementation."""
+    """Least Frequently Used (LFU) cache implementation. All operations are O(1)"""
+    __marker = object()
+
+    __size = _DefaultSize()
 
     def __init__(self, maxsize, getsizeof=None):
-        Cache.__init__(self, maxsize, getsizeof)
+        if getsizeof:
+            self.getsizeof = getsizeof
+        if self.getsizeof is not Cache.getsizeof:
+            self.__size = dict()
+        self.__data = {}
+        self.__maxsize = maxsize
+        self.__currsize = 0
         self.__counter = collections.Counter()
+        self.__freq = collections.defaultdict(collections.OrderedDict)
+        self.__min_freq = 0
 
-    def __getitem__(self, key, cache_getitem=Cache.__getitem__):
-        value = cache_getitem(self, key)
-        if key in self:  # __missing__ may not store item
-            self.__counter[key] -= 1
+    def __repr__(self):
+        return "%s(%s, maxsize=%r, currsize=%r)" % (
+            self.__class__.__name__,
+            repr(self.__data),
+            self.__maxsize,
+            self.__currsize,
+        )
+
+    def _increase_freq(self, key):
+        freq = self.__counter[key]
+        self.__counter[key] = freq + 1
+        bucket = self.__freq[freq]
+        bucket.pop(key, None)
+        if not bucket:
+            if freq == self.__min_freq:
+                self.__min_freq += 1
+            del self.__freq[freq]
+
+        self.__freq[freq + 1][key] = None
+
+    def _remove_least_freq(self):
+        key, _ = self.__freq[self.__min_freq].popitem(last=False)
+        _ = self.__data.pop(key)
+        self.__currsize -= self.__size[key]
+        del self.__counter[key]
+        if not self.__freq[self.__min_freq]:
+            del self.__freq[self.__min_freq]
+            self.__min_freq = min(self.__freq) if self.__freq else 0
+
+    def __getitem__(self, key):
+        try:
+            value = self.__data[key]
+        except KeyError:
+            value = self.__missing__(key)
+            return value
+        else:
+            self._increase_freq(key)
+            return value
+
+    def __setitem__(self, key, value):
+        if self.__maxsize <= 0:
+            return
+
+        new_size = self.getsizeof(value)
+        if new_size > self.__maxsize:
+            raise ValueError("item size exceeds cache maxsize")
+
+        if key in self.__data:
+            old_size = self.__size.get(key, self.getsizeof(self.__data[key]))
+            self.__currsize -= old_size
+            self.__data[key] = value
+            self.__currsize += new_size
+            self._increase_freq(key)
+
+            self.__size[key] = new_size
+
+            while self.__currsize > self.__maxsize:
+                self._remove_least_freq()
+            return
+
+        while self.__currsize + new_size > self.__maxsize and self.__data:
+            self._remove_least_freq()
+
+        self.__data[key] = value
+        self.__counter[key] = 1
+        self.__freq[1][key] = None
+        self.__min_freq = 1
+        self.__currsize += new_size
+        self.__size[key] = new_size
+
+    def __delitem__(self, key):
+        if key not in self.__data:
+            raise KeyError(key)
+        freq = self.__counter.pop(key)
+        del self.__freq[freq][key]
+        if not self.__freq[freq]:
+            del self.__freq[freq]
+            self.__min_freq = min(self.__freq) if self.__freq else 0
+        value = self.__data.pop(key)
+        self.__currsize -= self.__size[key]
+
+    def __contains__(self, key):
+        return key in self.__data
+
+    def __missing__(self, key):
+        raise KeyError(key)
+
+    def __iter__(self):
+        return iter(self.__data)
+
+    def __len__(self):
+        return len(self.__data)
+
+    def get(self, key, default=None):
+        if key in self:
+            return self[key]
+        else:
+            return default
+
+    def pop(self, key, default=__marker):
+        if key in self:
+            value = self[key]
+            del self[key]
+        elif default is self.__marker:
+            raise KeyError(key)
+        else:
+            value = default
         return value
 
-    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
-        cache_setitem(self, key, value)
-        self.__counter[key] -= 1
-
-    def __delitem__(self, key, cache_delitem=Cache.__delitem__):
-        cache_delitem(self, key)
-        del self.__counter[key]
-
-    def popitem(self):
-        """Remove and return the `(key, value)` pair least frequently used."""
-        try:
-            ((key, _),) = self.__counter.most_common(1)
-        except ValueError:
-            raise KeyError("%s is empty" % type(self).__name__) from None
+    def setdefault(self, key, default=None):
+        if key in self:
+            value = self[key]
         else:
-            return (key, self.pop(key))
+            self[key] = value = default
+        return value
+
+    @property
+    def maxsize(self):
+        """The maximum size of the cache."""
+        return self.__maxsize
+
+    @property
+    def currsize(self):
+        """The current size of the cache."""
+        return self.__currsize
+
+    @staticmethod
+    def getsizeof(value):
+        """Return the size of a cache element's value."""
+        return 1
 
 
 class LRUCache(Cache):
