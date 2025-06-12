@@ -169,6 +169,7 @@ class FIFOCache(Cache):
 
 class LFUCache(Cache):
     """Least Frequently Used (LFU) cache implementation. All operations are O(1)"""
+
     __marker = object()
 
     __size = _DefaultSize()
@@ -230,7 +231,7 @@ class LFUCache(Cache):
 
         new_size = self.getsizeof(value)
         if new_size > self.__maxsize:
-            raise ValueError("item size exceeds cache maxsize")
+            raise ValueError("value too large")
 
         if key in self.__data:
             old_size = self.__size.get(key, self.getsizeof(self.__data[key]))
