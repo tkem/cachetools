@@ -265,7 +265,7 @@ class LFUCache(Cache):
         if not self.__freq[freq]:
             del self.__freq[freq]
             self.__min_freq = min(self.__freq) if self.__freq else 0
-        value = self.__data.pop(key)
+        _ = self.__data.pop(key)
         self.__currsize -= self.__size.pop(key)
 
     def __contains__(self, key):
