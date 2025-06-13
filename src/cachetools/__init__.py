@@ -177,14 +177,11 @@ class LFUCache(Cache):
             self.count = count
             self.keys = set()
 
-        # def __reduce__(self):
-        #     return LFUCache._Link, (self.count, self.keys)
-
-        # def unlink(self):
-        #     next = self.next
-        #     prev = self.prev
-        #     prev.next = next
-        #     next.prev = prev
+        def unlink(self):
+            next = self.next
+            prev = self.prev
+            prev.next = next
+            next.prev = prev
 
     def __init__(self, maxsize, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
@@ -201,46 +198,47 @@ class LFUCache(Cache):
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
         if key in self.__links:
-            self.__touch(key)
-        else:
-            root = self.__root
-            link = root.next
-            if link is root:
-                link = root.next = root.prev = LFUCache._Link(1)
-                link.next = link.prev = root
-            link.keys.add(key)
-            self.__links[key] = link
+            return self.__touch(key)
+        root = self.__root
+        link = root.next
+        if link.count != 1:
+            link = LFUCache._Link(1)
+            link.next = root.next
+            root.next = link.next.prev = link
+            link.prev = root
+        link.keys.add(key)
+        self.__links[key] = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
         link = self.__links.pop(key)
-        # FIXME: delete empty nodes
         link.keys.remove(key)
+        if not link.keys:
+            link.unlink()
 
     def popitem(self):
-        """Remove and return the `(key, value)` pair least countuently used."""
+        """Remove and return the `(key, value)` pair least frequently used."""
         root = self.__root
         curr = root.next
-        while curr is not root:
-            if curr.keys:
-                key = next(iter(curr.keys))  # remove an arbitrary element
-                return (key, self.pop(key))
-            curr = curr.next
-        raise KeyError("%s is empty" % type(self).__name__) from None
+        if curr is root:
+            raise KeyError("%s is empty" % type(self).__name__) from None
+        key = next(iter(curr.keys))  # remove an arbitrary element
+        return (key, self.pop(key))
 
     def __touch(self, key):
         """Increment use count"""
         link = self.__links[key]
-        n = link.next
-        if n.count != link.count + 1:
-            n = LFUCache._Link(link.count + 1)
-            n.next = link.next
-            link.next = n.next.prev = n
-            n.prev = link
-        n.keys.add(key)
-        # FIXME: remove empty nodes, otherwise this may grow without bounds?
+        curr = link.next
+        if curr.count != link.count + 1:
+            curr = LFUCache._Link(link.count + 1)
+            curr.next = link.next
+            link.next = curr.next.prev = curr
+            curr.prev = link
+        curr.keys.add(key)
         link.keys.remove(key)
-        self.__links[key] = n
+        if not link.keys:
+            link.unlink()
+        self.__links[key] = curr
 
 
 class LRUCache(Cache):

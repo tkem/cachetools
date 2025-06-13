@@ -26,6 +26,11 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[4], 4)
         self.assertEqual(cache[1], 1)
 
+        cache[1]
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cache[1], 1)
+        self.assertEqual(cache[4], 4)
+
     def test_lfu_getsizeof(self):
         cache = LFUCache(maxsize=3, getsizeof=lambda x: x)
 
