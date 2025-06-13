@@ -76,6 +76,11 @@ class DecoratorTestMixin:
         self.assertEqual(cached.cache_info(), (2, 1, 128, 1))
 
     def test_decorator_needs_rlock(self):
+        """This will deadlock on a cache that uses a regular lock.
+        https://github.com/python/cpython/blob/3.13/Lib/test/test_functools.py#L1791
+
+        """
+
         cached = self.decorator(lambda n: n)
 
         class RecursiveEquals:

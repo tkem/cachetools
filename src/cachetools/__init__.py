@@ -170,32 +170,78 @@ class FIFOCache(Cache):
 class LFUCache(Cache):
     """Least Frequently Used (LFU) cache implementation."""
 
+    class _Link:
+        __slots__ = ("count", "keys", "next", "prev")
+
+        def __init__(self, count):
+            self.count = count
+            self.keys = set()
+
+        def unlink(self):
+            next = self.next
+            prev = self.prev
+            prev.next = next
+            next.prev = prev
+
     def __init__(self, maxsize, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
-        self.__counter = collections.Counter()
+        self.__root = root = LFUCache._Link(0)  # sentinel
+        root.prev = root.next = root
+        self.__links = {}
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
         if key in self:  # __missing__ may not store item
-            self.__counter[key] -= 1
+            self.__touch(key)
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
-        self.__counter[key] -= 1
+        if key in self.__links:
+            return self.__touch(key)
+        root = self.__root
+        link = root.next
+        if link.count != 1:
+            link = LFUCache._Link(1)
+            link.next = root.next
+            root.next = link.next.prev = link
+            link.prev = root
+        link.keys.add(key)
+        self.__links[key] = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
-        del self.__counter[key]
+        link = self.__links.pop(key)
+        link.keys.remove(key)
+        if not link.keys:
+            link.unlink()
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least frequently used."""
-        try:
-            ((key, _),) = self.__counter.most_common(1)
-        except ValueError:
+        root = self.__root
+        curr = root.next
+        if curr is root:
             raise KeyError("%s is empty" % type(self).__name__) from None
-        else:
-            return (key, self.pop(key))
+        key = next(iter(curr.keys))  # remove an arbitrary element
+        return (key, self.pop(key))
+
+    def __touch(self, key):
+        """Increment use count"""
+        link = self.__links[key]
+        curr = link.next
+        if curr.count != link.count + 1:
+            if len(link.keys) == 1:
+                link.count += 1
+                return
+            curr = LFUCache._Link(link.count + 1)
+            curr.next = link.next
+            link.next = curr.next.prev = curr
+            curr.prev = link
+        curr.keys.add(key)
+        link.keys.remove(key)
+        if not link.keys:
+            link.unlink()
+        self.__links[key] = curr
 
 
 class LRUCache(Cache):
