@@ -230,6 +230,9 @@ class LFUCache(Cache):
         link = self.__links[key]
         curr = link.next
         if curr.count != link.count + 1:
+            if len(link.keys) == 1:
+                link.count += 1
+                return
             curr = LFUCache._Link(link.count + 1)
             curr.next = link.next
             link.next = curr.next.prev = curr
