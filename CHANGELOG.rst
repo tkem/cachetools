@@ -1,3 +1,13 @@
+v6.1.0 (2025-06-16)
+===================
+
+- Improve ``LFUCache`` insertion performance by switching to an
+  implementation based on the `cacheing
+  <https://pypi.org/project/cacheing/>`_ library.
+
+- Update CI environment.
+
+
 v6.0.0 (2025-05-23)
 ===================
 
