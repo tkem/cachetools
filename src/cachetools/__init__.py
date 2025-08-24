@@ -288,16 +288,33 @@ class RRCache(Cache):
     def __init__(self, maxsize, choice=random.choice, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
         self.__choice = choice
+        self.__index = {}
+        self.__keys = []
 
     @property
     def choice(self):
         """The `choice` function used by the cache."""
         return self.__choice
 
+    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
+        cache_setitem(self, key, value)
+        if key not in self.__index:
+            self.__index[key] = len(self.__keys)
+            self.__keys.append(key)
+
+    def __delitem__(self, key, cache_delitem=Cache.__delitem__):
+        cache_delitem(self, key)
+        index = self.__index.pop(key)
+        if index != len(self.__keys) - 1:
+            last = self.__keys[-1]
+            self.__keys[index] = last
+            self.__index[last] = index
+        self.__keys.pop()
+
     def popitem(self):
         """Remove and return a random `(key, value)` pair."""
         try:
-            key = self.__choice(list(self))
+            key = self.__choice(self.__keys)
         except IndexError:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
