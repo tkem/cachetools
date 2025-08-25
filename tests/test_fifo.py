@@ -5,7 +5,7 @@ from cachetools import FIFOCache
 from . import CacheTestMixin
 
 
-class LRUCacheTest(unittest.TestCase, CacheTestMixin):
+class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = FIFOCache
 
     def test_fifo(self):
@@ -54,3 +54,15 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
             cache[4] = 4
         self.assertEqual(len(cache), 1)
         self.assertEqual(cache[3], 3)
+
+    def test_fifo_update_existing(self):
+        cache = FIFOCache(maxsize=2)
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[1] = "updated"
+        cache[3] = 3
+
+        self.assertEqual(cache[1], "updated")
+        self.assertIn(3, cache)
+        self.assertNotIn(2, cache)
