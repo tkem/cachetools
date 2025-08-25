@@ -1,3 +1,13 @@
+v6.2.0 (2025-08-25)
+===================
+
+- Improve general ``RRCache`` performance by storing cache keys in an
+  additional sequence container.  Note that this will increase memory
+  consumption.
+
+- Add more unit tests.
+
+
 v6.1.0 (2025-06-16)
 ===================
 
