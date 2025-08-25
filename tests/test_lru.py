@@ -54,3 +54,15 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
             cache[4] = 4
         self.assertEqual(len(cache), 1)
         self.assertEqual(cache[3], 3)
+
+    def test_lru_update_existing(self):
+        cache = LRUCache(maxsize=2)
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[1] = "updated"
+        cache[3] = 3
+
+        self.assertEqual(cache[1], "updated")
+        self.assertIn(3, cache)
+        self.assertNotIn(2, cache)

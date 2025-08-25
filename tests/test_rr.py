@@ -56,6 +56,18 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(len(cache), 1)
         self.assertEqual(cache[3], 3)
 
+    def test_rr_update_existing(self):
+        cache = RRCache(maxsize=2, choice=min)
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[1] = "updated"
+        cache[3] = 3
+
+        self.assertIn(2, cache)
+        self.assertIn(3, cache)
+        self.assertNotIn(1, cache)
+
     def test_rr_bad_choice(self):
         def bad_choice(seq):
             raise ValueError("test error")
