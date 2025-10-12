@@ -350,7 +350,7 @@ often called with the same arguments:
       `cache stampede`_ issues under high load, depending on your
       actual use case.  Providing a `condition` variable will mitigate
       these situations, but will inflict some performance penalty.
-   
+
    If no separate `lock` parameter is provided, `condition` must also
    implement the `context manager`_ protocol, and will also be used to
    guard access to the cache.
@@ -731,8 +731,9 @@ all the decorators in this module are thread-safe by default.
 
    Decorator to wrap a function with a memoizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
-   algorithm with a per-item time-to-live (TTL) value.
-
+   algorithm with a per-item time-to-live (TTL) value.  By default,
+   the time-to-live is set to 600 seconds and :func:`time.monotonic`
+   is used to retrieve the current time.
 
 .. _@lru_cache: https://docs.python.org/3/library/functools.html#functools.lru_cache
 .. _cache algorithm: https://en.wikipedia.org/wiki/Cache_algorithms

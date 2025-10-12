@@ -93,7 +93,6 @@ def ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False):
     up to `maxsize` results based on a Least Recently Used (LRU)
     algorithm with a per-item time-to-live (TTL) value.
 
-    By default, the time-to-live is set to 600 seconds (10 minutes).
     """
     if maxsize is None:
         return _cache(_UnboundTTLCache(ttl, timer), None, typed)
