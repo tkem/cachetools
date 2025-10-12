@@ -451,7 +451,7 @@ often called with the same arguments:
       [..., (('fib', 42), 267914296), ..., (('luc', 42), 599074578)]
 
 
-   Function invocations are _not_ cached if any exception are raised.
+   Function invocations are *not* cached if any exceptions are raised.
    To cache some (or all) calls raising exceptions, additional
    function wrappers may be introduced which wrap exceptions as
    regular function results for caching purposes:
