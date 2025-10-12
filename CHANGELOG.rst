@@ -1,3 +1,13 @@
+v6.2.1 (2025-10-12)
+===================
+
+- Add support for Python 3.14.
+
+- Improve documentation.
+
+- Update CI environment.
+
+
 v6.2.0 (2025-08-25)
 ===================
 
