@@ -488,6 +488,49 @@ often called with the same arguments:
           print(e, "-", _get_pep_wrapped.cache_info())
 
 
+   Curiously, default function arguments are not quite handled as one
+   might expect, and also the use of positional vs. keyword arguments
+   may lead to surprising results.  In the example below, `foo()`,
+   `foo(1)` and `foo(a=1)` are treated as different function
+   invocations, with seperately cached results:
+
+   .. doctest::
+      :pyversion: >= 3
+
+      >>> @cached(LRUCache(maxsize=100))
+      ... def foo(a=1):
+      ...     print(f"foo({a}) called")
+      ...
+      >>> foo()
+      foo(1) called
+      >>> foo()
+      >>> foo(1)
+      foo(1) called
+      >>> foo(1)
+      >>> foo(a=1)
+      foo(1) called
+      >>> foo(a=1)
+
+   If consistent behavior is required, a private helper function may
+   be introduced to avoid ambiguities, e.g.:
+
+   .. doctest::
+      :pyversion: >= 3
+
+      >>> def foo(a=1):
+      ...     _foo(a)
+      ...
+      >>> @cached(LRUCache(maxsize=100))
+      ... def _foo(a):
+      ...     print(f"_foo({a}) called")
+      ...
+      >>> foo()
+      _foo(1) called
+      >>> foo()
+      >>> foo(1)
+      >>> foo(a=1)
+
+
 .. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None, condition=None)
 
    Decorator to wrap a class or instance method with a memoizing
