@@ -4,16 +4,6 @@ import functools
 import weakref
 
 
-def warn_cache_none():
-    from warnings import warn
-
-    warn(
-        "returning `None` from `cache(self)` is deprecated",
-        DeprecationWarning,
-        stacklevel=3,
-    )
-
-
 def warn_classmethod():
     from warnings import warn
 
@@ -31,9 +21,6 @@ def _condition(method, cache, key, lock, cond):
         if type(self) is type:
             warn_classmethod()
         c = cache(self)
-        if c is None:
-            warn_cache_none()
-            return method(self, *args, **kwargs)
         k = key(self, *args, **kwargs)
         with lock(self):
             p = pending.setdefault(self, set())
@@ -57,9 +44,8 @@ def _condition(method, cache, key, lock, cond):
 
     def cache_clear(self):
         c = cache(self)
-        if c is not None:
-            with lock(self):
-                c.clear()
+        with lock(self):
+            c.clear()
 
     wrapper.cache_clear = cache_clear
     return wrapper
@@ -70,9 +56,6 @@ def _locked(method, cache, key, lock):
         if type(self) is type:
             warn_classmethod()
         c = cache(self)
-        if c is None:
-            warn_cache_none()
-            return method(self, *args, **kwargs)
         k = key(self, *args, **kwargs)
         with lock(self):
             try:
@@ -89,9 +72,8 @@ def _locked(method, cache, key, lock):
 
     def cache_clear(self):
         c = cache(self)
-        if c is not None:
-            with lock(self):
-                c.clear()
+        with lock(self):
+            c.clear()
 
     wrapper.cache_clear = cache_clear
     return wrapper
@@ -102,9 +84,6 @@ def _unlocked(method, cache, key):
         if type(self) is type:
             warn_classmethod()
         c = cache(self)
-        if c is None:
-            warn_cache_none()
-            return method(self, *args, **kwargs)
         k = key(self, *args, **kwargs)
         try:
             return c[k]
@@ -119,8 +98,7 @@ def _unlocked(method, cache, key):
 
     def cache_clear(self):
         c = cache(self)
-        if c is not None:
-            c.clear()
+        c.clear()
 
     wrapper.cache_clear = cache_clear
     return wrapper
