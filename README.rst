@@ -91,7 +91,7 @@ Related Projects
 ------------------------------------------------------------------------
 
 - asyncache_: Helpers to use cachetools_ with asyncio.
-- cachetools-async_: Helpers to use cachetools_ with asyncio (more actively maintained than asyncache_).
+- cachetools-async_: Helpers to use cachetools_ with asyncio.
 - cacheing_: Pure Python Cacheing Library.
 - CacheToolsUtils_: Stackable cache classes for sharing, encryption,
   statistics *and more* on top of cachetools_, redis_ and memcached_.
