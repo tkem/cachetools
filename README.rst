@@ -91,6 +91,7 @@ Related Projects
 ------------------------------------------------------------------------
 
 - asyncache_: Helpers to use cachetools_ with asyncio.
+- cachetools-async_: Helpers to use cachetools_ with asyncio (more actively maintained than asyncache_).
 - cacheing_: Pure Python Cacheing Library.
 - CacheToolsUtils_: Stackable cache classes for sharing, encryption,
   statistics *and more* on top of cachetools_, redis_ and memcached_.
@@ -120,6 +121,7 @@ Licensed under the `MIT License`_.
 .. _MIT License: https://raw.github.com/tkem/cachetools/master/LICENSE
 
 .. _asyncache: https://pypi.org/project/asyncache/
+.. _cachetools-async: https://pypi.org/project/cachetools-async/
 .. _cacheing: https://pypi.org/project/cacheing/
 .. _CacheToolsUtils: https://pypi.org/project/CacheToolsUtils/
 .. _shelved-cache: https://pypi.org/project/shelved-cache/
