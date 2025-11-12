@@ -232,7 +232,7 @@ With :class:`TTLCache` and :class:`TLRUCache`, items may also be
 removed after they expire.  In this case, :meth:`popitem` will *not*
 be called, but :meth:`expire` will be called from the next mutating
 operation and will return an iterable of the expired `(key, value)`
-pairs.  By overrding :meth:`expire`, a subclass will be able to track
+pairs.  By overriding :meth:`expire`, a subclass will be able to track
 expired items:
 
 .. doctest::
@@ -492,7 +492,7 @@ often called with the same arguments:
    might expect, and also the use of positional vs. keyword arguments
    may lead to surprising results.  In the example below, `foo()`,
    `foo(1)` and `foo(a=1)` are treated as different function
-   invocations, with seperately cached results:
+   invocations, with separately cached results:
 
    .. doctest::
       :pyversion: >= 3
