@@ -63,7 +63,9 @@ def _locked_info(func, cache, key, lock, info):
         v = func(*args, **kwargs)
         with lock:
             try:
-                # in case of a race, prefer the item already in the cache
+                # In case of a race condition, i.e. if another thread
+                # stored a value for this key while we were calling
+                # func(), prefer the cached value.
                 return cache.setdefault(k, v)
             except ValueError:
                 return v  # value too large
@@ -173,7 +175,7 @@ def _locked(func, cache, key, lock):
         v = func(*args, **kwargs)
         with lock:
             try:
-                # in case of a race, prefer the item already in the cache
+                # possible race condition: see above
                 return cache.setdefault(k, v)
             except ValueError:
                 return v  # value too large
