@@ -1,3 +1,11 @@
+v6.2.2 (2025-11-13)
+===================
+
+- Minor improvements from GitHub Copilot code review.
+
+- Improve documentation.
+
+
 v6.2.1 (2025-10-12)
 ===================
 
