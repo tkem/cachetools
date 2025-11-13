@@ -27,13 +27,13 @@ from . import keys
 class _DefaultSize:
     __slots__ = ()
 
-    def __getitem__(self, _):
+    def __getitem__(self, _key):
         return 1
 
-    def __setitem__(self, _, value):
-        assert value == 1
+    def __setitem__(self, _key, _value):
+        pass
 
-    def pop(self, _):
+    def pop(self, _key):
         return 1
 
 
@@ -55,7 +55,7 @@ class Cache(collections.abc.MutableMapping):
 
     def __repr__(self):
         return "%s(%s, maxsize=%r, currsize=%r)" % (
-            self.__class__.__name__,
+            type(self).__name__,
             repr(self.__data),
             self.__maxsize,
             self.__currsize,
@@ -99,6 +99,12 @@ class Cache(collections.abc.MutableMapping):
 
     def __len__(self):
         return len(self.__data)
+
+    # Note that we cannot simply inherit get(), pop() and setdefault()
+    # from MutableMapping, since these rely on __getitem__ throwing a
+    # KeyError on cache miss.  This is not the case if __missing__ is
+    # implemented for a Cache subclass, so we have to roll our own,
+    # somewhat less elegant versions.
 
     def get(self, key, default=None):
         if key in self:
@@ -642,7 +648,7 @@ class TLRUCache(_TimedCache):
             try:
                 key = next(iter(self.__items))
             except StopIteration:
-                raise KeyError("%s is empty" % self.__class__.__name__) from None
+                raise KeyError("%s is empty" % type(self).__name__) from None
             else:
                 return (key, self.pop(key))
 

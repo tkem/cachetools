@@ -29,8 +29,8 @@ class _HashedTuple(tuple):
         return {}
 
 
-# used for separating keyword arguments; we do not use an object
-# instance here so identity is preserved when pickling/unpickling
+# A sentinel for separating args from kwargs.  Using the class itself
+# ensures uniqueness and preserves identity when pickling/unpickling.
 _kwmark = (_HashedTuple,)
 
 
