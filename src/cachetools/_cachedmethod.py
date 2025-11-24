@@ -14,6 +14,36 @@ def warn_classmethod():
     )
 
 
+class WrapperBase:
+    def __init__(self, obj, method, cache, key):
+        functools.update_wrapper(self, method)
+        self.__obj = obj
+        self.__cache = cache
+        self.__key = key
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError()  # pragma: no cover
+
+    def cache_clear(self):
+        raise NotImplementedError()  # pragma: no cover
+
+    @property
+    def cache(self):
+        return self.__cache(self.__obj)
+
+    @property
+    def cache_key(self):
+        return self.__key  # TODO: how to handle self?
+
+    @property
+    def cache_lock(self):
+        return None
+
+    @property
+    def cache_condition(self):
+        return None
+
+
 def _condition(method, cache, key, lock, cond):
     pending = weakref.WeakKeyDictionary()
 
@@ -47,8 +77,30 @@ def _condition(method, cache, key, lock, cond):
         with lock(self):
             c.clear()
 
-    wrapper.cache_clear = cache_clear
-    return wrapper
+    class Descriptor:
+        def __get__(self, obj, objtype=None):
+            class Wrapper(WrapperBase):
+                def __call__(self, *args, **kwargs):
+                    return wrapper(obj, *args, **kwargs)
+
+                def cache_clear(self):
+                    return cache_clear(obj)
+
+                @property
+                def cache_lock(self):
+                    return lock(obj)
+
+                @property
+                def cache_condition(self):
+                    return cond(obj)
+
+            return Wrapper(obj, method, cache, key)
+
+        # called for @classmethod with Python >= 3.13
+        def __call__(self, *args, **kwargs):
+            return wrapper(*args, **kwargs)
+
+    return Descriptor()
 
 
 def _locked(method, cache, key, lock):
@@ -75,8 +127,26 @@ def _locked(method, cache, key, lock):
         with lock(self):
             c.clear()
 
-    wrapper.cache_clear = cache_clear
-    return wrapper
+    class Descriptor:
+        def __get__(self, obj, objtype=None):
+            class Wrapper(WrapperBase):
+                def __call__(self, *args, **kwargs):
+                    return wrapper(obj, *args, **kwargs)
+
+                def cache_clear(self):
+                    return cache_clear(obj)
+
+                @property
+                def cache_lock(self):
+                    return lock(obj)
+
+            return Wrapper(obj, method, cache, key)
+
+        # called for @classmethod with Python >= 3.13
+        def __call__(self, *args, **kwargs):
+            return wrapper(*args, **kwargs)
+
+    return Descriptor()
 
 
 def _unlocked(method, cache, key):
@@ -100,8 +170,22 @@ def _unlocked(method, cache, key):
         c = cache(self)
         c.clear()
 
-    wrapper.cache_clear = cache_clear
-    return wrapper
+    class Descriptor:
+        def __get__(self, obj, objtype=None):
+            class Wrapper(WrapperBase):
+                def __call__(self, *args, **kwargs):
+                    return wrapper(obj, *args, **kwargs)
+
+                def cache_clear(self):
+                    return cache_clear(obj)
+
+            return Wrapper(obj, method, cache, key)
+
+        # called for @classmethod with Python >= 3.13
+        def __call__(self, *args, **kwargs):
+            return wrapper(*args, **kwargs)
+
+    return Descriptor()
 
 
 def _wrapper(method, cache, key, lock=None, cond=None):
