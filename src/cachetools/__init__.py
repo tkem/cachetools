@@ -673,17 +673,6 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     """
     from ._cached import _wrapper
 
-    if isinstance(condition, bool):
-        from warnings import warn
-
-        warn(
-            "passing `info` as positional parameter is deprecated",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        info = condition
-        condition = None
-
     def decorator(func):
         if info:
             if isinstance(cache, Cache):
