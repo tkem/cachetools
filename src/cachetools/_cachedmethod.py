@@ -149,6 +149,7 @@ def _locked(method, cache, key, lock):
     return Descriptor()
 
 
+# FIXME: _unlocked as Descriptor class?
 def _unlocked(method, cache, key):
     def wrapper(self, *args, **kwargs):
         if type(self) is type:
@@ -171,6 +172,19 @@ def _unlocked(method, cache, key):
         c.clear()
 
     class Descriptor:
+        def __init__(self):
+            self.attrname = None
+
+        # TODO: BaseDescriptor
+        def __set_name__(self, owner, name):
+            if self.attrname is None:
+                self.attrname = name
+            elif name != self.attrname:
+                raise TypeError(
+                    "Cannot assign the same @cachedmethos to two different names "
+                    f"({self.attrname!r} and {name!r})."
+                )
+
         def __get__(self, obj, objtype=None):
             class Wrapper(WrapperBase):
                 def __call__(self, *args, **kwargs):
@@ -179,7 +193,26 @@ def _unlocked(method, cache, key):
                 def cache_clear(self):
                     return cache_clear(obj)
 
-            return Wrapper(obj, method, cache, key)
+            w = Wrapper(obj, method, cache, key)
+            if self.attrname is not None:
+                try:
+                    obj.__dict__[self.attrname] = w
+                except (
+                    AttributeError
+                ):  # not all objects have __dict__ (e.g. class defines slots)
+                    msg = (
+                        f"No '__dict__' attribute on {type(obj).__name__!r} "
+                        f"instance to cache {self.attrname!r} property."
+                    )
+                    raise TypeError(msg) from None
+                except TypeError:
+                    msg = (
+                        f"The '__dict__' attribute on {type(obj).__name__!r} "
+                        f"instance does not support item assignment for "
+                        f"caching {self.attrname!r} property."
+                    )
+                    raise TypeError(msg) from None
+            return w
 
         # called for @classmethod with Python >= 3.13
         def __call__(self, *args, **kwargs):
