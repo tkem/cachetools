@@ -14,10 +14,22 @@ def warn_cache_none():
     )
 
 
+def warn_classmethod():
+    from warnings import warn
+
+    warn(
+        "decorating class methods with @cachedmethod is deprecated",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
 def _condition(method, cache, key, lock, cond):
     pending = weakref.WeakKeyDictionary()
 
     def wrapper(self, *args, **kwargs):
+        if type(self) is type:
+            warn_classmethod()
         c = cache(self)
         if c is None:
             warn_cache_none()
@@ -55,6 +67,8 @@ def _condition(method, cache, key, lock, cond):
 
 def _locked(method, cache, key, lock):
     def wrapper(self, *args, **kwargs):
+        if type(self) is type:
+            warn_classmethod()
         c = cache(self)
         if c is None:
             warn_cache_none()
@@ -85,6 +99,8 @@ def _locked(method, cache, key, lock):
 
 def _unlocked(method, cache, key):
     def wrapper(self, *args, **kwargs):
+        if type(self) is type:
+            warn_classmethod()
         c = cache(self)
         if c is None:
             warn_cache_none()
