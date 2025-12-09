@@ -44,6 +44,46 @@ class WrapperBase:
         return None
 
 
+class DescriptorBase:
+    def __init__(self):
+        self.attrname = None
+
+    def __set_name__(self, owner, name):
+        if self.attrname is None:
+            self.attrname = name
+        elif name != self.attrname:
+            raise TypeError(
+                "Cannot assign the same @cachedmethod to two different names "
+                f"({self.attrname!r} and {name!r})."
+            )
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        wrapper = self._wrapper(obj)
+        if self.attrname is not None:
+            try:
+                obj.__dict__[self.attrname] = wrapper
+            except AttributeError:
+                # not all objects have __dict__ (e.g. class defines slots)
+                msg = (
+                    f"No '__dict__' attribute on {type(obj).__name__!r} "
+                    f"instance to cache {self.attrname!r} property."
+                )
+                raise TypeError(msg) from None
+            except TypeError:
+                msg = (
+                    f"The '__dict__' attribute on {type(obj).__name__!r} "
+                    f"instance does not support item assignment for "
+                    f"caching {self.attrname!r} property."
+                )
+                raise TypeError(msg) from None
+        return wrapper
+
+    def _wrapper(self, obj):
+        raise NotImplementedError()  # pragma: no cover
+
+
 def _condition(method, cache, key, lock, cond):
     pending = weakref.WeakKeyDictionary()
 
@@ -77,8 +117,8 @@ def _condition(method, cache, key, lock, cond):
         with lock(self):
             c.clear()
 
-    class Descriptor:
-        def __get__(self, obj, objtype=None):
+    class Descriptor(DescriptorBase):
+        def _wrapper(self, obj):
             class Wrapper(WrapperBase):
                 def __call__(self, *args, **kwargs):
                     return wrapper(obj, *args, **kwargs)
@@ -127,8 +167,8 @@ def _locked(method, cache, key, lock):
         with lock(self):
             c.clear()
 
-    class Descriptor:
-        def __get__(self, obj, objtype=None):
+    class Descriptor(DescriptorBase):
+        def _wrapper(self, obj):
             class Wrapper(WrapperBase):
                 def __call__(self, *args, **kwargs):
                     return wrapper(obj, *args, **kwargs)
@@ -171,21 +211,8 @@ def _unlocked(method, cache, key):
         c = cache(self)
         c.clear()
 
-    class Descriptor:
-        def __init__(self):
-            self.attrname = None
-
-        # TODO: BaseDescriptor
-        def __set_name__(self, owner, name):
-            if self.attrname is None:
-                self.attrname = name
-            elif name != self.attrname:
-                raise TypeError(
-                    "Cannot assign the same @cachedmethos to two different names "
-                    f"({self.attrname!r} and {name!r})."
-                )
-
-        def __get__(self, obj, objtype=None):
+    class Descriptor(DescriptorBase):
+        def _wrapper(self, obj):
             class Wrapper(WrapperBase):
                 def __call__(self, *args, **kwargs):
                     return wrapper(obj, *args, **kwargs)
@@ -193,26 +220,7 @@ def _unlocked(method, cache, key):
                 def cache_clear(self):
                     return cache_clear(obj)
 
-            w = Wrapper(obj, method, cache, key)
-            if self.attrname is not None:
-                try:
-                    obj.__dict__[self.attrname] = w
-                except (
-                    AttributeError
-                ):  # not all objects have __dict__ (e.g. class defines slots)
-                    msg = (
-                        f"No '__dict__' attribute on {type(obj).__name__!r} "
-                        f"instance to cache {self.attrname!r} property."
-                    )
-                    raise TypeError(msg) from None
-                except TypeError:
-                    msg = (
-                        f"The '__dict__' attribute on {type(obj).__name__!r} "
-                        f"instance does not support item assignment for "
-                        f"caching {self.attrname!r} property."
-                    )
-                    raise TypeError(msg) from None
-            return w
+            return Wrapper(obj, method, cache, key)
 
         # called for @classmethod with Python >= 3.13
         def __call__(self, *args, **kwargs):
