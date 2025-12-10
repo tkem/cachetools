@@ -1,3 +1,52 @@
 [build-system]
-requires = ["setuptools >= 46.4.0", "wheel"]
+requires = ["setuptools >= 61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "cachetools"
+dynamic = ["version"]
+description = "Extensible memoizing collections and decorators"
+authors = [
+    {name = "Thomas Kemmer", email = "tkemmer@computer.org"}
+]
+maintainers = [
+    {name = "Thomas Kemmer", email = "tkemmer@computer.org"}
+]
+readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">= 3.9"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+Homepage = "https://github.com/tkem/cachetools/"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "cachetools.__version__"}
+
+[tool.flake8]
+max-line-length = 80
+exclude = [".git", ".tox", "build"]
+select = ["C", "E", "F", "W", "B", "B950", "I", "N"]
+# F401: imported but unused (submodule shims)
+# E501: line too long (black)
+ignore = ["F401", "E501"]
