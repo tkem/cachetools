@@ -6,13 +6,14 @@ import cachetools
 
 caches = {
     "dict": lambda _: {},
-    "FIFO": cachetools.FIFOCache,
-    "LFU": cachetools.LFUCache,
+    # "FIFO": cachetools.FIFOCache,
+    # "LFU": cachetools.LFUCache,
     "LRU": cachetools.LRUCache,
-    "RR": cachetools.RRCache,
-    "TTL": lambda n: cachetools.TTLCache(n, 10),
-    "TLRU": lambda n: cachetools.TLRUCache(n, lambda k, v, t: t + 10),
+    # "RR": cachetools.RRCache,
+    # "TTL": lambda n: cachetools.TTLCache(n, 10),
+    # "TLRU": lambda n: cachetools.TLRUCache(n, lambda k, v, t: t + 10),
 }
+
 
 class C:
     def __init__(self, cache):
@@ -34,7 +35,7 @@ for n in [1000, 2000, 5000, 10000]:
             i = random.randint(1, n)
             cache[i] = i
 
-        def get(cache=cache, n=n):
+        def get(cached=cached, n=n):
             i = random.randint(1, n)
             cached.get(i)
 
