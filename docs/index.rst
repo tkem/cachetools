@@ -555,6 +555,12 @@ often called with the same arguments:
    function, :func:`cachetools.keys.methodkey`, ignores its first
    argument, i.e. :const:`self`.  This has mostly historical reasons,
    but also ensures that :const:`self` does not have to be hashable.
+
+   .. note::
+
+      Using :func:`cachedmethod` with a `condition` currently *does*
+      require :const:`self` be hashable, though.
+
    You may provide a different `key` function,
    e.g. :func:`cachetools.keys.hashkey`, if you need :const:`self` to
    be part of the cache key.
