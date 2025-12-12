@@ -1,3 +1,16 @@
+v6.2.3 (UNRELEASED)
+===================
+
+- Improve documentation regarding ``@cachedmethod`` with ``condition``
+  parameter.
+
+- Minor style and readability improvements.
+
+- Modernize build environment.
+
+- Update CI environment.
+
+
 v6.2.2 (2025-11-13)
 ===================
 
