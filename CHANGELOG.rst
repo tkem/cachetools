@@ -1,4 +1,4 @@
-v6.2.3 (UNRELEASED)
+v6.2.3 (2025-12-12)
 ===================
 
 - Improve documentation regarding ``@cachedmethod`` with ``condition``
