@@ -154,9 +154,9 @@ class FIFOCache(Cache):
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
-        try:
+        if key in self.__order:
             self.__order.move_to_end(key)
-        except KeyError:
+        else:
             self.__order[key] = None
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
@@ -204,7 +204,8 @@ class LFUCache(Cache):
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
         if key in self.__links:
-            return self.__touch(key)
+            self.__touch(key)
+            return
         root = self.__root
         link = root.next
         if link.count != 1:

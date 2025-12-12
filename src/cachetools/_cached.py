@@ -109,8 +109,11 @@ def _unlocked_info(func, cache, key, info):
         cache.clear()
         hits = misses = 0
 
+    def cache_info():
+        return info(hits, misses)
+
     wrapper.cache_clear = cache_clear
-    wrapper.cache_info = lambda: info(hits, misses)
+    wrapper.cache_info = cache_info
     return wrapper
 
 

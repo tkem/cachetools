@@ -38,7 +38,7 @@ def hashkey(*args, **kwargs):
     """Return a cache key for the specified hashable arguments."""
 
     if kwargs:
-        return _HashedTuple(args + sum(sorted(kwargs.items()), _kwmark))
+        return _HashedTuple(args + _kwmark + tuple(sorted(kwargs.items())))
     else:
         return _HashedTuple(args)
 
@@ -53,6 +53,7 @@ def typedkey(*args, **kwargs):
 
     key = hashkey(*args, **kwargs)
     key += tuple(type(v) for v in args)
+    # TODO: avoid iterating twice over kwargs
     key += tuple(type(v) for _, v in sorted(kwargs.items()))
     return key
 
