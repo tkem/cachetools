@@ -1,3 +1,10 @@
+v6.2.4 (2025-12-15)
+===================
+
+- Fix license information displayed on PyPI be using an updated
+  version of ``twine`` for uploading.
+
+
 v6.2.3 (2025-12-12)
 ===================
 
