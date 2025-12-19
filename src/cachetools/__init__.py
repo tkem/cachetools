@@ -717,3 +717,40 @@ def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None):
         return _wrapper(method, cache, key, lock, condition)
 
     return decorator
+
+
+# --- BEGIN: get_ttl monkey patch for TTLCache ---
+try:
+    from . import TTLCache as _TTLCacheClass
+except Exception:
+    _TTLCacheClass = None
+
+def _ttlcache_get_ttl(self, key):
+    """
+    Return remaining TTL for a key, or raise KeyError if missing/expired.
+
+    - Returns the remaining TTL in the same type as the cache's timer/ttl,
+      e.g., float, int, or datetime.timedelta.
+    - Raises KeyError for missing or expired keys.
+    - Does not affect LRU or iteration order.
+    """
+    now = self.timer()
+    try:
+        link = self._TTLCache__links[key]
+    except KeyError:
+        raise KeyError(key)
+
+    if not (now < link.expires):
+        # expired → cleanup and raise
+        try:
+            self.pop(key)
+        except KeyError:
+            pass
+        raise KeyError(key)
+
+    return link.expires - now
+
+if _TTLCacheClass is not None and not hasattr(_TTLCacheClass, "get_ttl"):
+    _TTLCacheClass.get_ttl = _ttlcache_get_ttl
+# --- END: get_ttl monkey patch for TTLCache ---
+
