@@ -65,7 +65,7 @@ class DescriptorBase:
 
     def __get__(self, obj, objtype=None):
         if obj is None:
-            return self
+            return self  # deprecated @classmethod
         wrapper = self.Wrapper(obj)
         if self.__attrname is not None:
             try:
