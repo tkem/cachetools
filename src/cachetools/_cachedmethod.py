@@ -19,7 +19,7 @@ class WrapperBase:
         if type(obj) is type:
             warn_classmethod(stacklevel=5)
         functools.update_wrapper(self, method)
-        self.__obj = obj
+        self._obj = obj  # protected
         self.__cache = cache
         self.__key = key
         self.__lock = lock
@@ -33,7 +33,7 @@ class WrapperBase:
 
     @property
     def cache(self):
-        return self.__cache(self.__obj)
+        return self.__cache(self._obj)
 
     @property
     def cache_key(self):
@@ -41,11 +41,11 @@ class WrapperBase:
 
     @property
     def cache_lock(self):
-        return None if self.__lock is None else self.__lock(self.__obj)
+        return None if self.__lock is None else self.__lock(self._obj)
 
     @property
     def cache_condition(self):
-        return None if self.__cond is None else self.__cond(self.__obj)
+        return None if self.__cond is None else self.__cond(self._obj)
 
 
 class DescriptorBase:
@@ -132,14 +132,13 @@ def _condition(method, cache, key, lock, cond):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock, cond)
-                self.__obj = obj
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self.__obj, *args, **kwargs)
+                return wrapper(self._obj, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
             def cache_clear(self, _objtype=None):
-                return cache_clear(self.__obj)
+                return cache_clear(self._obj)
 
     return Descriptor(wrapper, cache_clear)
 
@@ -170,14 +169,13 @@ def _locked(method, cache, key, lock):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock)
-                self.__obj = obj
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self.__obj, *args, **kwargs)
+                return wrapper(self._obj, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
             def cache_clear(self, _objtype=None):
-                return cache_clear(self.__obj)
+                return cache_clear(self._obj)
 
     return Descriptor(wrapper, cache_clear)
 
@@ -205,14 +203,13 @@ def _unlocked(method, cache, key):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key)
-                self.__obj = obj
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self.__obj, *args, **kwargs)
+                return wrapper(self._obj, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
             def cache_clear(self, _objtype=None):
-                return cache_clear(self.__obj)
+                return cache_clear(self._obj)
 
     return Descriptor(wrapper, cache_clear)
 
