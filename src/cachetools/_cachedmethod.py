@@ -98,18 +98,18 @@ class DescriptorBase:
 
 
 def _condition(method, cache, key, lock, cond):
+    # backward-compatible weakref dictionary for Python >= 3.13
     pending = weakref.WeakKeyDictionary()
 
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, pending, *args, **kwargs):
         c = cache(self)
         k = key(self, *args, **kwargs)
         with lock(self):
-            p = pending.setdefault(self, set())
-            cond(self).wait_for(lambda: k not in p)
+            cond(self).wait_for(lambda: k not in pending)
             try:
                 return c[k]
             except KeyError:
-                p.add(k)
+                pending.add(k)
         try:
             v = method(self, *args, **kwargs)
             with lock(self):
@@ -120,7 +120,7 @@ def _condition(method, cache, key, lock, cond):
                 return v
         finally:
             with lock(self):
-                pending[self].remove(k)
+                pending.remove(k)
                 cond(self).notify_all()
 
     def cache_clear(self):
@@ -128,19 +128,24 @@ def _condition(method, cache, key, lock, cond):
         with lock(self):
             c.clear()
 
+    def classmethod_wrapper(self, *args, **kwargs):
+        p = pending.setdefault(self, set())
+        return wrapper(self, p, *args, **kwargs)
+
     class Descriptor(DescriptorBase):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock, cond)
+                self.__pending = set()
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self._obj, *args, **kwargs)
+                return wrapper(self._obj, self.__pending, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
             def cache_clear(self, _objtype=None):
                 return cache_clear(self._obj)
 
-    return Descriptor(wrapper, cache_clear)
+    return Descriptor(classmethod_wrapper, cache_clear)
 
 
 def _locked(method, cache, key, lock):
