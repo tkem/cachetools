@@ -69,7 +69,7 @@ class DescriptorBase:
         wrapper = self.Wrapper(obj)
         if self.__attrname is not None:
             try:
-                obj.__dict__[self.__attrname] = wrapper
+                wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
             except AttributeError:  # pragma: no cover
                 # not all objects have __dict__ (e.g. class defines slots)
                 msg = (
