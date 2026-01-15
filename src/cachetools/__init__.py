@@ -20,6 +20,7 @@ import functools
 import heapq
 import random
 import time
+from typing import TypeVar
 
 from . import keys
 
@@ -37,7 +38,11 @@ class _DefaultSize:
         return 1
 
 
-class Cache(collections.abc.MutableMapping):
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class Cache(collections.abc.MutableMapping[K, V]):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
     __marker = object()
@@ -145,7 +150,7 @@ class Cache(collections.abc.MutableMapping):
         return 1
 
 
-class FIFOCache(Cache):
+class FIFOCache(Cache[K, V]):
     """First In First Out (FIFO) cache implementation."""
 
     def __init__(self, maxsize, getsizeof=None):
@@ -173,7 +178,7 @@ class FIFOCache(Cache):
             return (key, self.pop(key))
 
 
-class LFUCache(Cache):
+class LFUCache(Cache[K, V]):
     """Least Frequently Used (LFU) cache implementation."""
 
     class _Link:
@@ -251,7 +256,7 @@ class LFUCache(Cache):
         self.__links[key] = curr
 
 
-class LRUCache(Cache):
+class LRUCache(Cache[K, V]):
     """Least Recently Used (LRU) cache implementation."""
 
     def __init__(self, maxsize, getsizeof=None):
@@ -289,7 +294,7 @@ class LRUCache(Cache):
             self.__order[key] = None
 
 
-class RRCache(Cache):
+class RRCache(Cache[K, V]):
     """Random Replacement (RR) cache implementation."""
 
     def __init__(self, maxsize, choice=random.choice, getsizeof=None):
@@ -328,7 +333,7 @@ class RRCache(Cache):
             return (key, self.pop(key))
 
 
-class _TimedCache(Cache):
+class _TimedCache(Cache[K, V]):
     """Base class for time aware cache implementations."""
 
     class _Timer:
@@ -402,7 +407,7 @@ class _TimedCache(Cache):
             return Cache.setdefault(self, *args, **kwargs)
 
 
-class TTLCache(_TimedCache):
+class TTLCache(_TimedCache[K, V]):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
     class _Link:
@@ -537,7 +542,7 @@ class TTLCache(_TimedCache):
         return value
 
 
-class TLRUCache(_TimedCache):
+class TLRUCache(_TimedCache[K, V]):
     """Time aware Least Recently Used (TLRU) cache implementation."""
 
     @functools.total_ordering
