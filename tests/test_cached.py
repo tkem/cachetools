@@ -4,29 +4,7 @@ import warnings
 import cachetools
 import cachetools.keys
 
-
-class CountedLock:
-    def __init__(self):
-        self.count = 0
-
-    def __enter__(self):
-        self.count += 1
-
-    def __exit__(self, *exc):
-        pass
-
-
-class CountedCondition(CountedLock):
-    def __init__(self):
-        CountedLock.__init__(self)
-        self.wait_count = 0
-        self.notify_count = 0
-
-    def wait_for(self, predicate):
-        self.wait_count += 1
-
-    def notify_all(self):
-        self.notify_count += 1
+from . import CountedCondition, CountedLock
 
 
 class DecoratorTestMixin:
