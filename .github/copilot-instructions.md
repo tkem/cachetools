@@ -1,7 +1,7 @@
 # Copilot Instructions for cachetools
 
 ## Architecture Overview
-**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. All cache implementations live in a single ~710-line file (`src/cachetools/__init__.py`) with decorator helpers in separate modules.
+**cachetools** provides extensible memorizing collections and decorators, including variants of Python's `@lru_cache`. All cache implementations live in a single ~710-line file (`src/cachetools/__init__.py`) with decorator helpers in separate modules.
 
 ### Core Design Pattern
 - All caches inherit from `Cache` (a `MutableMapping` with `maxsize`, `currsize`, and `getsizeof`)

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cachetools"
 dynamic = ["version"]
-description = "Extensible memoizing collections and decorators"
+description = "Extensible memorizing collections and decorators"
 authors = [
     {name = "Thomas Kemmer", email = "tkemmer@computer.org"}
 ]

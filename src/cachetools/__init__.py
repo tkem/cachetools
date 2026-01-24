@@ -1,4 +1,4 @@
-"""Extensible memoizing collections and decorators."""
+"""Extensible memorizing collections and decorators."""
 
 __all__ = (
     "Cache",
@@ -665,7 +665,7 @@ _CacheInfo = collections.namedtuple(
 
 
 def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
-    """Decorator to wrap a function with a memoizing callable that saves
+    """Decorator to wrap a function with a memorizing callable that saves
     results in a cache.
 
     """
@@ -707,7 +707,7 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
 
 
 def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None):
-    """Decorator to wrap a class or instance method with a memoizing
+    """Decorator to wrap a class or instance method with a memorizing
     callable that saves results in a cache.
 
     """

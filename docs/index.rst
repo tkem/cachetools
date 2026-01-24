@@ -1,12 +1,12 @@
 :tocdepth: 3
 
 *********************************************************************
-:mod:`cachetools` --- Extensible memoizing collections and decorators
+:mod:`cachetools` --- Extensible memorizing collections and decorators
 *********************************************************************
 
 .. module:: cachetools
 
-This module provides various memoizing collections and decorators,
+This module provides various memorizing collections and decorators,
 including variants of the Python Standard Library's `@lru_cache`_
 function decorator.
 
@@ -16,7 +16,7 @@ item the cache would exceed its maximum size, the cache must choose
 which item(s) to discard based on a suitable `cache algorithm`_.
 
 This module provides multiple cache classes based on different cache
-algorithms, as well as decorators for easily memoizing function and
+algorithms, as well as decorators for easily memorizing function and
 method calls.
 
 .. testsetup:: *
@@ -67,7 +67,7 @@ inserted into the cache.
 
    Please be aware that all these classes are *not* thread-safe.
    Access to a shared cache from multiple threads must be properly
-   synchronized, e.g. by using one of the memoizing decorators with a
+   synchronized, e.g. by using one of the memorizing decorators with a
    suitable `lock` object.
 
 .. autoclass:: Cache(maxsize, getsizeof=None)
@@ -278,14 +278,14 @@ key is not found:
 
 Note, though, that such a class does not really behave like a *cache*
 any more, and will lead to surprising results when used with any of
-the memoizing decorators described below.  However, it may be useful
+the memorizing decorators described below.  However, it may be useful
 in its own right.
 
 
 Memoizing decorators
 ====================
 
-The :mod:`cachetools` module provides decorators for memoizing
+The :mod:`cachetools` module provides decorators for memorizing
 function and method calls.  This can save time when a function is
 often called with the same arguments:
 
@@ -301,7 +301,7 @@ often called with the same arguments:
 
 .. decorator:: cached(cache, key=cachetools.keys.hashkey, lock=None, condition=None, info=False)
 
-   Decorator to wrap a function with a memoizing callable that saves
+   Decorator to wrap a function with a memorizing callable that saves
    results in a cache.
 
    The `cache` argument specifies a cache object to store previous
@@ -358,7 +358,7 @@ often called with the same arguments:
    The decorator's `cache`, `key`, `lock` and `condition` parameters
    are also available as :attr:`cache`, :attr:`cache_key`,
    :attr:`cache_lock` and :attr:`cache_condition` attributes of the
-   memoizing wrapper function.  These can be used for clearing the
+   memorizing wrapper function.  These can be used for clearing the
    cache or invalidating individual cache items, for example.
 
    .. testcode::
@@ -533,7 +533,7 @@ often called with the same arguments:
 
 .. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None, condition=None)
 
-   Decorator to wrap a class or instance method with a memoizing
+   Decorator to wrap a class or instance method with a memorizing
    callable that saves results in a (possibly shared) cache.
 
    The main difference between this and the :func:`cached` function
@@ -648,7 +648,7 @@ often called with the same arguments:
 
 
 *****************************************************************
-:mod:`cachetools.keys` --- Key functions for memoizing decorators
+:mod:`cachetools.keys` --- Key functions for memorizing decorators
 *****************************************************************
 
 .. module:: cachetools.keys
@@ -714,8 +714,8 @@ like this::
 .. module:: cachetools.func
 
 To ease migration from (or to) Python 3's :func:`functools.lru_cache`,
-this module provides several memoizing function decorators with a
-similar API.  All these decorators wrap a function with a memoizing
+this module provides several memorizing function decorators with a
+similar API.  All these decorators wrap a function with a memorizing
 callable that saves up to the `maxsize` most recent calls, using
 different caching strategies.  If `maxsize` is set to :const:`None`,
 the caching strategy is effectively disabled and the cache can grow
@@ -750,35 +750,35 @@ all the decorators in this module are thread-safe by default.
 .. decorator:: fifo_cache(user_function)
                fifo_cache(maxsize=128, typed=False)
 
-   Decorator that wraps a function with a memoizing callable that
+   Decorator that wraps a function with a memorizing callable that
    saves up to `maxsize` results based on a First In First Out
    (FIFO) algorithm.
 
 .. decorator:: lfu_cache(user_function)
                lfu_cache(maxsize=128, typed=False)
 
-   Decorator that wraps a function with a memoizing callable that
+   Decorator that wraps a function with a memorizing callable that
    saves up to `maxsize` results based on a Least Frequently Used
    (LFU) algorithm.
 
 .. decorator:: lru_cache(user_function)
                lru_cache(maxsize=128, typed=False)
 
-   Decorator that wraps a function with a memoizing callable that
+   Decorator that wraps a function with a memorizing callable that
    saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm.
 
 .. decorator:: rr_cache(user_function)
                rr_cache(maxsize=128, choice=random.choice, typed=False)
 
-   Decorator that wraps a function with a memoizing callable that
+   Decorator that wraps a function with a memorizing callable that
    saves up to `maxsize` results based on a Random Replacement (RR)
    algorithm.
 
 .. decorator:: ttl_cache(user_function)
                ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
 
-   Decorator to wrap a function with a memoizing callable that saves
+   Decorator to wrap a function with a memorizing callable that saves
    up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm with a per-item time-to-live (TTL) value.  By default,
    the time-to-live is set to 600 seconds and :func:`time.monotonic`

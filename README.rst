@@ -30,7 +30,7 @@ cachetools
    :alt: Code style: black
 
 
-This module provides various memoizing collections and decorators,
+This module provides various memorizing collections and decorators,
 including variants of the Python Standard Library's `@lru_cache`_
 function decorator.
 
@@ -61,7 +61,7 @@ item the cache would exceed its maximum size, the cache must choose
 which item(s) to discard based on a suitable `cache algorithm`_.
 
 This module provides multiple cache classes based on different cache
-algorithms, as well as decorators for easily memoizing function and
+algorithms, as well as decorators for easily memorizing function and
 method calls.
 
 

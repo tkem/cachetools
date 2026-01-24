@@ -1,4 +1,4 @@
-"""Key functions for memoizing decorators."""
+"""Key functions for memorizing decorators."""
 
 __all__ = ("hashkey", "methodkey", "typedkey", "typedmethodkey")
 
