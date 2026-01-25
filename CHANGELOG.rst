@@ -1,3 +1,14 @@
+v6.2.5 (2026-01-25)
+===================
+
+- Improve documentation regarding ``@cachedmethod`` with ``lock``
+  parameter.
+
+- Add test cases for cache stampede scenarios.
+
+- Update CI environment.
+
+
 v6.2.4 (2025-12-15)
 ===================
 
