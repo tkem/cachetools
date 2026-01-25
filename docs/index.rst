@@ -572,14 +572,15 @@ often called with the same arguments:
    .. testcode::
 
       from cachetools.keys import hashkey
-      from functools import partial
+      from threading import Lock
 
       class CachedPEPs:
 
           def __init__(self, cachesize):
               self.cache = LRUCache(maxsize=cachesize)
+              self.lock = Lock()
 
-          @cachedmethod(lambda self: self.cache)
+          @cachedmethod(lambda self: self.cache, lock=lambda self: self.lock)
           def get(self, num):
               """Retrieve text of a Python Enhancement Proposal"""
               url = 'http://www.python.org/dev/peps/pep-%04d/' % num
