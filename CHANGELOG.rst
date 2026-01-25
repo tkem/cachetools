@@ -1,3 +1,15 @@
+v7.0.0 (UNRELEASED)
+===================
+
+- Drop support for ``cache(self)`` returning ``None`` with
+   ``@cachedmethod`` (breaking change).
+
+- Drop support for passing ``info`` as fourth positional parameter to
+  ``@cached``.
+
+- Require Python 3.10 or later (breaking change).
+
+
 v6.2.6 (2026-01-27)
 ===================
 
