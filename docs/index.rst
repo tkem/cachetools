@@ -541,7 +541,7 @@ often called with the same arguments:
    decorator is that `cache`, `lock` and `condition` are not passed
    objects, but functions.  Those will be called with :const:`self`
    (or :const:`cls` for class methods) as their sole argument to
-   retrieve the cache, lock, or condition object for the method's
+   retrieve a valid cache, lock, or condition object for the method's
    respective instance or class.
 
    .. note::
@@ -642,11 +642,9 @@ often called with the same arguments:
    to create distinct cache keys, to avoid issues with
    :func:`methodkey` skipping its initial `self` argument.
 
-   .. deprecated:: 6.0
+   .. versionchanged:: 7.0
 
-   Support for `cache(self)` returning :const:`None` to suppress any
-   caching has been deprecated.  `cache(self)` should always return a
-   valid cache object.
+   Returning :const:`None` from `cache(self)` is no longer supported.
 
 
 *****************************************************************
