@@ -98,9 +98,12 @@ class CacheTestMixin:
         cache = self.Cache(maxsize=2)
 
         cache.update({1: 1, 2: 2})
-        self.assertIn(cache.pop(1), {1: 1, 2: 2})
+
+        key, _ = cache.popitem()
+        self.assertIn(key, {1, 2})
         self.assertEqual(1, len(cache))
-        self.assertIn(cache.pop(2), {1: 1, 2: 2})
+        key, _ = cache.popitem()
+        self.assertIn(key, {1, 2})
         self.assertEqual(0, len(cache))
 
         with self.assertRaises(KeyError):
