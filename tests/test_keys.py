@@ -21,7 +21,7 @@ class CacheKeysTest(unittest.TestCase):
         self.assertEqual(key(1, 2, 3), key(1.0, 2.0, 3.0))
         self.assertEqual(hash(key(1, 2, 3)), hash(key(1.0, 2.0, 3.0)))
 
-    def methodkey(self, key=cachetools.keys.methodkey):
+    def test_methodkey(self, key=cachetools.keys.methodkey):
         # similar to hashkey(), but ignores its first positional argument
         self.assertEqual(key("x"), key("y"))
         self.assertEqual(hash(key("x")), hash(key("y")))
