@@ -35,11 +35,11 @@ Cache implementations
 This module provides several classes implementing caches using
 different cache algorithms.  All these classes derive from class
 :class:`Cache`, which in turn derives from
-:class:`collections.MutableMapping`, and provide :attr:`maxsize` and
-:attr:`currsize` properties to retrieve the maximum and current size
-of the cache.  When a cache is full, :meth:`Cache.__setitem__()` calls
-:meth:`self.popitem()` repeatedly until there is enough room for the
-item to be added.
+:class:`collections.abc.MutableMapping`, and provide :attr:`maxsize`
+and :attr:`currsize` properties to retrieve the maximum and current
+size of the cache.  When a cache is full, :meth:`Cache.__setitem__()`
+calls :meth:`self.popitem()` repeatedly until there is enough room for
+the item to be added.
 
 .. note::
 
@@ -53,8 +53,9 @@ returns the size of a given `value`.  The default implementation of
 :meth:`getsizeof` returns :const:`1` irrespective of its argument,
 making the cache's size equal to the number of its items, or
 `len(cache)`.  For convenience, all cache classes accept an optional
-named constructor parameter `getsizeof`, which may specify a function
-of one argument used to retrieve the size of an item's value.
+named constructor parameter `getsizeof`, which may specify a callable
+``getsizeof(value) -> int`` used to retrieve the size of an item's
+value.
 
 The values of a :class:`Cache` are mutable by default, as are e.g. the
 values of a :class:`dict`.  It is the user's responsibility to take
