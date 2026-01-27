@@ -540,6 +540,8 @@ class TTLCache(_TimedCache):
 class TLRUCache(_TimedCache):
     """Time aware Least Recently Used (TLRU) cache implementation."""
 
+    __HEAP_CLEANUP_FACTOR = 2  # clean up the heap if size > N * len(items)
+
     @functools.total_ordering
     class _Item:
         __slots__ = ("key", "expires", "removed")
@@ -625,7 +627,7 @@ class TLRUCache(_TimedCache):
         items = self.__items
         order = self.__order
         # clean up the heap if too many items are marked as removed
-        if len(order) > len(items) * 2:
+        if len(order) > len(items) * self.__HEAP_CLEANUP_FACTOR:
             self.__order = order = [item for item in order if not item.removed]
             heapq.heapify(order)
         expired = []
