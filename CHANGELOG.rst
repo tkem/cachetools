@@ -1,3 +1,15 @@
+v6.2.6 (2026-01-27)
+===================
+
+- Improve typedkey performance.
+
+- Minor documentation improvements.
+
+- Minor testing improvements.
+
+- Minor code readability improvements.
+
+
 v6.2.5 (2026-01-25)
 ===================
 
