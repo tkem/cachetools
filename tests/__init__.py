@@ -317,11 +317,15 @@ class CountedLock:
 
 class CountedCondition(CountedLock):
     def __init__(self):
-        CountedLock.__init__(self)
+        super().__init__()
         self.wait_count = 0
         self.notify_count = 0
 
+    # only wait_for() and notify_all() are used in the cache tests,
+    # calling wait() or notify() will fail intentionally
+
     def wait_for(self, predicate):
+        assert callable(predicate)
         self.wait_count += 1
 
     def notify_all(self):

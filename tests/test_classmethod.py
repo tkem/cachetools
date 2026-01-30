@@ -49,7 +49,7 @@ class CachedClassMethodTest(unittest.TestCase):
             self.assertEqual(Cached.get(0), 1)
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
-        self.assertIs(w[0].category, DeprecationWarning)
+        self.assertIs(w[1].category, DeprecationWarning)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
