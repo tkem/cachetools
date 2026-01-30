@@ -1,14 +1,21 @@
 """Method decorator helpers."""
 
 import functools
+import warnings
 import weakref
 
 
 def warn_classmethod(stacklevel):
-    from warnings import warn
-
-    warn(
+    warnings.warn(
         "decorating class methods with @cachedmethod is deprecated",
+        DeprecationWarning,
+        stacklevel=stacklevel,
+    )
+
+
+def warn_instance_dict(msg, stacklevel):
+    warnings.warn(
+        msg,
         DeprecationWarning,
         stacklevel=stacklevel,
     )
@@ -16,7 +23,7 @@ def warn_classmethod(stacklevel):
 
 class WrapperBase:
     def __init__(self, obj, method, cache, key, lock=None, cond=None):
-        if type(obj) is type:
+        if isinstance(obj, type):
             warn_classmethod(stacklevel=5)
         functools.update_wrapper(self, method)
         self._obj = obj  # protected
@@ -37,7 +44,7 @@ class WrapperBase:
 
     @property
     def cache_key(self):
-        return self.__key  # TODO: how to handle self?
+        return self.__key
 
     @property
     def cache_lock(self):
@@ -49,42 +56,57 @@ class WrapperBase:
 
 
 class DescriptorBase:
-    def __init__(self, wrapper, cache_clear):
+    def __init__(self, warndict=False):
         self.__attrname = None
-        self.__wrapper = wrapper
-        self.__cache_clear = cache_clear
+        self.__warndict = warndict
 
     def __set_name__(self, owner, name):
         if self.__attrname is None:
             self.__attrname = name
-        elif name != self.__attrname:  # pragma: no cover
+        elif name != self.__attrname:
             raise TypeError(
                 "Cannot assign the same @cachedmethod to two different names "
                 f"({self.__attrname!r} and {name!r})."
             )
 
     def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self  # deprecated @classmethod
         wrapper = self.Wrapper(obj)
         if self.__attrname is not None:
             try:
                 wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
-            except AttributeError:  # pragma: no cover
+            except AttributeError:
                 # not all objects have __dict__ (e.g. class defines slots)
                 msg = (
                     f"No '__dict__' attribute on {type(obj).__name__!r} "
                     f"instance to cache {self.__attrname!r} property."
                 )
-                raise TypeError(msg) from None
-            except TypeError:  # pragma: no cover
+                if self.__warndict:
+                    warn_instance_dict(msg, 3)
+                else:
+                    raise TypeError(msg) from None
+            except TypeError:
                 msg = (
                     f"The '__dict__' attribute on {type(obj).__name__!r} "
                     f"instance does not support item assignment for "
                     f"caching {self.__attrname!r} property."
                 )
-                raise TypeError(msg) from None
+                if self.__warndict:
+                    warn_instance_dict(msg, 3)
+                else:
+                    raise TypeError(msg) from None
+        elif self.__deprecated:
+            pass  # deprecated @classmethod, warning already raised elsewhere
+        else:
+            msg = "Cannot use @cachedmethod instance without calling __set_name__ on it"
+            raise TypeError(msg) from None
         return wrapper
+
+
+class DeprecatedDescriptorBase(DescriptorBase):
+    def __init__(self, wrapper, cache_clear):
+        super().__init__(True)
+        self.__wrapper = wrapper
+        self.__cache_clear = cache_clear
 
     # called for @classmethod with Python >= 3.13
     def __call__(self, *args, **kwargs):
@@ -95,6 +117,127 @@ class DescriptorBase:
     def cache_clear(self, objtype):
         warn_classmethod(stacklevel=3)
         return self.__cache_clear(objtype)
+
+
+def _condition_info(method, cache, key, lock, cond, info):
+    class Descriptor(DescriptorBase):
+        class Wrapper(WrapperBase):
+            def __init__(self, obj):
+                super().__init__(obj, method, cache, key, lock, cond)
+                self.__hits = self.__misses = 0
+                self.__pending = set()
+
+            def __call__(self, *args, **kwargs):
+                cache = self.cache
+                lock = self.cache_lock
+                cond = self.cache_condition
+                key = self.cache_key(self._obj, *args, **kwargs)
+
+                with lock:
+                    cond.wait_for(lambda: key not in self.__pending)
+                    try:
+                        result = cache[key]
+                        self.__hits += 1
+                        return result
+                    except KeyError:
+                        self.__pending.add(key)
+                        self.__misses += 1
+                try:
+                    val = method(self._obj, *args, **kwargs)
+                    with lock:
+                        try:
+                            cache[key] = val
+                        except ValueError:
+                            pass  # value too large
+                        return val
+                finally:
+                    with lock:
+                        self.__pending.remove(key)
+                        cond.notify_all()
+
+            def cache_clear(self):
+                with self.cache_lock:
+                    self.cache.clear()
+                    self.__hits = self.__misses = 0
+
+            def cache_info(self):
+                with self.cache_lock:
+                    return info(self.cache, self.__hits, self.__misses)
+
+    return Descriptor()
+
+
+def _locked_info(method, cache, key, lock, info):
+    class Descriptor(DescriptorBase):
+        class Wrapper(WrapperBase):
+            def __init__(self, obj):
+                super().__init__(obj, method, cache, key, lock)
+                self.__hits = self.__misses = 0
+
+            def __call__(self, *args, **kwargs):
+                cache = self.cache
+                lock = self.cache_lock
+                key = self.cache_key(self._obj, *args, **kwargs)
+                with lock:
+                    try:
+                        result = cache[key]
+                        self.__hits += 1
+                        return result
+                    except KeyError:
+                        self.__misses += 1
+                val = method(self._obj, *args, **kwargs)
+                with lock:
+                    try:
+                        # In case of a race condition, i.e. if another thread
+                        # stored a value for this key while we were calling
+                        # method(), prefer the cached value.
+                        return cache.setdefault(key, val)
+                    except ValueError:
+                        return val  # value too large
+
+            def cache_clear(self):
+                with self.cache_lock:
+                    self.cache.clear()
+                    self.__hits = self.__misses = 0
+
+            def cache_info(self):
+                with self.cache_lock:
+                    return info(self.cache, self.__hits, self.__misses)
+
+    return Descriptor()
+
+
+def _unlocked_info(method, cache, key, info):
+    class Descriptor(DescriptorBase):
+        class Wrapper(WrapperBase):
+            def __init__(self, obj):
+                super().__init__(obj, method, cache, key)
+                self.__hits = self.__misses = 0
+
+            def __call__(self, *args, **kwargs):
+                cache = self.cache
+                key = self.cache_key(self._obj, *args, **kwargs)
+                try:
+                    result = cache[key]
+                    self.__hits += 1
+                    return result
+                except KeyError:
+                    self.__misses += 1
+                val = method(self._obj, *args, **kwargs)
+                try:
+                    cache[key] = val
+                except ValueError:
+                    pass  # value too large
+                return val
+
+            def cache_clear(self):
+                self.cache.clear()
+                self.__hits = self.__misses = 0
+
+            def cache_info(self):
+                return info(self.cache, self.__hits, self.__misses)
+
+    return Descriptor()
 
 
 def _condition(method, cache, key, lock, cond):
@@ -132,7 +275,7 @@ def _condition(method, cache, key, lock, cond):
         p = pending.setdefault(self, set())
         return wrapper(self, p, *args, **kwargs)
 
-    class Descriptor(DescriptorBase):
+    class Descriptor(DeprecatedDescriptorBase):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock, cond)
@@ -158,9 +301,9 @@ def _locked(method, cache, key, lock):
             except KeyError:
                 pass  # key not found
         v = method(self, *args, **kwargs)
-        # in case of a race, prefer the item already in the cache
         with lock(self):
             try:
+                # possible race condition: see above
                 return c.setdefault(k, v)
             except ValueError:
                 return v  # value too large
@@ -170,7 +313,7 @@ def _locked(method, cache, key, lock):
         with lock(self):
             c.clear()
 
-    class Descriptor(DescriptorBase):
+    class Descriptor(DeprecatedDescriptorBase):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock)
@@ -204,7 +347,7 @@ def _unlocked(method, cache, key):
         c = cache(self)
         c.clear()
 
-    class Descriptor(DescriptorBase):
+    class Descriptor(DeprecatedDescriptorBase):
         class Wrapper(WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key)
@@ -219,17 +362,27 @@ def _unlocked(method, cache, key):
     return Descriptor(wrapper, cache_clear)
 
 
-def _wrapper(method, cache, key, lock=None, cond=None):
-    if cond is not None and lock is not None:
-        wrapper = _condition(method, cache, key, lock, cond)
-    elif cond is not None:
-        wrapper = _condition(method, cache, key, cond, cond)
-    elif lock is not None:
-        wrapper = _locked(method, cache, key, lock)
+def _wrapper(method, cache, key, lock=None, cond=None, info=None):
+    if info is not None:
+        if cond is not None and lock is not None:
+            wrapper = _condition_info(method, cache, key, lock, cond, info)
+        elif cond is not None:
+            wrapper = _condition_info(method, cache, key, cond, cond, info)
+        elif lock is not None:
+            wrapper = _locked_info(method, cache, key, lock, info)
+        else:
+            wrapper = _unlocked_info(method, cache, key, info)
     else:
-        wrapper = _unlocked(method, cache, key)
+        if cond is not None and lock is not None:
+            wrapper = _condition(method, cache, key, lock, cond)
+        elif cond is not None:
+            wrapper = _condition(method, cache, key, cond, cond)
+        elif lock is not None:
+            wrapper = _locked(method, cache, key, lock)
+        else:
+            wrapper = _unlocked(method, cache, key)
 
-    # backward-compatible properties for @classmethod
+    # backward-compatible properties for deprecated @classmethod use
     wrapper.cache = cache
     wrapper.cache_key = key
     wrapper.cache_lock = lock if lock is not None else cond
