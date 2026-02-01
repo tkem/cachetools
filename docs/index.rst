@@ -26,6 +26,7 @@ method calls.
    from unittest import mock
    urllib = mock.MagicMock()
 
+   import threading
    import time
 
 
@@ -215,7 +216,6 @@ all cache implementations call :meth:`popitem` to evict items from the
 cache, this can be achieved by overriding this method in a subclass:
 
 .. doctest::
-   :pyversion: >= 3
 
    >>> class MyCache(LRUCache):
    ...     def popitem(self):
@@ -237,7 +237,6 @@ pairs.  By overriding :meth:`expire`, a subclass will be able to track
 expired items:
 
 .. doctest::
-   :pyversion: >= 3
 
    >>> class ExpCache(TTLCache):
    ...     def expire(self, time=None):
@@ -260,7 +259,6 @@ method which is called by :meth:`Cache.__getitem__` if the requested
 key is not found:
 
 .. doctest::
-   :pyversion: >= 3
 
    >>> class PepStore(LRUCache):
    ...     def __missing__(self, key):
@@ -364,10 +362,8 @@ often called with the same arguments:
 
    .. testcode::
 
-      from threading import Lock
-
       # 640K should be enough for anyone...
-      @cached(cache=LRUCache(maxsize=640*1024, getsizeof=len), lock=Lock())
+      @cached(cache=LRUCache(maxsize=640*1024, getsizeof=len), lock=threading.Lock())
       def get_pep(num):
           'Retrieve text of a Python Enhancement Proposal'
           url = 'http://www.python.org/dev/peps/pep-%04d/' % num
@@ -402,7 +398,6 @@ often called with the same arguments:
       to be enabled explicitly.
 
    .. doctest::
-      :pyversion: >= 3
 
       >>> @cached(cache=LRUCache(maxsize=32), info=True)
       ... def get_pep(num):
@@ -496,7 +491,6 @@ often called with the same arguments:
    invocations, with separately cached results:
 
    .. doctest::
-      :pyversion: >= 3
 
       >>> @cached(LRUCache(maxsize=100))
       ... def foo(a=1):
@@ -516,7 +510,6 @@ often called with the same arguments:
    be introduced to avoid ambiguities, e.g.:
 
    .. doctest::
-      :pyversion: >= 3
 
       >>> def foo(a=1):
       ...     _foo(a)
@@ -532,17 +525,16 @@ often called with the same arguments:
       >>> foo(a=1)
 
 
-.. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None, condition=None)
+.. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None, condition=None, info=False)
 
-   Decorator to wrap a class or instance method with a memoizing
-   callable that saves results in a (possibly shared) cache.
+   Decorator to wrap an instance method with a memoizing callable that
+   saves results in a cache.
 
    The main difference between this and the :func:`cached` function
    decorator is that `cache`, `lock` and `condition` are not passed
-   objects, but functions.  Those will be called with :const:`self`
-   (or :const:`cls` for class methods) as their sole argument to
-   retrieve a valid cache, lock, or condition object for the method's
-   respective instance or class.
+   objects, but functions.  Those will be called with :const:`self` as
+   their sole argument to retrieve a valid cache, lock, or condition
+   object for the respective instance.
 
    .. note::
 
@@ -551,55 +543,63 @@ often called with the same arguments:
       the user's responsibility to handle concurrent calls to the
       underlying wrapped method in a multithreaded environment.
 
+   Similarly to the :func:`cached` function decorator, the `cache`,
+   `key`, `lock` and `condition` parameters are also available as
+   :attr:`cache`, :attr:`cache_key`, :attr:`cache_lock` and
+   :attr:`cache_condition` attributes of the wrapped instance method.
+   A :func:`cache_clear()` function will also be provided, as well as
+   an optional :func:`cache_info()` function reporting per-instance
+   cache statistics.
+
+   Also, mostly for efficiency, this decorator requires that the
+   :attr:`__dict__` attribute on each instance be a mutable mapping.
+   This means it will not work with some types, such as metaclasses,
+   and those that specify :attr:`__slots__` without including
+   :attr:`__dict__` as one of the defined slots.
+
+   One advantage of :func:`cachedmethod` over the :func:`cached`
+   function decorator is that cache properties such as `maxsize` can
+   be set at runtime:
+
+   .. doctest::
+
+      >>> class CachedPEPs:
+      ...     def __init__(self, cachesize):
+      ...         self.cache = LRUCache(maxsize=cachesize)
+      ...         self.lock = threading.Lock()
+      ...
+      ...     @cachedmethod(lambda self: self.cache, lock=lambda self: self.lock, info=True)
+      ...     def get(self, num):
+      ...         """Retrieve text of a Python Enhancement Proposal"""
+      ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+      ...         with urllib.request.urlopen(url) as s:
+      ...             return s.read()
+
+      >>> peps = CachedPEPs(cachesize=32)
+      >>> for n in 8, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
+      ...     pep = peps.get(n)
+
+      >>> peps.get.cache_info()
+      CacheInfo(hits=3, misses=8, maxsize=32, currsize=8)
+
+      >>> peps.get.cache_clear()
+
+      >>> peps.get.cache_info()
+      CacheInfo(hits=0, misses=0, maxsize=32, currsize=0)
+
    The `key` function will be called as `key(self, *args, **kwargs)`
    to retrieve a suitable cache key.  Note that the default `key`
    function, :func:`cachetools.keys.methodkey`, ignores its first
    argument, i.e. :const:`self`.  This has mostly historical reasons,
    but also ensures that :const:`self` does not have to be hashable.
 
-   .. note::
-
-      Using :func:`cachedmethod` with a `condition` currently *does*
-      require :const:`self` be hashable, though.
-
    You may provide a different `key` function,
    e.g. :func:`cachetools.keys.hashkey`, if you need :const:`self` to
    be part of the cache key.
 
-   One advantage of :func:`cachedmethod` over the :func:`cached`
-   function decorator is that cache properties such as `maxsize` can
-   be set at runtime:
-
-   .. testcode::
-
-      from cachetools.keys import hashkey
-      from threading import Lock
-
-      class CachedPEPs:
-
-          def __init__(self, cachesize):
-              self.cache = LRUCache(maxsize=cachesize)
-              self.lock = Lock()
-
-          @cachedmethod(lambda self: self.cache, lock=lambda self: self.lock)
-          def get(self, num):
-              """Retrieve text of a Python Enhancement Proposal"""
-              url = 'http://www.python.org/dev/peps/pep-%04d/' % num
-              with urllib.request.urlopen(url) as s:
-                  return s.read()
-
-      peps = CachedPEPs(cachesize=10)
-      print("PEP #1: %s" % peps.get(1))
-
-   .. testoutput::
-      :hide:
-      :options: +ELLIPSIS
-
-      PEP #1: ...
-
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when
-   function arguments are the same, just as with the `@cached`
+   function arguments are the same, just as with the :func:`cached`
    decorator:
 
    .. testcode::
@@ -644,7 +644,31 @@ often called with the same arguments:
 
    .. versionchanged:: 7.0
 
+   Added the `info` option for reporting per-instance cache
+   statistics.
+
+   :func:`cachedmethod` attributes (:attr:`cache`, :attr:`cache_lock`,
+   etc.) are now implemented as properties for instance methods, and
+   are finally officially supported.
+
+   Require :attr:`__dict__` to be a mutable mapping to support
+   per-instance :func:`cache_info()`.
+
    Returning :const:`None` from `cache(self)` is no longer supported.
+
+   .. deprecated:: 7.0
+
+   Using :func:`cachedmethod` with :func:`classmethod` is deprecated,
+   and support will be removed in the next major version.  This is
+   mostly due to the fact that chaining descriptors, i.e. using
+   descriptors with :func:`classmethod`, was deprecated in Python 3.11
+   and removed in Python 3.13.  When using :func:`cache_info()`, an
+   instance method is already required.
+
+   Using :func:`cachedmethod` with an instance that does not provide a
+   mutable :attr:`__dict__` attribute is deprecated, and may inflict a
+   noticeable performance penalty.  When using :func:`cache_info()`,
+   :attr:`__dict__` already has to be a mutable mapping.
 
 
 *****************************************************************

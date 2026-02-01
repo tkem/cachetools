@@ -1,13 +1,27 @@
 v7.0.0 (UNRELEASED)
 ===================
 
-- Drop support for ``cache(self)`` returning ``None`` with
-   ``@cachedmethod`` (breaking change).
+- Require Python 3.10 or later (breaking change).
 
 - Drop support for passing ``info`` as fourth positional parameter to
-  ``@cached``.
+  ``@cached`` (breaking change).
 
-- Require Python 3.10 or later (breaking change).
+- Drop support for ``cache(self)`` returning ``None`` with
+  ``@cachedmethod`` (breaking change).
+
+- Convert the ``@cachedmethod`` wrappers to descriptors, deprecating
+  its use with class methods and instances that do not provide a
+  mutable ``__dict__`` attribute (potentially breaking change).
+
+- Convert the previously undocumented ``@cachedmethod`` attributes
+  (``cache``, ``cache_lock``, etc.) to properties for instance
+  methods, providing official support and documentation (potentially
+  breaking change).
+
+- Add an optional ``info`` parameter to the ``@cachedmethod``
+  decorator for reporting per-instance cache statistics.  Note that
+  this requires the instance's ``__dict__`` attribute to be a mutable
+  mapping.
 
 
 v6.2.6 (2026-01-27)
