@@ -23,8 +23,13 @@ import time
 
 from . import keys
 
+# Typing stubs for this package are provided by typeshed:
+# https://github.com/python/typeshed/tree/main/stubs/cachetools
+
 
 class _DefaultSize:
+    """A minimal "fake" dict that returns a constant size 1 for any key."""
+
     __slots__ = ()
 
     def __getitem__(self, _key):

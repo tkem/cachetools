@@ -1,6 +1,13 @@
 """Function decorator helpers."""
 
+__all__ = ()
+
 import functools
+
+# At least for now, the implementation prefers clarity and performance
+# over ease of maintenance, thus providing separate wrappers for
+# all valid combinations of decorator parameters lock, condition and
+# info.
 
 
 def _condition_info(func, cache, key, lock, cond, info):
@@ -178,7 +185,9 @@ def _locked(func, cache, key, lock):
         v = func(*args, **kwargs)
         with lock:
             try:
-                # possible race condition: see above
+                # In case of a race condition, i.e. if another thread
+                # stored a value for this key while we were calling
+                # func(), prefer the cached value.
                 return cache.setdefault(k, v)
             except ValueError:
                 return v  # value too large
