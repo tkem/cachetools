@@ -1,4 +1,4 @@
-v7.0.0 (UNRELEASED)
+v7.0.0 (2026-02-01)
 ===================
 
 - Require Python 3.10 or later (breaking change).
