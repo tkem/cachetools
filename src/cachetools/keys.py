@@ -11,7 +11,7 @@ class _HashedTuple(tuple):
 
     """
 
-    __hashvalue = None
+    __hashvalue = None  # default value, set in instance on first use
 
     def __hash__(self, hash=tuple.__hash__):
         hashvalue = self.__hashvalue
