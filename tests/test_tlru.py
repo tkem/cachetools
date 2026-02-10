@@ -6,6 +6,10 @@ from cachetools import TLRUCache
 from . import CacheTestMixin
 
 
+def default_ttu(_key, _value, _time):
+    return math.inf
+
+
 class Timer:
     def __init__(self, auto=False):
         self.auto = auto
@@ -21,9 +25,6 @@ class Timer:
 
 
 class TLRUTestCache(TLRUCache):
-    def default_ttu(_key, _value, _time):
-        return math.inf
-
     def __init__(self, maxsize, ttu=default_ttu, **kwargs):
         TLRUCache.__init__(self, maxsize, ttu, timer=Timer(), **kwargs)
 

@@ -75,7 +75,7 @@ class CachedClassMethodTest(unittest.TestCase):
             self.assertEqual(Cached.get_typed(0), 1)
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
-        self.assertIs(w[0].category, DeprecationWarning)
+        self.assertIs(w[1].category, DeprecationWarning)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -99,7 +99,7 @@ class CachedClassMethodTest(unittest.TestCase):
             self.assertEqual(Cached.get_locked(0), 1)
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
-        self.assertIs(w[0].category, DeprecationWarning)
+        self.assertIs(w[1].category, DeprecationWarning)
 
     def test_condition(self):
         Cached.cache = LRUCache(2)
@@ -112,7 +112,7 @@ class CachedClassMethodTest(unittest.TestCase):
             self.assertEqual(Cached.get_condition(0), 1)
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
-        self.assertIs(w[0].category, DeprecationWarning)
+        self.assertIs(w[1].category, DeprecationWarning)
 
     def test_clear(self):
         Cached.cache = LRUCache(2)

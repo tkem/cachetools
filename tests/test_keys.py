@@ -34,7 +34,7 @@ class CacheKeysTest(unittest.TestCase):
         self.assertNotEqual(key("x", 1, 2, 3, x=0), key("x", 1, 2, 3, x=None))
         self.assertNotEqual(key("x", 1, 2, 3, x=0), key("x", 1, 2, 3, y=0))
         with self.assertRaises(TypeError):
-            hash("x", key({}))
+            hash(key("x", {}))
         # untyped keys compare equal
         self.assertEqual(key("x", 1, 2, 3), key("y", 1.0, 2.0, 3.0))
         self.assertEqual(hash(key("x", 1, 2, 3)), hash(key("y", 1.0, 2.0, 3.0)))
