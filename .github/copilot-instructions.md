@@ -1,7 +1,7 @@
 # Copilot Instructions for cachetools
 
 ## Architecture Overview
-**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. All cache implementations live in a single ~710-line file (`src/cachetools/__init__.py`) with decorator helpers in separate modules.
+**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. All cache implementations live in a single ~730-line file (`src/cachetools/__init__.py`) with decorator helpers in separate modules.
 
 ### Core Design Pattern
 - All caches inherit from `Cache` (a `MutableMapping` with `maxsize`, `currsize`, and `getsizeof`)
@@ -16,8 +16,8 @@
 - `TTLCache`/`TLRUCache`: Time-based eviction with `_TimedCache` base (uses `_Timer` context manager to freeze time during operations)
 
 ### Decorator Architecture
-- `@cached`: Function memoization via `src/cachetools/_cached.py` (3 variants: unlocked, locked, condition-based)
-- `@cachedmethod`: Method memoization via `src/cachetools/_cachedmethod.py` (uses `weakref.WeakKeyDictionary` for pending sets)
+- `@cached`: Function memoization via `src/cachetools/_cached.py` (separate wrappers for each combination of lock/condition/info, plus uncached variants when `cache=None`)
+- `@cachedmethod`: Method memoization via `src/cachetools/_cachedmethod.py` (uses descriptor protocol with `__set_name__`/`__get__` to replace itself in instance `__dict__` with a per-instance `Wrapper`; `weakref.WeakKeyDictionary` only used for deprecated `@classmethod` pending sets)
 - Both support custom `key` functions, `lock` objects, and `condition` variables for thread safety
 - `info=True` adds `cache_info()` and `cache_clear()` methods (see `_CacheInfo` namedtuple)
 
@@ -73,20 +73,20 @@ tox -e doctest                            # Doctest validation
 5. Add test class inheriting `CacheTestMixin` in `tests/`
 
 ### Module Structure
-- All cache classes in `src/cachetools/__init__.py` (~710 lines)
-- Decorator wrappers split: `_cached.py` (functions), `_cachedmethod.py` (methods)
+- All cache classes in `src/cachetools/__init__.py` (~730 lines)
+- Decorator wrappers split: `_cached.py` (functions), `_cachedmethod.py` (methods/descriptors, ~410 lines)
 - Functools-compatible wrappers in `src/cachetools/func.py` (`lru_cache`, `ttl_cache`, etc.)
-- No external dependencies at runtime (pure Python 3.9+)
+- No external dependencies at runtime (pure Python 3.10+)
 
 ### Version Management
 - Version in `src/cachetools/__init__.py` as `__version__`
-- Extracted by `setup.cfg`: `version = attr: cachetools.__version__`
+- Extracted by `pyproject.toml`: `version = {attr = "cachetools.__version__"}`
 - Docs extract version via `docs/conf.py` parsing
 
 ## Key Files
-- `src/cachetools/__init__.py` - All cache implementations (~710 lines)
+- `src/cachetools/__init__.py` - All cache implementations (~730 lines)
 - `src/cachetools/keys.py` - Key generation with hash optimization
 - `src/cachetools/_cached.py` - Function decorator variants
-- `src/cachetools/_cachedmethod.py` - Method decorator variants
+- `src/cachetools/_cachedmethod.py` - Method descriptor variants (~410 lines)
 - `tests/__init__.py` - `CacheTestMixin` for standard cache tests
-- `setup.cfg` - Package metadata and flake8 config
+- `pyproject.toml` - Package metadata, build config, and flake8 config
