@@ -84,6 +84,20 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(0, len(cache))
         self.assertEqual(set(), set(cache))
 
+    def test_ttl_timer(self):
+        cache = TTLCache(maxsize=2, ttl=2, timer=Timer())
+        self.assertEqual(cache.timer.time, 0)
+        self.assertFalse(cache.timer.auto)
+
+        cache[1] = 1
+        cache.timer.tick()
+        self.assertEqual(cache.timer.time, 1)
+        self.assertEqual(1, cache[1])
+
+        cache.timer.tick()
+        self.assertEqual(cache.timer.time, 2)
+        self.assertNotIn(1, cache)
+
     def test_ttl_lru(self):
         cache = TTLCache(maxsize=2, ttl=1, timer=Timer())
 

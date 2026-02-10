@@ -270,3 +270,32 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(1, cache)
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
+
+    def test_ttu_heap_cleanup(self):
+        cache = TLRUCache(maxsize=4, ttu=lambda k, v, t: t + 1, timer=Timer())
+        self.assertEqual(0, cache.timer())
+
+        cache[1] = 1
+        cache[2] = 2
+
+        # replace items to accumulate removed entries in the internal heap
+        for i in range(5):
+            cache[1] = 10 + i
+            cache[2] = 20 + i
+
+        # this should compact the internal heap
+        expired = cache.expire()
+        self.assertEqual([], expired)
+
+        # verify cache is functional after cleanup
+        self.assertEqual(2, len(cache))
+        self.assertEqual(14, cache[1])
+        self.assertEqual(24, cache[2])
+        cache[3] = 3
+        cache[4] = 4
+        self.assertEqual(4, len(cache))
+
+        cache.timer.tick()
+        expired = cache.expire()
+        self.assertEqual(4, len(expired))
+        self.assertEqual(0, len(cache))

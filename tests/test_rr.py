@@ -77,6 +77,11 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
         cache[2] = 2
         with self.assertRaises(ValueError):
             cache[3] = 3
+        self.assertEqual(len(cache), 2)
+        self.assertEqual(cache.currsize, 2)
+        self.assertIn(1, cache)
+        self.assertIn(2, cache)
+        self.assertNotIn(3, cache)
 
     def test_rr_default_choice(self):
         cache = RRCache(maxsize=2)
