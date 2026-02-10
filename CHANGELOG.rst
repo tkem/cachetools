@@ -1,3 +1,11 @@
+v7.0.1 (2026-02-10)
+===================
+
+- Various test improvements.
+
+- Update Copilot Instructions.
+
+
 v7.0.0 (2026-02-01)
 ===================
 
