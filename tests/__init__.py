@@ -266,6 +266,57 @@ class CacheTestMixin:
 
         self._test_getsizeof(Cache(maxsize=3))
 
+    def test_clear(self):
+        cache = self.Cache(maxsize=2)
+        cache.update({1: 1, 2: 2})
+
+        self.assertEqual(2, len(cache))
+        self.assertEqual(2, cache.currsize)
+
+        cache.clear()
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+        self.assertNotIn(1, cache)
+        self.assertNotIn(2, cache)
+
+        # verify cache can be reused after clear
+        cache[3] = 3
+        cache[4] = 4
+        self.assertEqual(2, len(cache))
+        self.assertEqual(3, cache[3])
+        self.assertEqual(4, cache[4])
+
+        # verify eviction still works after clear
+        cache[5] = 5
+        self.assertEqual(2, len(cache))
+        self.assertIn(5, cache)
+
+    def test_clear_empty(self):
+        cache = self.Cache(maxsize=2)
+        cache.clear()  # should not raise
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+    def test_clear_getsizeof(self):
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+        cache[1] = 1
+        cache[2] = 2
+        cache[3] = 3
+
+        self.assertEqual(3, len(cache))
+        self.assertEqual(6, cache.currsize)
+
+        cache.clear()
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+        # verify cache can be reused with getsizeof after clear
+        cache[4] = 4
+        self.assertEqual(1, len(cache))
+        self.assertEqual(4, cache.currsize)
+
     def test_pickle(self):
         import pickle
 

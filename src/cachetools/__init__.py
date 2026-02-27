@@ -134,6 +134,12 @@ class Cache(collections.abc.MutableMapping):
             self[key] = value = default
         return value
 
+    def clear(self):
+        self.__data.clear()
+        if isinstance(self.__size, dict):
+            self.__size.clear()
+        self.__currsize = 0
+
     @property
     def maxsize(self):
         """The maximum size of the cache."""
@@ -237,6 +243,12 @@ class LFUCache(Cache):
         key = next(iter(curr.keys))  # remove an arbitrary element
         return (key, self.pop(key))
 
+    def clear(self, cache_clear=Cache.clear):
+        cache_clear(self)
+        root = self.__root
+        root.prev = root.next = root
+        self.__links.clear()
+
     def __touch(self, key):
         """Increment use count"""
         link = self.__links[key]
@@ -285,6 +297,10 @@ class LRUCache(Cache):
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))
+
+    def clear(self, cache_clear=Cache.clear):
+        cache_clear(self)
+        self.__order.clear()
 
     def __touch(self, key):
         """Mark as recently used"""
