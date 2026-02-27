@@ -64,3 +64,27 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[1], "updated")
         self.assertIn(3, cache)
         self.assertNotIn(2, cache)
+
+    def test_lfu_clear(self):
+        cache = LFUCache(maxsize=2)
+
+        cache[1] = 1
+        cache[1]  # increment frequency
+        cache[1]  # increment frequency again
+        cache[2] = 2
+
+        cache.clear()
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+        # verify LFU frequency tracking is reset after clear
+        cache[3] = 3
+        cache[4] = 4
+        cache[3]  # access 3 to increment frequency
+        cache[5] = 5  # should evict 4 (least frequently used)
+
+        self.assertEqual(2, len(cache))
+        self.assertIn(3, cache)
+        self.assertIn(5, cache)
+        self.assertNotIn(4, cache)

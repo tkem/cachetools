@@ -66,3 +66,26 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[1], "updated")
         self.assertIn(3, cache)
         self.assertNotIn(2, cache)
+
+    def test_lru_clear(self):
+        cache = LRUCache(maxsize=2)
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[1]  # access to make 1 most recently used
+
+        cache.clear()
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+        # verify LRU order is reset after clear
+        cache[3] = 3
+        cache[4] = 4
+        cache[3]  # access 3 to make it most recently used
+        cache[5] = 5  # should evict 4 (least recently used)
+
+        self.assertEqual(2, len(cache))
+        self.assertIn(3, cache)
+        self.assertIn(5, cache)
+        self.assertNotIn(4, cache)
