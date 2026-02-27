@@ -183,6 +183,10 @@ class FIFOCache(Cache):
         else:
             return (key, self.pop(key))
 
+    def clear(self, cache_clear=Cache.clear):
+        cache_clear(self)
+        self.__order.clear()
+
 
 class LFUCache(Cache):
     """Least Frequently Used (LFU) cache implementation."""
@@ -347,6 +351,11 @@ class RRCache(Cache):
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
             return (key, self.pop(key))
+
+    def clear(self, cache_clear=Cache.clear):
+        cache_clear(self)
+        self.__index.clear()
+        del self.__keys[:]
 
 
 class _TimedCache(Cache):
@@ -552,6 +561,14 @@ class TTLCache(_TimedCache):
             else:
                 return (key, self.pop(key))
 
+    def clear(self):
+        with self.timer as time:
+            self.expire(time)
+            Cache.clear(self)
+        root = self.__root
+        root.prev = root.next = root
+        self.__links.clear()
+
     def __getlink(self, key):
         value = self.__links[key]
         self.__links.move_to_end(key)
@@ -675,6 +692,13 @@ class TLRUCache(_TimedCache):
                 raise KeyError("%s is empty" % type(self).__name__) from None
             else:
                 return (key, self.pop(key))
+
+    def clear(self):
+        with self.timer as time:
+            self.expire(time)
+            Cache.clear(self)
+        self.__items.clear()
+        del self.__order[:]
 
     def __getitem(self, key):
         value = self.__items[key]
