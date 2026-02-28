@@ -137,6 +137,12 @@ class Cache(collections.abc.MutableMapping):
             self[key] = value = default
         return value
 
+    # Although the MutableMapping.clear() default implementation works
+    # perfectly well, it calls popitem() in a loop until the cache is
+    # empty, resulting in O(n) complexity.  For large caches, this
+    # becomes a significant performance bottleneck, so we provide an
+    # optimized version for each Cache subclass.
+
     def clear(self):
         self.__data.clear()
         self.__size.clear()
