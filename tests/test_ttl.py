@@ -215,3 +215,24 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         items = cache.expire(datetime.now() + timedelta(days=1))
         self.assertEqual([(1, 1)], list(items))
         self.assertEqual(0, len(cache))
+
+    def test_ttl_clear(self):
+        cache = TTLCache(maxsize=2, ttl=2, timer=Timer())
+
+        cache[1] = 1
+        cache[2] = 2
+        cache.clear()
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+        # verify LRU order is reset after clear
+        cache[3] = 3
+        cache[4] = 4
+        cache[3]  # access 3 to make it most recently used
+        cache[5] = 5  # should evict 4 (least recently used)
+
+        self.assertEqual(2, len(cache))
+        self.assertIn(3, cache)
+        self.assertIn(5, cache)
+        self.assertNotIn(4, cache)

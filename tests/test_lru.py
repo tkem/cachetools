@@ -72,8 +72,6 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
 
         cache[1] = 1
         cache[2] = 2
-        cache[1]  # access to make 1 most recently used
-
         cache.clear()
 
         self.assertEqual(0, len(cache))
