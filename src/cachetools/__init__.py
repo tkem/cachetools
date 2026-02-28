@@ -41,6 +41,9 @@ class _DefaultSize:
     def pop(self, _key):
         return 1
 
+    def clear(self):
+        pass
+
 
 class Cache(collections.abc.MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
@@ -136,8 +139,7 @@ class Cache(collections.abc.MutableMapping):
 
     def clear(self):
         self.__data.clear()
-        if isinstance(self.__size, dict):
-            self.__size.clear()
+        self.__size.clear()
         self.__currsize = 0
 
     @property
@@ -183,8 +185,8 @@ class FIFOCache(Cache):
         else:
             return (key, self.pop(key))
 
-    def clear(self, cache_clear=Cache.clear):
-        cache_clear(self)
+    def clear(self):
+        Cache.clear(self)
         self.__order.clear()
 
 
@@ -247,8 +249,8 @@ class LFUCache(Cache):
         key = next(iter(curr.keys))  # remove an arbitrary element
         return (key, self.pop(key))
 
-    def clear(self, cache_clear=Cache.clear):
-        cache_clear(self)
+    def clear(self):
+        Cache.clear(self)
         root = self.__root
         root.prev = root.next = root
         self.__links.clear()
@@ -302,8 +304,8 @@ class LRUCache(Cache):
         else:
             return (key, self.pop(key))
 
-    def clear(self, cache_clear=Cache.clear):
-        cache_clear(self)
+    def clear(self):
+        Cache.clear(self)
         self.__order.clear()
 
     def __touch(self, key):
@@ -352,8 +354,8 @@ class RRCache(Cache):
         else:
             return (key, self.pop(key))
 
-    def clear(self, cache_clear=Cache.clear):
-        cache_clear(self)
+    def clear(self):
+        Cache.clear(self)
         self.__index.clear()
         del self.__keys[:]
 
@@ -562,9 +564,7 @@ class TTLCache(_TimedCache):
                 return (key, self.pop(key))
 
     def clear(self):
-        with self.timer as time:
-            self.expire(time)
-            Cache.clear(self)
+        _TimedCache.clear(self)
         root = self.__root
         root.prev = root.next = root
         self.__links.clear()
@@ -694,9 +694,7 @@ class TLRUCache(_TimedCache):
                 return (key, self.pop(key))
 
     def clear(self):
-        with self.timer as time:
-            self.expire(time)
-            Cache.clear(self)
+        _TimedCache.clear(self)
         self.__items.clear()
         del self.__order[:]
 
