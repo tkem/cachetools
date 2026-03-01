@@ -226,7 +226,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(0, len(cache))
         self.assertEqual(0, cache.currsize)
 
-        # verify LRU order is reset after clear
+        # verify LRU eviction order is reset after clear
         cache[3] = 3
         cache[4] = 4
         cache[3]  # access 3 to make it most recently used
@@ -236,3 +236,10 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertIn(3, cache)
         self.assertIn(5, cache)
         self.assertNotIn(4, cache)
+
+        # verify TTL expiry still works after clear
+        cache[42] = 42
+        cache.timer.tick()
+        cache.timer.tick()
+        cache.timer.tick()  # past TTL
+        self.assertNotIn(42, cache)

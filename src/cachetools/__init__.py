@@ -422,11 +422,6 @@ class _TimedCache(Cache):
         """The timer function used by the cache."""
         return self.__timer
 
-    def clear(self):
-        with self.__timer as time:
-            self.expire(time)
-            Cache.clear(self)
-
     def get(self, *args, **kwargs):
         with self.__timer:
             return Cache.get(self, *args, **kwargs)
@@ -438,6 +433,12 @@ class _TimedCache(Cache):
     def setdefault(self, *args, **kwargs):
         with self.__timer:
             return Cache.setdefault(self, *args, **kwargs)
+
+    def clear(self):
+        # Subclasses must override to also reset their own time-tracking
+        # structures; we do not call expire() here since clear() should
+        # be O(1) regardless of cache contents.
+        Cache.clear(self)
 
 
 class TTLCache(_TimedCache):
