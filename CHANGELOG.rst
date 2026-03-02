@@ -1,3 +1,10 @@
+v7.0.2 (2026-03-02)
+===================
+
+- Provide more efficient ``clear()`` implementation for all support
+  Cache classes (courtesy Josep Pon Farreny).
+
+
 v7.0.1 (2026-02-10)
 ===================
 
