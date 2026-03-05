@@ -81,7 +81,7 @@ class _DescriptorBase:
             # Return the wrapper itself without modification when accessed
             # through the class to support class-level introspection, such
             # as for mocking with autospec=True in unittest.mock.
-            return wrapper
+            pass
         elif self.__attrname is not None:
             # replace descriptor instance with wrapper in instance dict
             try:
