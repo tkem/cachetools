@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock
 import warnings
 
 
@@ -673,3 +674,14 @@ class NoneMethodTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             wrapper.cache_info()
+
+
+class AutospecTest(unittest.TestCase):
+    def test_autospec_no_warnings(self):
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+
+            _ = unittest.mock.create_autospec(Cached, instance=True)
+
+        self.assertEqual(len(w), 0)
