@@ -77,7 +77,12 @@ class _DescriptorBase:
 
     def __get__(self, obj, objtype=None):
         wrapper = self.Wrapper(obj)
-        if self.__attrname is not None:
+        if obj is None:
+            # Return the wrapper itself without modification when accessed
+            # through the class to support class-level introspection, such
+            # as for mocking with autospec=True in unittest.mock.
+            pass
+        elif self.__attrname is not None:
             # replace descriptor instance with wrapper in instance dict
             try:
                 # In case of a race condition where another thread already replaced
