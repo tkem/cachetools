@@ -681,7 +681,5 @@ class AutospecTest(unittest.TestCase):
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-
-            _ = unittest.mock.create_autospec(Cached, instance=True)
-
+            unittest.mock.create_autospec(Cached, instance=True)
         self.assertEqual(len(w), 0)

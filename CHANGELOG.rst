@@ -1,3 +1,10 @@
+v7.0.3 (2026-03-05)
+===================
+
+- Fix ``DeprecationWarning`` when creating an autospec mock with
+  ``@cachedmethod`` decorations.
+
+
 v7.0.2 (2026-03-02)
 ===================
 
