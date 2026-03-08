@@ -1,4 +1,4 @@
-v7.0.4 (UNRELEASED)
+v7.0.4 (2026-03-08)
 ===================
 
 - Fix and properly document ``@cachedmethod.cache_key`` behavior.
