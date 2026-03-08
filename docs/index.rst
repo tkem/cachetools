@@ -370,13 +370,10 @@ often called with the same arguments:
           with urllib.request.urlopen(url) as s:
               return s.read()
 
-      # make sure access to cache is synchronized
+      # remove (pop) an individual cached PEP from the cache
+      key = get_pep.cache_key(42)
       with get_pep.cache_lock:
-          get_pep.cache.clear()
-
-      # always use the key function for accessing cache items
-      with get_pep.cache_lock:
-          get_pep.cache.pop(get_pep.cache_key(42), None)
+          get_pep.cache.pop(key, None)
 
    For the common use case of clearing or invalidating the cache, the
    decorator also provides a :func:`cache_clear()` function which
@@ -582,6 +579,15 @@ often called with the same arguments:
       >>> peps.get.cache_info()
       CacheInfo(hits=3, misses=8, maxsize=32, currsize=8)
 
+      >>> # remove an individual cached PEP from the cache
+      >>> key = peps.get.cache_key(320)
+      >>> with peps.get.cache_lock:
+      ...    del peps.get.cache[key]
+
+      >>> peps.get.cache_info()
+      CacheInfo(hits=3, misses=8, maxsize=32, currsize=7)
+
+      >>> # remove all cached PEPs and clear cache info
       >>> peps.get.cache_clear()
 
       >>> peps.get.cache_info()
@@ -590,8 +596,9 @@ often called with the same arguments:
    The `key` function will be called as `key(self, *args, **kwargs)`
    to retrieve a suitable cache key.  Note that the default `key`
    function, :func:`cachetools.keys.methodkey`, ignores its first
-   argument, i.e. :const:`self`.  This has mostly historical reasons,
-   but also ensures that :const:`self` does not have to be hashable.
+   implicit argument, i.e. :const:`self`.  This has mostly historical
+   reasons, but also ensures that :const:`self` does not have to be
+   hashable.
 
    You may provide a different `key` function,
    e.g. :func:`cachetools.keys.hashkey`, if you need :const:`self` to
