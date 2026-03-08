@@ -10,6 +10,7 @@ __all__ = (
     "TTLCache",
     "cached",
     "cachedmethod",
+    "cachedproperty",
 )
 
 __version__ = "7.0.4"
@@ -768,5 +769,22 @@ def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None, info=Fals
             return _wrapper(method, cache, key, lock, condition, info=make_info)
         else:
             return _wrapper(method, cache, key, lock, condition)
+
+    return decorator
+
+
+# FIXME: args order, or split decorator?
+def cachedproperty(ttl=None, timer=time.monotonic, lock=None):
+    """Decorator to transform a method into a property whose value is
+    computed once or after a given time.
+
+    """
+    from ._cachedproperty import _wrapper
+
+    def decorator(method):
+        if lock is not None:
+            return _wrapper(method, ttl, timer, lock)
+        else:
+            return _wrapper(method, ttl, timer)
 
     return decorator
