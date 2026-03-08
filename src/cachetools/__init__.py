@@ -748,8 +748,8 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
 
 
 def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None, info=False):
-    """Decorator to wrap a class or instance method with a memoizing
-    callable that saves results in a cache.
+    """Decorator to wrap a method with a memoizing callable that saves
+    results in a cache.
 
     """
     from ._cachedmethod import _wrapper
