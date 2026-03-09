@@ -23,6 +23,10 @@ def _warn_instance_dict(msg, stacklevel):
     )
 
 
+def _none(_):
+    return None
+
+
 class _WrapperBase:
     """Wrapper base class providing default implementations for properties."""
 
@@ -32,9 +36,9 @@ class _WrapperBase:
         functools.update_wrapper(self, method)
         self._obj = obj  # protected
         self.__cache = cache
-        self.__key = key
-        self.__lock = lock
-        self.__cond = cond
+        self.__key = functools.partial(key, obj)
+        self.__lock = lock if lock is not None else _none
+        self.__cond = cond if cond is not None else _none
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError()  # pragma: no cover
@@ -48,15 +52,15 @@ class _WrapperBase:
 
     @property
     def cache_key(self):
-        return functools.partial(self.__key, self._obj)
+        return self.__key  # self._obj passed via functools.partial
 
     @property
     def cache_lock(self):
-        return None if self.__lock is None else self.__lock(self._obj)
+        return self.__lock(self._obj)
 
     @property
     def cache_condition(self):
-        return None if self.__cond is None else self.__cond(self._obj)
+        return self.__cond(self._obj)
 
 
 class _DescriptorBase:
