@@ -31,7 +31,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/tkem/cachetools/"
+Homepage = "https://cachetools.readthedocs.io/en/stable/"
+Documentation = "https://cachetools.readthedocs.io/en/stable/"
+Source = "https://github.com/tkem/cachetools/"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
