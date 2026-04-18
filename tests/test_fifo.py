@@ -9,7 +9,7 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = FIFOCache
 
     def test_fifo(self):
-        cache = FIFOCache(maxsize=2)
+        cache = FIFOCache[int, int](maxsize=2)
 
         cache[1] = 1
         cache[2] = 2
@@ -34,7 +34,7 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(3, cache)
 
     def test_fifo_getsizeof(self):
-        cache = FIFOCache(maxsize=3, getsizeof=lambda x: x)
+        cache = FIFOCache[int, int](maxsize=3, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2
@@ -56,7 +56,7 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[3], 3)
 
     def test_fifo_update_existing(self):
-        cache = FIFOCache(maxsize=2)
+        cache = FIFOCache[int, int | str](maxsize=2)
 
         cache[1] = 1
         cache[2] = 2

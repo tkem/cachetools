@@ -53,4 +53,5 @@ exclude = [".git", ".tox", "build"]
 select = ["C", "E", "F", "W", "B", "B950", "I", "N"]
 # F401: imported but unused (submodule shims)
 # E501: line too long (black)
-ignore = ["F401", "E501"]
+# E704: multiple statements on one line (typehints)
+ignore = ["F401", "E501", "E704"]

@@ -10,7 +10,7 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = RRCache
 
     def test_rr(self):
-        cache = RRCache(maxsize=2, choice=min)
+        cache = RRCache[int, int](maxsize=2, choice=min)
         self.assertEqual(min, cache.choice)
 
         cache[1] = 1
@@ -35,7 +35,7 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(0, cache)
 
     def test_rr_getsizeof(self):
-        cache = RRCache(maxsize=3, choice=min, getsizeof=lambda x: x)
+        cache = RRCache[int, int](maxsize=3, choice=min, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2
@@ -57,7 +57,7 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[3], 3)
 
     def test_rr_update_existing(self):
-        cache = RRCache(maxsize=2, choice=min)
+        cache = RRCache[int, int | str](maxsize=2, choice=min)
 
         cache[1] = 1
         cache[2] = 2
@@ -72,7 +72,7 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
         def bad_choice(seq):
             raise ValueError("test error")
 
-        cache = RRCache(maxsize=2, choice=bad_choice)
+        cache = RRCache[int, int](maxsize=2, choice=bad_choice)
         cache[1] = 1
         cache[2] = 2
         with self.assertRaises(ValueError):
@@ -84,5 +84,5 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(3, cache)
 
     def test_rr_default_choice(self):
-        cache = RRCache(maxsize=2)
+        cache = RRCache[int, int](maxsize=2)
         self.assertIs(cache.choice, random.choice)

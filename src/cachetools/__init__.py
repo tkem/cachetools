@@ -440,6 +440,9 @@ class _TimedCache(Cache):
         # be O(1) regardless of cache contents.
         Cache.clear(self)
 
+    def expire(self, time=None):  # pragma: no cover
+        raise NotImplementedError
+
 
 class TTLCache(_TimedCache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
@@ -711,6 +714,8 @@ class TLRUCache(_TimedCache):
         return value
 
 
+# note that the runtime __name__ is "CacheInfo", as in stdlib:
+# https://github.com/python/cpython/blob/3.14/Lib/functools.py#L520
 _CacheInfo = collections.namedtuple(
     "CacheInfo", ["hits", "misses", "maxsize", "currsize"]
 )

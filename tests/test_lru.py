@@ -9,7 +9,7 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = LRUCache
 
     def test_lru(self):
-        cache = LRUCache(maxsize=2)
+        cache = LRUCache[int, int](maxsize=2)
 
         cache[1] = 1
         cache[2] = 2
@@ -34,7 +34,7 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
 
     def test_lru_getsizeof(self):
-        cache = LRUCache(maxsize=3, getsizeof=lambda x: x)
+        cache = LRUCache[int, int](maxsize=3, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2
@@ -56,7 +56,7 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[3], 3)
 
     def test_lru_update_existing(self):
-        cache = LRUCache(maxsize=2)
+        cache = LRUCache[int, int | str](maxsize=2)
 
         cache[1] = 1
         cache[2] = 2
@@ -68,7 +68,7 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
 
     def test_lru_clear(self):
-        cache = LRUCache(maxsize=2)
+        cache = LRUCache[int, int](maxsize=2)
 
         cache[1] = 1
         cache[2] = 2

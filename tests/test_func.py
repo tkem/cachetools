@@ -1,9 +1,14 @@
 import unittest
+from typing import Any, Callable
 
 import cachetools.func
 
+from . import _TestCaseProtocol
 
-class DecoratorTestMixin:
+
+class DecoratorTestMixin(_TestCaseProtocol):
+    DECORATOR: Callable[..., Any]
+
     def decorator(self, maxsize, **kwargs):
         return self.DECORATOR(maxsize, **kwargs)
 
@@ -122,3 +127,18 @@ class RRDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 
 class TTLDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.ttl_cache)
+
+    def test_ttl_datetime(self):
+        from datetime import datetime, timedelta
+
+        cached = self.decorator(maxsize=2, ttl=timedelta(days=1), timer=datetime.now)(
+            lambda n: n
+        )
+        self.assertEqual(cached.cache_parameters(), {"maxsize": 2, "typed": False})
+        self.assertEqual(cached.cache_info(), (0, 0, 2, 0))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 1, 2, 1))
+        self.assertEqual(cached(1.0), 1.0)
+        self.assertEqual(cached.cache_info(), (2, 1, 2, 1))

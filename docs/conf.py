@@ -16,6 +16,7 @@ def get_version():
         full_version = line.partition("=")[2].strip().strip("\"'")
         partial_version = ".".join(full_version.split(".")[:2])
         return full_version, partial_version
+    return (None, None)
 
 
 project = "cachetools"

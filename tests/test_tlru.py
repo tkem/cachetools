@@ -33,9 +33,11 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = TLRUTestCache
 
     def test_ttu(self):
-        cache = TLRUCache(maxsize=6, ttu=lambda _, v, t: t + v + 1, timer=Timer())
+        cache = TLRUCache[int, int, int](
+            maxsize=6, ttu=lambda _, v, t: t + v + 1, timer=Timer()
+        )
         self.assertEqual(0, cache.timer())
-        self.assertEqual(3, cache.ttu(None, 1, 1))
+        self.assertEqual(3, cache.ttu(0, 1, 1))
 
         cache[1] = 1
         self.assertEqual(1, cache[1])
@@ -110,9 +112,12 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(set(), set(cache))
 
     def test_ttu_lru(self):
-        cache = TLRUCache(maxsize=2, ttu=lambda k, v, t: t + 1, timer=Timer())
+        def ttu(_k, _v, t):
+            return t + 1
+
+        cache = TLRUCache[int, int, int](maxsize=2, ttu=ttu, timer=Timer())
         self.assertEqual(0, cache.timer())
-        self.assertEqual(2, cache.ttu(None, None, 1))
+        self.assertEqual(2, cache.ttu(0, 0, 1))
 
         cache[1] = 1
         cache[2] = 2
@@ -140,7 +145,10 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[5], 5)
 
     def test_ttu_expire(self):
-        cache = TLRUCache(maxsize=3, ttu=lambda k, v, t: t + 3, timer=Timer())
+        def ttu(_k, _v, t):
+            return t + 3
+
+        cache = TLRUCache[int, int, int](maxsize=3, ttu=ttu, timer=Timer())
         with cache.timer as time:
             self.assertEqual(time, cache.timer())
 
@@ -190,7 +198,9 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(3, cache)
 
     def test_ttu_expired(self):
-        cache = TLRUCache(maxsize=1, ttu=lambda k, _, t: t + k, timer=Timer())
+        cache = TLRUCache[int, None, int](
+            maxsize=1, ttu=lambda k, _, t: t + k, timer=Timer()
+        )
         cache[1] = None
         self.assertEqual(cache[1], None)
         self.assertEqual(1, len(cache))
@@ -205,7 +215,9 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(1, len(cache))
 
     def test_ttu_atomic(self):
-        cache = TLRUCache(maxsize=1, ttu=lambda k, v, t: t + 2, timer=Timer(auto=True))
+        cache = TLRUCache[int, int, int](
+            maxsize=1, ttu=lambda k, v, t: t + 2, timer=Timer(auto=True)
+        )
         cache[1] = 1
         self.assertEqual(1, cache[1])
         cache[1] = 1
@@ -219,7 +231,9 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(0, len(cache))
 
     def test_ttu_tuple_key(self):
-        cache = TLRUCache(maxsize=1, ttu=lambda k, v, t: t + 1, timer=Timer())
+        cache = TLRUCache[tuple[int, ...], int, int](
+            maxsize=1, ttu=lambda k, v, t: t + 1, timer=Timer()
+        )
 
         cache[(1, 2, 3)] = 42
         self.assertEqual(42, cache[(1, 2, 3)])
@@ -229,7 +243,10 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn((1, 2, 3), cache)
 
     def test_ttu_reverse_insert(self):
-        cache = TLRUCache(maxsize=4, ttu=lambda k, v, t: t + v, timer=Timer())
+        def ttu(_k, v, t):
+            return t + v
+
+        cache = TLRUCache[int, int, int](maxsize=4, ttu=ttu, timer=Timer())
         self.assertEqual(0, cache.timer())
 
         cache[3] = 3
@@ -272,7 +289,10 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(3, cache)
 
     def test_ttu_heap_cleanup(self):
-        cache = TLRUCache(maxsize=4, ttu=lambda k, v, t: t + 1, timer=Timer())
+        def ttu(_k, _v, t):
+            return t + 1
+
+        cache = TLRUCache[int, int, int](maxsize=4, ttu=ttu, timer=Timer())
         self.assertEqual(0, cache.timer())
 
         cache[1] = 1
@@ -300,8 +320,28 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(4, len(expired))
         self.assertEqual(0, len(cache))
 
+    def test_tlru_datetime(self):
+        from datetime import datetime, timedelta
+
+        def ttu(_k, _v, t):
+            return t + timedelta(days=1)
+
+        cache = TLRUCache[int, int, datetime](maxsize=1, ttu=ttu, timer=datetime.now)
+
+        cache[1] = 1
+        self.assertEqual(1, len(cache))
+        items = cache.expire(datetime.now())
+        self.assertEqual([], list(items))
+        self.assertEqual(1, len(cache))
+        items = cache.expire(datetime.now() + timedelta(days=1))
+        self.assertEqual([(1, 1)], list(items))
+        self.assertEqual(0, len(cache))
+
     def test_tlru_clear(self):
-        cache = TLRUCache(maxsize=2, ttu=lambda k, v, t: t + 2, timer=Timer())
+        def ttu(_k, _v, t):
+            return t + 2
+
+        cache = TLRUCache[int, int, int](maxsize=2, ttu=ttu, timer=Timer())
 
         cache[1] = 1
         cache[2] = 2
