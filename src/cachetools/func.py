@@ -18,7 +18,7 @@ class _UnboundTTLCache(TTLCache):
         TTLCache.__init__(self, math.inf, ttl, timer)
 
     @property
-    def maxsize(self):
+    def maxsize(self):  # type: ignore
         return None
 
 
@@ -29,7 +29,7 @@ def _cache(cache, maxsize, typed):
         # using a condition variable
         key = keys.typedkey if typed else keys.hashkey
         wrapper = cached(cache=cache, key=key, condition=Condition(), info=True)(func)
-        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
+        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}  # type: ignore
         return wrapper
 
     return decorator

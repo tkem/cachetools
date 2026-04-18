@@ -1,13 +1,13 @@
 import threading
 import unittest
 import warnings
-
+from typing import Any
 
 from cachetools import LRUCache, cachedmethod, keys
 
 
 class Cached:
-    cache = LRUCache(2)
+    cache: LRUCache[Any, int] = LRUCache(2)
     count = 0
     lock = threading.Lock()
     cond = threading.Condition()
@@ -123,7 +123,7 @@ class CachedClassMethodTest(unittest.TestCase):
             warnings.simplefilter("ignore")
             self.assertEqual(cached.get(0), 1)
             self.assertEqual(len(Cached.cache), 1)
-            Cached.get.cache_clear(cached)
+            Cached.get.cache_clear(cached)  # type: ignore
             self.assertEqual(len(Cached.cache), 0)
 
     def test_clear_locked(self):
@@ -135,7 +135,7 @@ class CachedClassMethodTest(unittest.TestCase):
             warnings.simplefilter("ignore")
             self.assertEqual(cached.get_locked(0), 1)
             self.assertEqual(len(Cached.cache), 1)
-            Cached.get_locked.cache_clear(cached)
+            Cached.get_locked.cache_clear(cached)  # type: ignore
             self.assertEqual(len(Cached.cache), 0)
 
     def test_clear_condition(self):
@@ -147,5 +147,5 @@ class CachedClassMethodTest(unittest.TestCase):
             warnings.simplefilter("ignore")
             self.assertEqual(cached.get_condition(0), 1)
             self.assertEqual(len(Cached.cache), 1)
-            Cached.get_condition.cache_clear(cached)
+            Cached.get_condition.cache_clear(cached)  # type: ignore
             self.assertEqual(len(Cached.cache), 0)

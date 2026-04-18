@@ -80,7 +80,7 @@ class _DescriptorBase:
             )
 
     def __get__(self, obj, objtype=None):
-        wrapper = self.Wrapper(obj)
+        wrapper = self.Wrapper(obj)  # type: ignore
         if obj is None:
             # Return the wrapper itself without modification when accessed
             # through the class to support class-level introspection, such
@@ -411,9 +411,11 @@ def _wrapper(method, cache, key, lock=None, cond=None, info=None):
             wrapper = _unlocked(method, cache, key)
 
     # backward-compatible properties for deprecated @classmethod use
-    wrapper.cache = cache
-    wrapper.cache_key = key
-    wrapper.cache_lock = lock if lock is not None else cond
-    wrapper.cache_condition = cond
+    wrapper.cache = cache  # type: ignore
+    wrapper.cache_key = key  # type: ignore
+    wrapper.cache_lock = lock if lock is not None else cond  # type: ignore
+    wrapper.cache_condition = cond  # type: ignore
 
-    return functools.update_wrapper(wrapper, method)
+    # functools.update_wrapper() will not accept descriptor (decorator) as wrapper
+    # https://github.com/python/typeshed/issues/9846
+    return functools.update_wrapper(wrapper, method)  # type: ignore

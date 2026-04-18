@@ -2,18 +2,19 @@ import threading
 import time
 import unittest
 from os import environ
+from typing import Any
 
 from cachetools import LRUCache, cached, cachedmethod
+
+count = 0
 
 
 @cached(cache=LRUCache(1), condition=threading.Condition(), info=True)
 def func():
+    global count
     time.sleep(1.0)
-    if hasattr(func, "count"):
-        func.count += 1
-    else:
-        func.count = 1
-    return func.count
+    count += 1
+    return count
 
 
 @unittest.skipUnless(environ.get("THREADING_TESTS", False), "THREADING_TESTS not set")
@@ -21,7 +22,7 @@ class ThreadingTest(unittest.TestCase):
 
     NTHREADS = 10
 
-    cache = LRUCache(1)
+    cache: LRUCache[Any, int] = LRUCache(1)
 
     cond = threading.Condition()
 
@@ -42,7 +43,7 @@ class ThreadingTest(unittest.TestCase):
         for t in threads:
             t.join()
 
-        self.assertEqual(func.count, 1)
+        self.assertEqual(count, 1)
 
         info = func.cache_info()
         self.assertEqual(info.hits, self.NTHREADS - 1)

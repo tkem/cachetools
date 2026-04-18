@@ -1,8 +1,35 @@
-import unittest
+from collections.abc import Container, Iterable
+from typing import Any, Protocol, TypeAlias, no_type_check
+
+import cachetools
 
 
-class CacheTestMixin:
-    Cache = None
+class _TestCaseProtocol(Protocol):
+    def assertEqual(self, first: Any, second: Any, msg: Any = None) -> None: ...
+    def assertNotEqual(self, first: Any, second: Any, msg: Any = None) -> None: ...
+    def assertTrue(self, expr: Any, msg: Any = None) -> None: ...
+    def assertFalse(self, expr: Any, msg: Any = None) -> None: ...
+    def assertIs(self, expr1: object, expr2: object, msg: Any = None) -> None: ...
+    def assertIsNot(self, expr1: object, expr2: object, msg: Any = None) -> None: ...
+    def assertIsNone(self, obj: object, msg: Any = None) -> None: ...
+
+    def assertIn(
+        self, member: Any, container: Iterable[Any] | Container[Any], msg: Any = None
+    ) -> None: ...
+
+    def assertNotIn(
+        self, member: Any, container: Iterable[Any] | Container[Any], msg: Any = None
+    ) -> None: ...
+
+    def assertRaises(self, expected_exception: type[BaseException]) -> Any: ...
+
+    def assertRaisesRegex(
+        self, expected_exception: type[BaseException], expected_regex: str
+    ) -> Any: ...
+
+
+class CacheTestMixin(_TestCaseProtocol):
+    Cache: type[cachetools.Cache]
 
     def test_defaults(self):
         cache = self.Cache(maxsize=1)
@@ -112,13 +139,11 @@ class CacheTestMixin:
     def test_popitem_exception_context(self):
         # since Python 3.7, MutableMapping.popitem() suppresses
         # exception context as implementation detail
-        exception = None
-        try:
+        with self.assertRaises(KeyError) as cm:
             self.Cache(maxsize=2).popitem()
-        except Exception as e:
-            exception = e
-        self.assertIsNone(exception.__cause__)
-        self.assertTrue(exception.__suppress_context__)
+        e = cm.exception
+        self.assertIsNone(e.__cause__)
+        self.assertTrue(e.__suppress_context__)
 
     def test_missing(self):
         class DefaultCache(self.Cache):
@@ -261,7 +286,8 @@ class CacheTestMixin:
 
     def test_getsizeof_subclass(self):
         class Cache(self.Cache):
-            def getsizeof(self, value):
+            @staticmethod
+            def getsizeof(value):
                 return value
 
         self._test_getsizeof(Cache(maxsize=3))
@@ -372,12 +398,20 @@ class CountedCondition(CountedLock):
         self.wait_count = 0
         self.notify_count = 0
 
-    # only wait_for() and notify_all() are used in the cache tests,
-    # calling wait() or notify() will fail intentionally
+    # only wait_for() and notify_all() are currently used, but wait()
+    # and notify() are also required according to the docs...
 
-    def wait_for(self, predicate):
-        assert callable(predicate)
+    def wait(self, timeout=None):
         self.wait_count += 1
+        return True
+
+    def wait_for(self, predicate, timeout=None):
+        res = predicate()
+        self.wait_count += 1
+        return res
+
+    def notify(self, n=1):
+        self.notify_count += 1
 
     def notify_all(self):
         self.notify_count += 1

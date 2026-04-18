@@ -5,7 +5,7 @@ import warnings
 
 from cachetools import Cache, cachedmethod, keys
 
-from . import CountedCondition, CountedLock
+from . import CountedCondition, CountedLock, _TestCaseProtocol
 
 
 class Cached:
@@ -78,8 +78,8 @@ class Unhashable(Cached):
         raise TypeError("unhashable type")
 
 
-class MethodDecoratorTestMixin:
-    def cache(self, _minsize):
+class MethodDecoratorTestMixin(_TestCaseProtocol):
+    def cache(self, _minsize, **_kwargs):
         raise NotImplementedError
 
     def test_decorator(self):
@@ -358,7 +358,7 @@ class MethodDecoratorTestMixin:
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.get.__wrapped__(cached, 0), 0)
         self.assertEqual(cached.get.__name__, "get")
-        self.assertEqual(cached.get.__doc__.strip(), "docstring")
+        self.assertEqual((cached.get.__doc__ or "").strip(), "docstring")
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.get(0), 1)
         self.assertEqual(len(cache), 1)
@@ -459,7 +459,7 @@ class MethodDecoratorTestMixin:
             def __setitem__(self, _key, _value):
                 raise TypeError("Modification not supported")
 
-            def setdefault(self, _key, _value):
+            def setdefault(self, _key, _value=None):
                 raise TypeError("Modification not supported")
 
         class Immutable:
@@ -502,19 +502,18 @@ class MethodDecoratorTestMixin:
                 bar = foo
 
     def test_decorator_no_set_name(self):
-
         class Cached:
             def foo(_self):
                 pass
 
         # __set_name__ currently only asserted with info, since this
         # may also occur with deprecated @classmethod use
-        Cached.bar = cachedmethod(lambda _: self.cache(2), info=True)(Cached.foo)
+        Cached.bar = cachedmethod(lambda _: self.cache(2), info=True)(Cached.foo)  # type: ignore
 
         cached = Cached()
 
         with self.assertRaises(TypeError):
-            cached.bar()
+            cached.bar()  # type: ignore
 
 
 class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
@@ -638,7 +637,7 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
 
 class DictMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
 
-    def cache(self, _minsize):
+    def cache(self, minsize, **_kwargs):
         return dict()
 
 
@@ -649,14 +648,14 @@ class WeakRefMethodTest(unittest.TestCase):
         import gc
         import weakref
 
-        # in Python 3.9, `int` does not support weak references even
-        # when subclassed, but Fraction apparently does...
+        # FIXME: in Python 3.9, `int` does not support weak references
+        # even when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
-            def __add__(self, other):
+            def __add__(self, other):  # type: ignore
                 return Int(fractions.Fraction.__add__(self, other))
 
         cache = weakref.WeakValueDictionary()
-        cached = Cached(cache, count=Int(0))
+        cached = Cached(cache, count=Int(0))  # type: ignore
 
         self.assertEqual(cached.get(0), 0)
         gc.collect()

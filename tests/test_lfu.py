@@ -9,7 +9,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = LFUCache
 
     def test_lfu(self):
-        cache = LFUCache(maxsize=2)
+        cache = LFUCache[int, int](maxsize=2)
 
         cache[1] = 1
         cache[1]
@@ -32,7 +32,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[4], 4)
 
     def test_lfu_getsizeof(self):
-        cache = LFUCache(maxsize=3, getsizeof=lambda x: x)
+        cache = LFUCache[int, int](maxsize=3, getsizeof=lambda x: x)
 
         cache[1] = 1
         cache[2] = 2
@@ -54,7 +54,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[3], 3)
 
     def test_lfu_update_existing(self):
-        cache = LFUCache(maxsize=2)
+        cache = LFUCache[int, int | str](maxsize=2)
 
         cache[1] = 1
         cache[2] = 2
@@ -66,7 +66,7 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
 
     def test_lfu_clear(self):
-        cache = LFUCache(maxsize=2)
+        cache = LFUCache[int, int](maxsize=2)
 
         cache[1] = 1
         cache[1]  # increment frequency
