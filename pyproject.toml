@@ -55,3 +55,9 @@ select = ["C", "E", "F", "W", "B", "B950", "I", "N"]
 # E501: line too long (black)
 # E704: multiple statements on one line (typehints)
 ignore = ["F401", "E501", "E704"]
+
+[tool.pyright]
+typeCheckingMode = "standard"
+reportFunctionMemberAccess = false
+reportOptionalContextManager = false
+reportOptionalMemberAccess = false
