@@ -1,3 +1,13 @@
+v7.0.6 (2026-04-20)
+===================
+
+- Minor code improvements.
+
+- Update project URLs.
+
+- Update CI environment.
+
+
 v7.0.5 (2026-03-09)
 ===================
 
