@@ -1,43 +1,34 @@
 # Copilot Instructions for cachetools
 
 ## Architecture Overview
-**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. All cache implementations live in a single ~730-line file (`src/cachetools/__init__.py`) with decorator helpers in separate modules.
+**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. Pure Python 3.10+, no external runtime dependencies.
 
 ### Core Design Pattern
 - All caches inherit from `Cache` (a `MutableMapping` with `maxsize`, `currsize`, and `getsizeof`)
 - Subclasses override `__setitem__`, `__getitem__`, `__delitem__`, and `popitem()` to implement eviction policies
 - **Critical:** Subclasses use default parameter trick (e.g., `cache_setitem=Cache.__setitem__`) to call parent methods efficiently while avoiding recursion
 
-### Cache Types & Eviction Policies
-- `FIFOCache`: Evicts oldest inserted (uses `OrderedDict`)
-- `LRUCache`: Evicts least recently used (uses `OrderedDict.move_to_end()`)
+### Cache Types
+- `FIFOCache`: Evicts oldest inserted (`OrderedDict`)
+- `LRUCache`: Evicts least recently used (`OrderedDict.move_to_end()`)
 - `LFUCache`: Evicts least frequently used (doubly-linked list of frequency buckets)
-- `RRCache`: Random eviction (maintains `__keys` list with `__index` dict for O(1) removal)
-- `TTLCache`/`TLRUCache`: Time-based eviction with `_TimedCache` base (uses `_Timer` context manager to freeze time during operations)
+- `RRCache`: Random eviction (`__keys` list with `__index` dict for O(1) removal)
+- `TTLCache`/`TLRUCache`: Time-based eviction via `_TimedCache` base; `_Timer` context manager freezes time during operations to prevent TOCTOU bugs; `expire()` returns `list[tuple[key, value]]`
 
-### Decorator Architecture
-- `@cached`: Function memoization via `src/cachetools/_cached.py` (separate wrappers for each combination of lock/condition/info, plus uncached variants when `cache=None`)
-- `@cachedmethod`: Method memoization via `src/cachetools/_cachedmethod.py` (uses descriptor protocol with `__set_name__`/`__get__` to replace itself in instance `__dict__` with a per-instance `Wrapper`; `weakref.WeakKeyDictionary` only used for deprecated `@classmethod` pending sets)
-- Both support custom `key` functions, `lock` objects, and `condition` variables for thread safety
-- `info=True` adds `cache_info()` and `cache_clear()` methods (see `_CacheInfo` namedtuple)
+### Decorators
+- `@cached` (`_cached.py`): Function memoization; separate wrappers for each lock/condition/info combination
+- `@cachedmethod` (`_cachedmethod.py`): Method memoization via descriptor protocol (`__set_name__`/`__get__`)
+- Both support `key`, `lock`, `condition`, and `info` parameters
+- `info=True` adds `cache_info()`/`cache_clear()`; `info=False` (default) only provides `cache_clear()`
 
-## Critical Implementation Details
+### Thread Safety
+3-tier locking: **Unlocked** | **Locked** (release during compute) | **Condition** (lock + pending set + `wait_for`/`notify_all` to prevent thundering herd)
 
-### Key Generation (`src/cachetools/keys.py`)
-- `_HashedTuple` caches hash values to avoid recomputation on cache misses
-- `methodkey(self, *args, **kwargs)` drops `self` from cache key (instance methods share cache)
-- `typedkey` adds type information: `key += tuple(type(v) for v in args)`
+`_AbstractCondition` protocol in `__init__.pyi`: extends `AbstractContextManager[Any]` + `Protocol` with `wait()`, `wait_for()`, `notify()`, `notify_all()`. Only `wait_for()` and `notify_all()` are used at runtime.
 
-### Thread Safety Pattern
-Decorators use 3-tier locking strategy:
-1. **Unlocked:** No synchronization (fastest, single-threaded)
-2. **Locked:** Lock around cache access, compute outside lock to avoid holding during expensive operations
-3. **Condition:** Lock + pending set + wait_for/notify_all (prevents thundering herd on cache misses)
-
-### Time-Based Caches (`_TimedCache`)
-- `_Timer` wrapper freezes time during multi-operation methods using `__enter__/__exit__`
-- Prevents time-of-check-time-of-use bugs during iteration/expiration
-- `expire()` method returns list of `(key, value)` pairs (allows logging/cleanup hooks)
+### Key Generation (`keys.py`)
+- `hashkey`: Default key function; `_HashedTuple` caches hash values
+- `methodkey`: Drops `self` from key; `typedkey`/`typedmethodkey`: Adds `type()` info
 
 ## Developer Workflows
 
@@ -45,48 +36,40 @@ Decorators use 3-tier locking strategy:
 ```bash
 pytest                                    # Run all tests
 pytest --cov=cachetools --cov-report term-missing  # With coverage
-tox                                       # All environments
 tox -e py                                 # Just tests
 tox -e flake8                             # Linting
-tox -e docs                               # Build docs
-tox -e doctest                            # Doctest validation
+tox -e docs                              # Build docs
 ```
 
+- `tests/__init__.py`: `CacheTestMixin` (13+ standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
+- Each cache test inherits `unittest.TestCase` + `CacheTestMixin`
+- Threading stampede tests gated by `THREADING_TESTS` env var
+
 ### Code Style
-- **Black** formatter (max line length: 80 via flake8)
-- flake8 with `flake8-black`, `flake8-bugbear`, `flake8-import-order`
-- Ignore: F401 (submodule shims), E501 (line length handled by black)
+- **Black** formatter; flake8 with `flake8-black`, `flake8-bugbear`, `flake8-import-order`
 
-### Test Patterns
-- `tests/__init__.py` defines `CacheTestMixin` with standard cache behavior tests
-- Each cache type test inherits: `class LRUCacheTest(unittest.TestCase, CacheTestMixin)`
-- Mixin provides 13 standard tests; cache-specific tests added per file
-- Decorator tests use `CountedLock` and `CountedCondition` helpers to verify synchronization
-
-## Project-Specific Conventions
+## Conventions
 
 ### Adding New Cache Types
 1. Inherit from `Cache` or `_TimedCache`
-2. Override `__setitem__`, `__delitem__`, `popitem()` (and optionally `__getitem__`)
+2. Override `__setitem__`, `__delitem__`, `popitem()` (optionally `__getitem__`)
 3. Use default parameters to call parent: `def __setitem__(self, key, value, cache_setitem=Cache.__setitem__)`
-4. Handle `__missing__` edge case: check `if key in self` after parent call (see LRU/LFU `__getitem__`)
-5. Add test class inheriting `CacheTestMixin` in `tests/`
+4. Handle `__missing__` edge case: check `if key in self` after parent call
+5. Add test class inheriting `CacheTestMixin`
 
-### Module Structure
-- All cache classes in `src/cachetools/__init__.py` (~730 lines)
-- Decorator wrappers split: `_cached.py` (functions), `_cachedmethod.py` (methods/descriptors, ~410 lines)
-- Functools-compatible wrappers in `src/cachetools/func.py` (`lru_cache`, `ttl_cache`, etc.)
-- No external dependencies at runtime (pure Python 3.10+)
-
-### Version Management
-- Version in `src/cachetools/__init__.py` as `__version__`
-- Extracted by `pyproject.toml`: `version = {attr = "cachetools.__version__"}`
-- Docs extract version via `docs/conf.py` parsing
+### Type Stubs
+Inline stubs ship with the package (`py.typed` marker):
+- `@overload` distinguishes `info=True` vs `info=False`; `Literal[False]` overload listed last
+- `_TimedCache` uses `Generic[_KT, _VT, _TT]` with `_TT` defaulting to `float`
+- `_AbstractCondition` is `@type_check_only` `Protocol` for `condition` params and `cache_condition` attributes
+- `_cachedmethod.py` uses `# type: ignore` for `functools.update_wrapper()` (typeshed #9846)
 
 ## Key Files
-- `src/cachetools/__init__.py` - All cache implementations (~730 lines)
-- `src/cachetools/keys.py` - Key generation with hash optimization
-- `src/cachetools/_cached.py` - Function decorator variants
-- `src/cachetools/_cachedmethod.py` - Method descriptor variants (~410 lines)
-- `tests/__init__.py` - `CacheTestMixin` for standard cache tests
-- `pyproject.toml` - Package metadata, build config, and flake8 config
+- `src/cachetools/__init__.py` — All cache implementations
+- `src/cachetools/__init__.pyi` — Type stubs for caches and decorators
+- `src/cachetools/_cached.py` — `@cached` decorator variants
+- `src/cachetools/_cachedmethod.py` — `@cachedmethod` descriptor variants
+- `src/cachetools/keys.py` / `keys.pyi` — Key functions
+- `src/cachetools/func.py` / `func.pyi` — Functools-compatible wrappers (`lru_cache`, `ttl_cache`, etc.)
+- `tests/__init__.py` — Test mixin and helpers
+- `pyproject.toml` — Build config, version: `{attr = "cachetools.__version__"}`
