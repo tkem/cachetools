@@ -1,3 +1,12 @@
+v7.1.0 (UNRELEASED)
+===================
+
+- Add type stubs based on the work of the good people at `typeshed
+  <https://github.com/python/typeshed/tree/main/stubs/cachetools/>`__.
+
+- Update unit tests.
+
+
 v7.0.6 (2026-04-20)
 ===================
 
