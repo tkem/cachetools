@@ -193,7 +193,7 @@ class _cachedmethod_wrapper(Generic[_R]):
     __wrapped__: Callable[..., _R]
     __name__: str
     __doc__: str | None
-    cache: MutableMapping[Any, Any] | None
+    cache: MutableMapping[Any, Any]
     cache_key: Callable[..., Any] = ...
     cache_lock: AbstractContextManager[Any] | None = None
     cache_condition: _AbstractCondition | None = None
