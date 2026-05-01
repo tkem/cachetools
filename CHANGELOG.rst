@@ -1,4 +1,4 @@
-v7.1.0 (UNRELEASED)
+v7.1.0 (2026-05-01)
 ===================
 
 - Add type stubs based on the work of the good people at `typeshed
