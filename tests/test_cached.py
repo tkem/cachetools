@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 import cachetools
 import cachetools.keys

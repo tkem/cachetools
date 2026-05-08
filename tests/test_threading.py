@@ -19,7 +19,6 @@ def func():
 
 @unittest.skipUnless(environ.get("THREADING_TESTS", False), "THREADING_TESTS not set")
 class ThreadingTest(unittest.TestCase):
-
     NTHREADS = 10
 
     cache: LRUCache[Any, int] = LRUCache(1)

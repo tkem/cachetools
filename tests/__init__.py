@@ -1,5 +1,5 @@
 from collections.abc import Container, Iterable
-from typing import Any, Protocol, TypeAlias, no_type_check
+from typing import Any, Protocol
 
 import cachetools
 

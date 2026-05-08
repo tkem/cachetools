@@ -517,7 +517,6 @@ class MethodDecoratorTestMixin(_TestCaseProtocol):
 
 
 class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
-
     def cache(self, minsize, **kwargs):
         return Cache(maxsize=minsize, **kwargs)
 
@@ -636,13 +635,11 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
 
 
 class DictMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
-
     def cache(self, minsize, **_kwargs):
         return dict()
 
 
 class WeakRefMethodTest(unittest.TestCase):
-
     def test_weakref(self):
         import fractions
         import gc

@@ -2,7 +2,6 @@
 
 __all__ = ("fifo_cache", "lfu_cache", "lru_cache", "rr_cache", "ttl_cache")
 
-import functools
 import math
 import random
 import time

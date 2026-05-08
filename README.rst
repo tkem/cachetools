@@ -25,11 +25,6 @@ cachetools
    :target: https://raw.github.com/tkem/cachetools/master/LICENSE
    :alt: License
 
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
-   :alt: Code style: black
-
-
 This module provides various memoizing collections and decorators,
 including variants of the Python Standard Library's `@lru_cache`_
 function decorator.
