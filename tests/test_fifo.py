@@ -63,6 +63,16 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = "updated"
         cache[3] = 3
 
-        self.assertEqual(cache[1], "updated")
+        self.assertEqual(cache[2], 2)
         self.assertIn(3, cache)
-        self.assertNotIn(2, cache)
+        self.assertNotIn(1, cache)
+
+    def test_fifo_update_existing_popitem(self):
+        cache = FIFOCache[int, int | str](maxsize=3)
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[3] = 3
+        cache[1] = "updated"
+
+        self.assertEqual(cache.popitem(), (1, "updated"))

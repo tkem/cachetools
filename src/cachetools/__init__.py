@@ -173,9 +173,7 @@ class FIFOCache(Cache):
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
-        if key in self.__order:
-            self.__order.move_to_end(key)
-        else:
+        if key not in self.__order:
             self.__order[key] = None
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
