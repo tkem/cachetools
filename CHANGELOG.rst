@@ -1,4 +1,4 @@
-v7.1.2 (UNRELEASED)
+v7.1.2 (2026-05-16)
 ===================
 
 - Minor type stub improvements.
