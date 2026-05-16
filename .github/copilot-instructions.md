@@ -37,8 +37,11 @@
 pytest                                    # Run all tests
 pytest --cov=cachetools --cov-report term-missing  # With coverage
 tox -e py                                 # Just tests
-tox -e flake8                             # Linting
-tox -e docs                              # Build docs
+tox -e lint                               # Linting (ruff check)
+tox -e format                             # Format check (ruff format --diff)
+tox -e pyright                            # Type checking
+tox -e docs                               # Build docs
+tox -e doctest                            # Run doctests
 ```
 
 - `tests/__init__.py`: `CacheTestMixin` (13+ standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
@@ -46,7 +49,7 @@ tox -e docs                              # Build docs
 - Threading stampede tests gated by `THREADING_TESTS` env var
 
 ### Code Style
-- **Black** formatter; flake8 with `flake8-black`, `flake8-bugbear`, `flake8-import-order`
+- **ruff** formatter and linter (`tox -e format`, `tox -e lint`)
 
 ## Conventions
 
@@ -62,7 +65,9 @@ Inline stubs ship with the package (`py.typed` marker):
 - `@overload` distinguishes `info=True` vs `info=False`; `Literal[False]` overload listed last
 - `_TimedCache` uses `Generic[_KT, _VT, _TT]` with `_TT` defaulting to `float`
 - `_AbstractCondition` is `@type_check_only` `Protocol` for `condition` params and `cache_condition` attributes
+- `_cachedmethod_wrapper` models the descriptor protocol: `__set_name__`, `__get__` (returns `Self`), `__call__`; uses `Concatenate[Any, _P]` so `_P` excludes `self`
 - `_cachedmethod.py` uses `# type: ignore` for `functools.update_wrapper()` (typeshed #9846)
+- Validate stubs with `tox -e pyright`
 
 ## Key Files
 - `src/cachetools/__init__.py` — All cache implementations
