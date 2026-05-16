@@ -88,6 +88,10 @@ inserted into the cache.
    This class evicts items in the order they were added to make space
    when necessary.
 
+   Updating a cache item via :meth:`FIFOCache.__setitem__` will act
+   like a re-insertion, i.e. deleting the item followed by an insert,
+   and therefore will reset the item's position in the cache.
+
 .. autoclass:: LFUCache(maxsize, getsizeof=None)
    :members: popitem
 
