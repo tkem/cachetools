@@ -1,3 +1,13 @@
+v7.1.2 (UNRELEASED)
+===================
+
+- Minor type stub improvements.
+
+- Minor documentation improvements.
+
+- Modernize build environment.
+
+
 v7.1.1 (2026-05-03)
 ===================
 

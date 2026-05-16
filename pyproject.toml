@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools >= 61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "cachetools"
 dynamic = ["version"]
@@ -33,10 +37,6 @@ Source = "https://github.com/tkem/cachetools/"
 Repository = "https://github.com/tkem/cachetools/"
 Issues = "https://github.com/tkem/cachetools/issues"
 Changelog = "https://github.com/tkem/cachetools/blob/master/CHANGELOG.rst"
-
-[build-system]
-requires = ["setuptools >= 61.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
