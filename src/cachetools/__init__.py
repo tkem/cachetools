@@ -12,7 +12,7 @@ __all__ = (
     "cachedmethod",
 )
 
-__version__ = "7.1.2"
+__version__ = "7.1.3"
 
 import collections
 import collections.abc
@@ -22,9 +22,6 @@ import random
 import time
 
 from . import keys
-
-# Typing stubs for this package are provided by typeshed:
-# https://github.com/python/typeshed/tree/main/stubs/cachetools
 
 
 class _DefaultSize:

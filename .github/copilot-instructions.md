@@ -16,10 +16,11 @@
 - `TTLCache`/`TLRUCache`: Time-based eviction via `_TimedCache` base; `_Timer` context manager freezes time during operations to prevent TOCTOU bugs; `expire()` returns `list[tuple[key, value]]`
 
 ### Decorators
-- `@cached` (`_cached.py`): Function memoization; separate wrappers for each lock/condition/info combination
-- `@cachedmethod` (`_cachedmethod.py`): Method memoization via descriptor protocol (`__set_name__`/`__get__`)
-- Both support `key`, `lock`, `condition`, and `info` parameters
+- `@cached` (`_cached.py`): Function memoization; separate wrappers for each lock/condition/info combination; supports `cache=None` via `_uncached`/`_uncached_info` wrappers (pass-through without caching)
+- `@cachedmethod` (`_cachedmethod.py`): Method memoization via descriptor protocol (`__set_name__`/`__get__`); class hierarchy: `_WrapperBase` (per-instance callable) → `_DescriptorBase` (descriptor with `__set_name__`/`__get__`, replaces self in instance `__dict__` via `setdefault` for thread safety) → `_DeprecatedDescriptorBase` (backward-compatible `@classmethod` support with warnings); the backward-compatible `_condition` variant uses `weakref.WeakKeyDictionary` for per-instance pending sets
+- Both support `key`, `lock`, `condition`, and `info` parameters; when `condition` is given without `lock`, `condition` serves as both lock and condition
 - `info=True` adds `cache_info()`/`cache_clear()`; `info=False` (default) only provides `cache_clear()`
+- `func.py`: `functools.lru_cache`-compatible wrappers; all use `threading.Condition()` by default for thread safety + stampede prevention; `_UnboundTTLCache` extends `TTLCache` with `math.inf` maxsize for `maxsize=None`
 
 ### Thread Safety
 3-tier locking: **Unlocked** | **Locked** (release during compute) | **Condition** (lock + pending set + `wait_for`/`notify_all` to prevent thundering herd)
@@ -37,19 +38,20 @@
 pytest                                    # Run all tests
 pytest --cov=cachetools --cov-report term-missing  # With coverage
 tox -e py                                 # Just tests
-tox -e lint                               # Linting (ruff check)
-tox -e format                             # Format check (ruff format --diff)
+tox -e ruff                               # Linting (ruff check)
+tox -e ruff-format                        # Format check (ruff format --diff)
 tox -e pyright                            # Type checking
 tox -e docs                               # Build docs
 tox -e doctest                            # Run doctests
 ```
 
-- `tests/__init__.py`: `CacheTestMixin` (13+ standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
+- `tests/__init__.py`: `CacheTestMixin` (16 standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
 - Each cache test inherits `unittest.TestCase` + `CacheTestMixin`
-- Threading stampede tests gated by `THREADING_TESTS` env var
+- `test_cached.py` / `test_cachedmethod.py` use `DecoratorTestMixin` / `MethodDecoratorTestMixin` for all lock/condition/info combos
+- Threading stampede tests gated by `THREADING_TESTS` env var (enabled in `tox.ini` via `setenv`)
 
 ### Code Style
-- **ruff** formatter and linter (`tox -e format`, `tox -e lint`)
+- **ruff** formatter and linter (`tox -e ruff-format`, `tox -e ruff`)
 
 ## Conventions
 
@@ -65,7 +67,8 @@ Inline stubs ship with the package (`py.typed` marker):
 - `@overload` distinguishes `info=True` vs `info=False`; `Literal[False]` overload listed last
 - `_TimedCache` uses `Generic[_KT, _VT, _TT]` with `_TT` defaulting to `float`
 - `_AbstractCondition` is `@type_check_only` `Protocol` for `condition` params and `cache_condition` attributes
-- `_cachedmethod_wrapper` models the descriptor protocol: `__set_name__`, `__get__` (returns `Self`), `__call__`; uses `Concatenate[Any, _P]` so `_P` excludes `self`
+- `_cached_wrapper` / `_cachedmethod_wrapper` use `ParamSpec(_P)` to preserve decorated function signatures; `__call__` uses `_P.args`/`_P.kwargs`
+- `_cachedmethod_wrapper` models the descriptor protocol: `__set_name__`, `__get__`, `__call__`; uses `Concatenate[Any, _P]` so `_P` excludes `self`
 - `_cachedmethod.py` uses `# type: ignore` for `functools.update_wrapper()` (typeshed #9846)
 - Validate stubs with `tox -e pyright`
 
