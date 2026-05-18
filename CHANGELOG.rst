@@ -1,4 +1,4 @@
-v7.1.3 (UNRELEASED)
+v7.1.3 (2026-05-18)
 ===================
 
 - Minor type stub improvements.
