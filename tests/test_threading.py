@@ -1,7 +1,6 @@
 import threading
 import time
 import unittest
-from os import environ
 from typing import Any
 
 from cachetools import LRUCache, cached, cachedmethod
@@ -17,9 +16,10 @@ def func():
     return count
 
 
-@unittest.skipUnless(environ.get("THREADING_TESTS", False), "THREADING_TESTS not set")
 class ThreadingTest(unittest.TestCase):
     NTHREADS = 10
+
+    TIMEOUT = 10
 
     cache: LRUCache[Any, int] = LRUCache(1)
 
@@ -40,7 +40,8 @@ class ThreadingTest(unittest.TestCase):
         for t in threads:
             t.start()
         for t in threads:
-            t.join()
+            t.join(timeout=self.TIMEOUT)
+            self.assertFalse(t.is_alive())
 
         self.assertEqual(count, 1)
 
@@ -53,7 +54,8 @@ class ThreadingTest(unittest.TestCase):
         for t in threads:
             t.start()
         for t in threads:
-            t.join()
+            t.join(timeout=self.TIMEOUT)
+            self.assertFalse(t.is_alive())
 
         self.assertEqual(self.count, 1)
 

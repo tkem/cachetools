@@ -48,7 +48,7 @@ tox -e doctest                            # Run doctests
 - `tests/__init__.py`: `CacheTestMixin` (16 standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
 - Each cache test inherits `unittest.TestCase` + `CacheTestMixin`
 - `test_cached.py` / `test_cachedmethod.py` use `DecoratorTestMixin` / `MethodDecoratorTestMixin` for all lock/condition/info combos
-- Threading stampede tests gated by `THREADING_TESTS` env var (enabled in `tox.ini` via `setenv`)
+- Threading stampede tests run unconditionally with a `TIMEOUT` class constant; `thread.join(timeout=TIMEOUT)` + `assertFalse(t.is_alive())` guard against deadlock hangs
 
 ### Code Style
 - **ruff** formatter and linter (`tox -e ruff-format`, `tox -e ruff`)

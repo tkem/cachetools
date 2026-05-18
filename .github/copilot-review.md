@@ -31,13 +31,12 @@ No implementation bugs found.
 
 | # | Priority | Finding |
 |---|----------|---------|
-| 1 | Medium | Threading tests join workers without timeout (`test_threading.py`), so a deadlock regression hangs CI instead of failing. |
-| 2 | Medium | Lock-only race resolution (`cache.setdefault` in locked wrappers) is not stress-tested under real concurrency — only condition-based wrappers have threading tests. |
-| 3 | Low | `@cached` condition wrappers lack an error-path test (pending cleanup on exception). Equivalent coverage exists for `@cachedmethod` (`test_decorator_cond_error`) but not for `@cached`. |
-| 4 | Low | `CacheTestMixin` assertions are intentionally weak on eviction-order correctness (checks key existence, not specific eviction victim), relying on per-cache test files for policy validation. |
-| 5 | Low | `test_cached.py`: zero-size + condition + `info=True` combination is not tested (zero-size only tested for no-lock and lock variants). |
-| 6 | Low | `test_lfu.py`: no tie-breaking test for equal-frequency eviction (current code picks an arbitrary element via `next(iter(curr.keys))`). |
-| 7 | Low | `test_classmethod.py`: limited coverage — only deprecation warnings + basic functionality. No `info=True`, error-path, or shared-cache tests. |
+| 1 | Medium | Lock-only race resolution (`cache.setdefault` in locked wrappers) is not stress-tested under real concurrency — only condition-based wrappers have threading tests. |
+| 2 | Low | `@cached` condition wrappers lack an error-path test (pending cleanup on exception). Equivalent coverage exists for `@cachedmethod` (`test_decorator_cond_error`) but not for `@cached`. |
+| 3 | Low | `CacheTestMixin` assertions are intentionally weak on eviction-order correctness (checks key existence, not specific eviction victim), relying on per-cache test files for policy validation. |
+| 4 | Low | `test_cached.py`: zero-size + condition + `info=True` combination is not tested (zero-size only tested for no-lock and lock variants). |
+| 5 | Low | `test_lfu.py`: no tie-breaking test for equal-frequency eviction (current code picks an arbitrary element via `next(iter(curr.keys))`). |
+| 6 | Low | `test_classmethod.py`: limited coverage — only deprecation warnings + basic functionality. No `info=True`, error-path, or shared-cache tests. |
 
 ## Docs
 
