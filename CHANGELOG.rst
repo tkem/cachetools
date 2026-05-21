@@ -1,3 +1,11 @@
+v7.1.4 (2026-05-22)
+===================
+
+- Minor unit test improvements.
+
+- Update build environment.
+
+
 v7.1.3 (2026-05-18)
 ===================
 

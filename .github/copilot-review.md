@@ -1,6 +1,6 @@
-# Code Review — cachetools 7.1.3
+# Code Review — cachetools 7.1.4
 
-**Date:** 2026-05-18
+**Date:** 2026-05-22
 **CI status:** All green (tox: py, ruff, ruff-format, pyright, docs, doctest)
 
 ## Type Stubs (`__init__.pyi`, `keys.pyi`, `func.pyi`)
