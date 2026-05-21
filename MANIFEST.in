@@ -1,0 +1,3 @@
+prune .github/
+exclude .gitignore
+exclude .readthedocs.yaml
