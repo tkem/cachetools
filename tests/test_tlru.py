@@ -144,6 +144,26 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[4], 4)
         self.assertEqual(cache[5], 5)
 
+    def test_overwrite_existing_with_expired(self):
+        # Overwriting an existing key with an already-expired value must not
+        # silently retain the previous value: the assignment cannot store the
+        # new (dead-on-arrival) value, so the key has to be evicted instead.
+        def ttu(_k, value, t):
+            return t + value
+
+        cache = TLRUCache[int, int, int](maxsize=2, ttu=ttu, timer=Timer())
+        cache[1] = 5
+        self.assertEqual(cache[1], 5)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(cache.currsize, 1)
+
+        cache[1] = 0  # ttu -> t, i.e. not (t < t): immediately expired
+        self.assertNotIn(1, cache)
+        self.assertIsNone(cache.get(1))
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cache.currsize, 0)
+        self.assertEqual(set(cache), set())
+
     def test_ttu_expire(self):
         def ttu(_k, _v, t):
             return t + 3

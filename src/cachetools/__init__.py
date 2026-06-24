@@ -625,10 +625,26 @@ class TLRUCache(_TimedCache):
         else:
             return cache_getitem(self, key)
 
-    def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
+    def __setitem__(
+        self,
+        key,
+        value,
+        cache_setitem=Cache.__setitem__,
+        cache_delitem=Cache.__delitem__,
+    ):
         with self.timer as time:
             expires = self.__ttu(key, value, time)
             if not (time < expires):
+                # The new value is already expired, so it is not stored.
+                # If the key still holds a previous (possibly still valid)
+                # value, drop it as well -- otherwise the assignment would
+                # be silently ignored and the stale value would persist.
+                try:
+                    self.__items.pop(key).removed = True
+                except KeyError:
+                    pass
+                else:
+                    cache_delitem(self, key)
                 return  # skip expired items
             self.expire(time)
             cache_setitem(self, key, value)
