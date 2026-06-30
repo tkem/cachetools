@@ -284,6 +284,15 @@ class CacheTestMixin(_TestCaseProtocol):
     def test_getsizeof_param(self):
         self._test_getsizeof(self.Cache(maxsize=3, getsizeof=lambda x: x))
 
+    def test_getsizeof_negative(self):
+        cache = self.Cache(maxsize=3, getsizeof=lambda x: -1)
+
+        with self.assertRaises(ValueError):
+            cache[1] = 1
+
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
     def test_getsizeof_subclass(self):
         class Cache(self.Cache):
             @staticmethod
