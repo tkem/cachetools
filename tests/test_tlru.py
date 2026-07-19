@@ -214,6 +214,24 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[1], None)
         self.assertEqual(1, len(cache))
 
+    def test_ttu_expired_overwrite_invalidates(self):
+        # Overwriting a live key with a value whose ttu is already in the past
+        # must not leave the previous value readable (the new item is skipped,
+        # but the old one must be invalidated).
+        cache = TLRUCache[int, int, int](
+            maxsize=2, ttu=lambda k, v, t: t + v, timer=Timer()
+        )
+        cache[1] = 5
+        self.assertEqual(cache[1], 5)
+        self.assertIn(1, cache)
+        cache[1] = 0  # ttu == now -> already expired, new item skipped
+        self.assertNotIn(1, cache)
+        self.assertEqual(cache.get(1), None)
+        self.assertEqual(0, len(cache))
+        # a later live assignment to the same key still works
+        cache[1] = 3
+        self.assertEqual(cache[1], 3)
+
     def test_ttu_atomic(self):
         cache = TLRUCache[int, int, int](
             maxsize=1, ttu=lambda k, v, t: t + 2, timer=Timer(auto=True)
