@@ -629,6 +629,13 @@ class TLRUCache(_TimedCache):
         with self.timer as time:
             expires = self.__ttu(key, value, time)
             if not (time < expires):
+                # Do not store an already-expired item, but make sure any
+                # previous value for this key is no longer accessible: a
+                # successful assignment must not leave the old value readable.
+                try:
+                    del self[key]
+                except KeyError:
+                    pass
                 return  # skip expired items
             self.expire(time)
             cache_setitem(self, key, value)
