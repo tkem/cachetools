@@ -1,3 +1,14 @@
+v7.1.5 (UNRELEASED)
+===================
+
+- Fix ``TLRUCache`` silently keeping stale values on expired
+  overwrites.
+
+- Reject negative cache item ``getsizeof`` values.
+
+- Update build environment.
+
+
 v7.1.4 (2026-05-22)
 ===================
 
