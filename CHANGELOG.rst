@@ -1,4 +1,4 @@
-v7.1.5 (UNRELEASED)
+v7.1.5 (2026-07-23)
 ===================
 
 - Fix ``TLRUCache`` silently keeping stale values on expired
