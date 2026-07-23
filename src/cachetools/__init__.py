@@ -12,7 +12,7 @@ __all__ = (
     "cachedmethod",
 )
 
-__version__ = "7.1.5"
+__version__ = "7.1.6"
 
 import collections
 import collections.abc
@@ -53,8 +53,8 @@ class Cache(collections.abc.MutableMapping):
         if getsizeof:
             self.getsizeof = getsizeof
         if self.getsizeof is not Cache.getsizeof:
-            self.__size = dict()
-        self.__data = dict()
+            self.__size = {}
+        self.__data = {}
         self.__currsize = 0
         self.__maxsize = maxsize
 
@@ -447,7 +447,7 @@ class TTLCache(_TimedCache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
     class _Link:
-        __slots__ = ("key", "expires", "next", "prev")
+        __slots__ = ("expires", "key", "next", "prev")
 
         def __init__(self, key=None, expires=None):
             self.key = key
@@ -591,7 +591,7 @@ class TLRUCache(_TimedCache):
 
     @functools.total_ordering
     class _Item:
-        __slots__ = ("key", "expires", "removed")
+        __slots__ = ("expires", "key", "removed")
 
         def __init__(self, key=None, expires=None):
             self.key = key

@@ -345,7 +345,7 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
-        return dict()
+        return {}
 
     def test_decorator_info(self):
         cache = self.cache(2)

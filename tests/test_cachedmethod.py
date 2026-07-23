@@ -2,7 +2,6 @@ import unittest
 import unittest.mock
 import warnings
 
-
 from cachetools import Cache, cachedmethod, keys
 
 from . import CountedCondition, CountedLock, _TestCaseProtocol
@@ -636,7 +635,7 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
 
 class DictMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
     def cache(self, minsize, **_kwargs):
-        return dict()
+        return {}
 
 
 class WeakRefMethodTest(unittest.TestCase):

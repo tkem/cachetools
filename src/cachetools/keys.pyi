@@ -1,6 +1,7 @@
-from _typeshed import Unused
 from collections.abc import Hashable
 from typing import Final
+
+from _typeshed import Unused
 
 __all__: Final = ("hashkey", "methodkey", "typedkey", "typedmethodkey")
 

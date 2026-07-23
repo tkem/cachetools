@@ -54,7 +54,7 @@ class ThreadingTest(unittest.TestCase):
     def test_cached_stampede(self):
         global count
         count = 0
-        threads = [threading.Thread(target=func) for i in range(0, self.NTHREADS)]
+        threads = [threading.Thread(target=func) for i in range(self.NTHREADS)]
         for t in threads:
             t.start()
         for t in threads:
@@ -70,9 +70,7 @@ class ThreadingTest(unittest.TestCase):
     def test_cachedmethod_stampede(self):
         self.cache = LRUCache(1)
         self.count = 0
-        threads = [
-            threading.Thread(target=self.method) for i in range(0, self.NTHREADS)
-        ]
+        threads = [threading.Thread(target=self.method) for i in range(self.NTHREADS)]
         for t in threads:
             t.start()
         for t in threads:
@@ -88,9 +86,7 @@ class ThreadingTest(unittest.TestCase):
     def test_cached_locked(self):
         global count
         count = 0
-        threads = [
-            threading.Thread(target=locked_func) for i in range(0, self.NTHREADS)
-        ]
+        threads = [threading.Thread(target=locked_func) for i in range(self.NTHREADS)]
         for t in threads:
             t.start()
         for t in threads:
@@ -109,7 +105,7 @@ class ThreadingTest(unittest.TestCase):
         self.cache = LRUCache(1)
         self.count = 0
         threads = [
-            threading.Thread(target=self.locked_method) for i in range(0, self.NTHREADS)
+            threading.Thread(target=self.locked_method) for i in range(self.NTHREADS)
         ]
         for t in threads:
             t.start()

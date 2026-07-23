@@ -1,6 +1,5 @@
 import importlib.metadata
 
-
 project = "cachetools"
 copyright = "2014-2026 Thomas Kemmer"
 release = importlib.metadata.version(project)

@@ -25,5 +25,4 @@ A clear and concise description of what happened instead.
 
 ```python
 import cachetools
-
 ```
