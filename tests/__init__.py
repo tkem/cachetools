@@ -284,6 +284,20 @@ class CacheTestMixin(_TestCaseProtocol):
     def test_getsizeof_param(self):
         self._test_getsizeof(self.Cache(maxsize=3, getsizeof=lambda x: x))
 
+    def test_getsizeof_grow_existing_no_evict(self):
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+
+        cache[1] = 3
+        cache[2] = 3
+        self.assertEqual(6, cache.currsize)
+
+        # growing an existing key must only reserve the additional size
+        cache[2] = 7
+        self.assertEqual(2, len(cache))
+        self.assertEqual(10, cache.currsize)
+        self.assertEqual(3, cache[1])
+        self.assertEqual(7, cache[2])
+
     def test_getsizeof_negative(self):
         cache = self.Cache(maxsize=3, getsizeof=lambda x: -1)
 

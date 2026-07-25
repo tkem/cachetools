@@ -79,13 +79,14 @@ class Cache(collections.abc.MutableMapping):
             raise ValueError("value size must be non-negative")
         if size > maxsize:
             raise ValueError("value too large")
-        if key not in self.__data or self.__size[key] < size:
-            while self.__currsize + size > maxsize:
-                self.popitem()
         if key in self.__data:
             diffsize = size - self.__size[key]
         else:
             diffsize = size
+        while diffsize > 0 and self.__currsize + diffsize > maxsize:
+            self.popitem()
+            if key not in self.__data:
+                diffsize = size
         self.__data[key] = value
         self.__size[key] = size
         self.__currsize += diffsize
