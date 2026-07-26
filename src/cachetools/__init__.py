@@ -79,9 +79,18 @@ class Cache(collections.abc.MutableMapping):
             raise ValueError("value size must be non-negative")
         if size > maxsize:
             raise ValueError("value too large")
-        if key not in self.__data or self.__size[key] < size:
-            while self.__currsize + size > maxsize:
-                self.popitem()
+        # If the key is already present, its current size is already
+        # included in currsize, so only the *additional* space (size -
+        # old size) has to be reserved -- not the full new size.  Note
+        # that popitem() may evict the very key being updated, turning
+        # this into a fresh insert; re-checking membership on each
+        # iteration keeps the reservation correct in that case.  See
+        # https://github.com/tkem/cachetools/issues/405.
+        while (
+            self.__currsize - (self.__size[key] if key in self.__data else 0) + size
+            > maxsize
+        ):
+            self.popitem()
         if key in self.__data:
             diffsize = size - self.__size[key]
         else:

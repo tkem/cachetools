@@ -301,6 +301,33 @@ class CacheTestMixin(_TestCaseProtocol):
 
         self._test_getsizeof(Cache(maxsize=3))
 
+    def test_getsizeof_grow_existing_fits(self):
+        # Growing an existing key must not evict other entries as long
+        # as the updated cache still fits within maxsize; the result
+        # must match the equivalent "delete followed by insert".
+        # https://github.com/tkem/cachetools/issues/405
+        cache = self.Cache(maxsize=10, getsizeof=lambda v: v)
+        cache["a"] = 3
+        cache["b"] = 3
+        self.assertEqual(6, cache.currsize)
+
+        cache["b"] = 7  # a(3) + b(7) == 10 == maxsize, so it still fits
+
+        self.assertEqual(2, len(cache))
+        self.assertEqual({"a", "b"}, set(cache))
+        self.assertEqual(3, cache["a"])
+        self.assertEqual(7, cache["b"])
+        self.assertEqual(10, cache.currsize)
+
+        # the equivalent delete-then-insert keeps the same entries
+        equivalent = self.Cache(maxsize=10, getsizeof=lambda v: v)
+        equivalent["a"] = 3
+        equivalent["b"] = 3
+        del equivalent["b"]
+        equivalent["b"] = 7
+        self.assertEqual(set(cache), set(equivalent))
+        self.assertEqual(cache.currsize, equivalent.currsize)
+
     def test_clear(self):
         cache = self.Cache(maxsize=2)
         cache.update({1: 1, 2: 2})
