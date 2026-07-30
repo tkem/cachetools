@@ -284,6 +284,47 @@ class CacheTestMixin(_TestCaseProtocol):
     def test_getsizeof_param(self):
         self._test_getsizeof(self.Cache(maxsize=3, getsizeof=lambda x: x))
 
+    def test_getsizeof_replace_grow(self):
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+
+        cache[3] = 3
+        cache[4] = 4
+        self.assertEqual(2, len(cache))
+        self.assertEqual(7, cache.currsize)
+
+        # growing an existing entry must only reserve the additional size
+        cache[4] = 7
+        self.assertEqual(2, len(cache))
+        self.assertEqual(10, cache.currsize)
+        self.assertEqual(3, cache[3])
+        self.assertEqual(7, cache[4])
+
+    def test_getsizeof_replace_same_size(self):
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+
+        cache[3] = 3
+        cache[4] = 4
+        self.assertEqual(7, cache.currsize)
+
+        cache[4] = 4
+        self.assertEqual(2, len(cache))
+        self.assertEqual(7, cache.currsize)
+        self.assertEqual(3, cache[3])
+        self.assertEqual(4, cache[4])
+
+    def test_getsizeof_replace_shrink(self):
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+
+        cache[3] = 3
+        cache[4] = 4
+        self.assertEqual(7, cache.currsize)
+
+        cache[4] = 1
+        self.assertEqual(2, len(cache))
+        self.assertEqual(4, cache.currsize)
+        self.assertEqual(3, cache[3])
+        self.assertEqual(1, cache[4])
+
     def test_getsizeof_negative(self):
         cache = self.Cache(maxsize=3, getsizeof=lambda x: -1)
 
