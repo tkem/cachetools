@@ -1,4 +1,4 @@
-v7.1.7 (UNRELEASED)
+v7.1.7 (2026-08-01)
 ===================
 
 - Improve ``Cache.__setitem__`` behavior when replacing an existing
