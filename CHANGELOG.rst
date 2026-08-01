@@ -1,3 +1,12 @@
+v7.1.7 (UNRELEASED)
+===================
+
+- Improve ``Cache.__setitem__`` behavior when replacing an existing
+  cache item with a larger value.
+
+- Update CI environment.
+
+
 v7.1.6 (2026-07-24)
 ===================
 
