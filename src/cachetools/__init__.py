@@ -80,8 +80,11 @@ class Cache(collections.abc.MutableMapping):
         if size > maxsize:
             raise ValueError("value too large")
         if key not in self.__data or self.__size[key] < size:
-            while self.__currsize + size > maxsize:
+            oldsize = self.__size[key] if key in self.__data else 0
+            while self.__currsize - oldsize + size > maxsize:
                 self.popitem()
+                if key not in self.__data:
+                    oldsize = 0
         if key in self.__data:
             diffsize = size - self.__size[key]
         else:

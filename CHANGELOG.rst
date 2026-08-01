@@ -3,6 +3,9 @@ v7.1.6 (2026-07-24)
 
 - Minor style improvements to keep ``ruff`` happy.
 
+- Fix ``Cache.__setitem__`` over-evicting when updating an existing
+  key with a custom ``getsizeof`` function.
+
 
 v7.1.5 (2026-07-23)
 ===================

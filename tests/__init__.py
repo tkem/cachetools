@@ -352,6 +352,33 @@ class CacheTestMixin(_TestCaseProtocol):
         self.assertEqual(1, len(cache))
         self.assertEqual(4, cache.currsize)
 
+    def test_setitem_getsizeof_grow_existing(self):
+        # Regression test for issue #405: growing an existing key should not
+        # over-evict when the updated cache still fits within maxsize.
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+        cache["a"] = 3
+        cache["b"] = 3
+        self.assertEqual(6, cache.currsize)
+
+        cache["b"] = 7  # final size 3+7=10 fits in maxsize
+        self.assertIn("a", cache)
+        self.assertIn("b", cache)
+        self.assertEqual(7, cache["b"])
+        self.assertEqual(10, cache.currsize)
+
+    def test_setitem_getsizeof_grow_needs_eviction(self):
+        # Growing an existing key beyond available space must still evict.
+        cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
+        cache["a"] = 3
+        cache["b"] = 3
+        self.assertEqual(6, cache.currsize)
+
+        cache["b"] = 9  # needs 3+9=12 > 10, so "a" must be evicted
+        self.assertNotIn("a", cache)
+        self.assertIn("b", cache)
+        self.assertEqual(9, cache["b"])
+        self.assertEqual(9, cache.currsize)
+
     def test_pickle(self):
         import pickle
 
