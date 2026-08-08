@@ -1,3 +1,4 @@
+import math
 from collections.abc import Container, Iterable
 from typing import Any, Protocol
 
@@ -40,6 +41,29 @@ class CacheTestMixin(_TestCaseProtocol):
         self.assertEqual(1, cache.getsizeof(""))
         self.assertEqual(1, cache.getsizeof(0))
         self.assertTrue(repr(cache).startswith(cache.__class__.__name__))
+
+    def test_maxsize_negative(self):
+        with self.assertRaises(ValueError):
+            self.Cache(maxsize=-1)
+
+        with self.assertRaises(ValueError):
+            self.Cache(maxsize=-math.inf)
+
+    def test_maxsize_zero(self):
+        cache = self.Cache(maxsize=0)
+
+        self.assertEqual(0, cache.maxsize)
+        with self.assertRaises(ValueError):
+            cache[1] = 1
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+
+    def test_maxsize_infinite(self):
+        cache = self.Cache(maxsize=math.inf)
+
+        cache.update((i, i) for i in range(100))
+        self.assertEqual(100, len(cache))
+        self.assertEqual(100, cache.currsize)
 
     def test_insert(self):
         cache = self.Cache(maxsize=2)
