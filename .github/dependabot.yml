@@ -4,3 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    groups:
+      monthly-batch:
+        patterns:
+          - "*"
+    target-branch: "develop"
