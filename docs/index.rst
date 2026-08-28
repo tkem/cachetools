@@ -42,12 +42,6 @@ size of the cache.  When a cache is full, :meth:`Cache.__setitem__()`
 calls :meth:`self.popitem()` repeatedly until there is enough room for
 the item to be added.
 
-.. note::
-
-   Please be aware that `maxsize` must be a positive number.  If you
-   really want your cache to grow without bounds, use
-   :const:`math.inf` or something similar.
-
 In general, a cache's size is the total size of its item's values.
 Therefore, :class:`Cache` provides a :meth:`getsizeof` method, which
 returns the size of a given `value`.  The default implementation of
