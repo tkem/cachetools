@@ -261,7 +261,7 @@ key is not found:
    >>> class PepStore(LRUCache):
    ...     def __missing__(self, key):
    ...         """Retrieve text of a Python Enhancement Proposal"""
-   ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % key
+   ...         url = 'https://peps.python.org/pep-%04d/' % key
    ...         with urllib.request.urlopen(url) as s:
    ...             pep = s.read()
    ...             self[key] = pep  # store text in cache
@@ -364,7 +364,7 @@ often called with the same arguments:
       @cached(cache=LRUCache(maxsize=640*1024, getsizeof=len), lock=threading.Lock())
       def get_pep(num):
           'Retrieve text of a Python Enhancement Proposal'
-          url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+          url = 'https://peps.python.org/pep-%04d/' % num
           with urllib.request.urlopen(url) as s:
               return s.read()
 
@@ -396,7 +396,7 @@ often called with the same arguments:
 
       >>> @cached(cache=LRUCache(maxsize=32), info=True)
       ... def get_pep(num):
-      ...     url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+      ...     url = 'https://peps.python.org/pep-%04d/' % num
       ...     with urllib.request.urlopen(url) as s:
       ...         return s.read()
 
@@ -451,7 +451,7 @@ often called with the same arguments:
 
       @cached(cache=LRUCache(maxsize=10), info=True)
       def _get_pep_wrapped(num):
-          url = "http://www.python.org/dev/peps/pep-%04d/" % num
+          url = "https://peps.python.org/pep-%04d/" % num
           try:
               with urllib.request.urlopen(url) as s:
                   return s.read()
@@ -566,7 +566,7 @@ often called with the same arguments:
       ...     @cachedmethod(lambda self: self.cache, lock=lambda self: self.lock, info=True)
       ...     def get(self, num):
       ...         """Retrieve text of a Python Enhancement Proposal"""
-      ...         url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+      ...         url = 'https://peps.python.org/pep-%04d/' % num
       ...         with urllib.request.urlopen(url) as s:
       ...             return s.read()
 
@@ -620,7 +620,7 @@ often called with the same arguments:
           @cachedmethod(lambda self: self.cache, key=partial(methodkey, method='pep'))
           def get_pep(self, num):
               """Retrieve text of a Python Enhancement Proposal"""
-              url = 'http://www.python.org/dev/peps/pep-%04d/' % num
+              url = 'https://peps.python.org/pep-%04d/' % num
               with urllib.request.urlopen(url) as s:
                   return s.read()
 
