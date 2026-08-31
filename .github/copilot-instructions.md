@@ -7,6 +7,7 @@
 - All caches inherit from `Cache` (a `MutableMapping` with `maxsize`, `currsize`, and `getsizeof`)
 - Subclasses override `__setitem__`, `__getitem__`, `__delitem__`, and `popitem()` to implement eviction policies
 - **Critical:** Subclasses use default parameter trick (e.g., `cache_setitem=Cache.__setitem__`) to call parent methods efficiently while avoiding recursion
+- `Cache.__init__` rejects negative `maxsize` eagerly (`ValueError`); `maxsize=0` (no-space cache) and `math.inf` (unbounded) remain valid
 
 ### Cache Types
 - `FIFOCache`: Evicts oldest inserted (`OrderedDict`)
@@ -35,9 +36,7 @@
 
 ### Testing
 ```bash
-pytest                                    # Run all tests
-pytest --cov=cachetools --cov-report term-missing  # With coverage
-tox -e py                                 # Just tests
+tox -e py                                 # Run tests with coverage
 tox -e ruff                               # Linting (ruff check)
 tox -e ruff-format                        # Format check (ruff format --diff)
 tox -e pyright                            # Type checking
@@ -45,7 +44,7 @@ tox -e docs                               # Build docs
 tox -e doctest                            # Run doctests
 ```
 
-- `tests/__init__.py`: `CacheTestMixin` (16 standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
+- `tests/__init__.py`: `CacheTestMixin` (23 standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
 - Each cache test inherits `unittest.TestCase` + `CacheTestMixin`
 - `test_cached.py` / `test_cachedmethod.py` use `DecoratorTestMixin` / `MethodDecoratorTestMixin` for all lock/condition/info combos
 - Threading tests (`test_threading.py`) cover both condition-based stampede prevention and lock-only race resolution under real concurrency; `TIMEOUT` class constant + `thread.join(timeout=TIMEOUT)` + `assertFalse(t.is_alive())` guard against deadlock hangs
