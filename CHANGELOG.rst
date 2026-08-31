@@ -1,3 +1,9 @@
+v7.1.8 (UNRELEASED)
+===================
+
+- Reject negative ``maxsize`` in ``Cache.__init__``.
+
+
 v7.1.7 (2026-08-01)
 ===================
 
