@@ -28,6 +28,10 @@ class TTLTestCache(TTLCache):
 class TTLCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = TTLTestCache
 
+    def test_ttl_negative(self):
+        with self.assertRaises(ValueError):
+            TTLCache(maxsize=2, ttl=-1)
+
     def test_ttl(self):
         cache = TTLCache[int, int, int](maxsize=2, ttl=2, timer=Timer())
         self.assertEqual(0, cache.timer())
