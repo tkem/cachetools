@@ -25,6 +25,7 @@ __all__: Final = (
     "TTLCache",
     "cached",
     "cachedmethod",
+    "cachedproperty",
 )
 __version__: str
 
@@ -243,3 +244,17 @@ def cachedmethod(
 ) -> Callable[
     [Callable[Concatenate[Any, _P], _R]], _cachedmethod_wrapper_info[_P, _R]
 ]: ...
+
+@type_check_only
+class _cachedproperty_wrapper(Generic[_R]):
+    __wrapped__: Callable[[Any], _R]
+    __name__: str
+    __doc__: str | None
+    def __set_name__(self, owner: type, name: str) -> None: ...
+    def __get__(self, obj: Any, objtype: type | None = None) -> _R: ...
+
+def cachedproperty(
+    ttl: Any | None = ...,
+    timer: Callable[[], Any] = ...,
+    lock: AbstractContextManager[Any] | None = ...,
+) -> Callable[[Callable[[Any], _R]], _cachedproperty_wrapper[_R]]: ...
