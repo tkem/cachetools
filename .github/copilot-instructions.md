@@ -22,8 +22,9 @@
 
 ### Decorators
 - `@cached` (`_cached.py`): Function memoization; separate wrappers for each lock/condition/info combination; supports `cache=None` via `_uncached`/`_uncached_info` wrappers (pass-through without caching)
-- `@cachedmethod` (`_cachedmethod.py`): Method memoization via descriptor protocol (`__set_name__`/`__get__`); class hierarchy: `_WrapperBase` (per-instance callable) → `_DescriptorBase` (descriptor with `__set_name__`/`__get__`, replaces self in instance `__dict__` via `setdefault` for thread safety) → `_DeprecatedDescriptorBase` (backward-compatible `@classmethod` support with warnings); the backward-compatible `_condition` variant uses `weakref.WeakKeyDictionary` for per-instance pending sets
-- `_DescriptorBase` error cases: `__set_name__` raises `TypeError` if the same descriptor is bound to two names; `__get__` raises `TypeError` when the instance has no writable `__dict__` (e.g. `__slots__`) or when `__set_name__` was never called — the deprecated `@classmethod` path warns instead of raising; `obj is None` (class access) returns the bare wrapper so `mock.patch(autospec=True)` works
+- `@cachedmethod` (`_cachedmethod.py`): Method memoization via descriptor protocol (`__set_name__`/`__get__`); class hierarchy: `_WrapperBase` (per-instance callable) → `_DescriptorBase` (descriptor with `__set_name__`/`__get__`, replaces self in instance `__dict__` via `setdefault` for thread safety); each `_condition*` variant keeps a per-instance pending set on its wrapper
+- `_DescriptorBase` error cases: `__set_name__` raises `TypeError` if the same descriptor is bound to two names; `__get__` raises `TypeError` when the instance has no writable `__dict__` (e.g. `__slots__`) or when `__set_name__` was never called; `obj is None` (class access) returns the bare wrapper so `mock.patch(autospec=True)` works
+- Decorating class methods is **not supported** (removed in 8.0): `_DescriptorBase.__call__` raises `TypeError`, which is what Python ≥ 3.13 hits when a `@cachedmethod` descriptor is wrapped in `@classmethod`
 - Both support `key`, `lock`, `condition`, and `info` parameters; when `condition` is given without `lock`, `condition` serves as both lock and condition
 - `info=True` adds `cache_info()`/`cache_clear()`; `info=False` (default) only provides `cache_clear()`
 - `func.py`: `functools.lru_cache`-compatible wrappers; all use `threading.Condition()` by default for thread safety + stampede prevention; `_UnboundTTLCache` extends `TTLCache` with `math.inf` maxsize for `maxsize=None`
@@ -52,7 +53,7 @@ tox -e doctest                            # Run doctests
 - `tests/__init__.py`: `CacheTestMixin` (23 standard tests), `_TestCaseProtocol`, `CountedLock`, `CountedCondition` (implements full `_AbstractCondition` protocol)
 - Each cache test inherits `unittest.TestCase` + `CacheTestMixin`
 - `test_cached.py` / `test_cachedmethod.py` use `DecoratorTestMixin` / `MethodDecoratorTestMixin` for all lock/condition/info combos
-- `test_classmethod.py` covers the deprecated `@cachedmethod` + `@classmethod` combinations and their `DeprecationWarning`s
+- `ClassMethodTest` in `test_cachedmethod.py` asserts that `@cachedmethod` + `@classmethod` raises `TypeError`
 - Threading tests (`test_threading.py`) cover both condition-based stampede prevention and lock-only race resolution under real concurrency; `TIMEOUT` class constant + `thread.join(timeout=TIMEOUT)` + `assertFalse(t.is_alive())` guard against deadlock hangs
 
 ### Code Style

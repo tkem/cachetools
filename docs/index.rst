@@ -661,19 +661,17 @@ often called with the same arguments:
 
    Returning :const:`None` from `cache(self)` is no longer supported.
 
-   .. deprecated:: 7.0
+   .. versionchanged:: 8.0
 
-   Using :func:`cachedmethod` with :func:`classmethod` is deprecated,
-   and support will be removed in the next major version.  This is
-   mostly due to the fact that chaining descriptors, i.e. using
-   descriptors with :func:`classmethod`, was deprecated in Python 3.11
-   and removed in Python 3.13.  When using :func:`cache_info()`, an
-   instance method is already required.
+   Using :func:`cachedmethod` with :func:`classmethod` is no longer
+   supported, and now raises a :exc:`TypeError`.  This is mostly due to
+   the fact that chaining descriptors, i.e. using descriptors with
+   :func:`classmethod`, was deprecated in Python 3.11 and removed in
+   Python 3.13.
 
    Using :func:`cachedmethod` with an instance that does not provide a
-   mutable :attr:`__dict__` attribute is deprecated, and may inflict a
-   noticeable performance penalty.  When using :func:`cache_info()`,
-   :attr:`__dict__` already has to be a mutable mapping.
+   mutable :attr:`__dict__` attribute is no longer supported, and now
+   raises a :exc:`TypeError`.
 
 
 *****************************************************************
