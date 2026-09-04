@@ -1,7 +1,7 @@
 # Copilot Instructions for cachetools
 
 ## Architecture Overview
-**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. Pure Python 3.10+, no external runtime dependencies.
+**cachetools** provides extensible memoizing collections and decorators, including variants of Python's `@lru_cache`. Pure Python 3.11+, no external runtime dependencies.
 
 ### Core Design Pattern
 - All caches inherit from `Cache` (a `MutableMapping` with `maxsize`, `currsize`, and `getsizeof`)
