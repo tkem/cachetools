@@ -3,6 +3,7 @@
 __all__ = ()
 
 import functools
+import inspect
 import warnings
 import weakref
 
@@ -87,6 +88,10 @@ class _DescriptorBase:
             # as for mocking with autospec=True in unittest.mock.
             pass
         elif self.__attrname is not None:
+            # A super() lookup must not replace an overriding method in the
+            # instance dictionary, even when this is the first lookup.
+            if inspect.getattr_static(objtype, self.__attrname, None) is not self:
+                return wrapper
             # replace descriptor instance with wrapper in instance dict
             try:
                 # In case of a race condition where another thread already replaced

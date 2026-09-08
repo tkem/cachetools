@@ -77,6 +77,42 @@ class Unhashable(Cached):
         raise TypeError("unhashable type")
 
 
+class InheritedCachedMethodTest(unittest.TestCase):
+    def test_super_uses_parent_wrapper(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+
+                class Parent:
+                    def __init__(self):
+                        self.parent_cache = {}
+                        self.child_cache = {}
+                        self.calls = []
+
+                    @cachedmethod(lambda self: self.parent_cache, info=info)
+                    def get(self, value):
+                        self.calls.append("parent")
+                        return value
+
+                class Child(Parent):
+                    @cachedmethod(lambda self: self.child_cache, info=info)
+                    def get(self, value):
+                        self.calls.append("child")
+                        return super().get(value) + 1
+
+                obj = Child()
+                wrapper = obj.get
+                self.assertEqual(obj.get(2), 3)
+                self.assertEqual(obj.get(2), 3)
+                self.assertEqual(super(Child, obj).get(2), 2)
+                self.assertIs(obj.get, wrapper)
+                self.assertEqual(obj.calls, ["child", "parent"])
+
+                obj = Child()
+                self.assertEqual(super(Child, obj).get(2), 2)
+                self.assertEqual(obj.get(2), 3)
+                self.assertEqual(obj.calls, ["parent", "child"])
+
+
 class MethodDecoratorTestMixin(_TestCaseProtocol):
     def cache(self, _minsize, **_kwargs):
         raise NotImplementedError
