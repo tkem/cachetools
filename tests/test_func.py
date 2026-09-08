@@ -35,6 +35,24 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertEqual(cached(1), 1)
         self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
 
+    def test_reused_decorator_has_independent_caches(self):
+        for maxsize in (2, None):
+            decorate = self.decorator(maxsize=maxsize)
+            first = decorate(lambda value: value + 1)
+            second = decorate(lambda value: value + 2)
+
+            self.assertEqual(first(1), 2)
+            self.assertEqual(second(1), 3)
+            self.assertIsNot(first.cache, second.cache)
+            first.cache_clear()
+            self.assertEqual(second.cache_info().currsize, 1)
+            self.assertEqual(second(1), 3)
+            self.assertEqual(second.cache_info().hits, 1)
+
+    def test_decorator_rejects_negative_maxsize(self):
+        with self.assertRaises(ValueError):
+            self.decorator(maxsize=-1)
+
     def test_decorator_nocache(self):
         cached = self.decorator(maxsize=0)(lambda n: n)
         self.assertEqual(cached.cache_parameters(), {"maxsize": 0, "typed": False})

@@ -19,13 +19,18 @@ class _UnboundTTLCache(TTLCache):
         return None
 
 
-def _cache(cache, maxsize, typed):
+def _cache(cache_factory, maxsize, typed):
+    if maxsize is not None and maxsize < 0:
+        raise ValueError("maxsize must be non-negative")
+
     def decorator(func):
         # like functools.lru_cache, this has to be thread-safe;
         # additionally, this also prevents cache stampede scenarios
         # using a condition variable
         key = keys.typedkey if typed else keys.hashkey
-        wrapper = cached(cache=cache, key=key, condition=Condition(), info=True)(func)
+        wrapper = cached(
+            cache=cache_factory(), key=key, condition=Condition(), info=True
+        )(func)
         wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}  # type: ignore
         return wrapper
 
@@ -39,11 +44,11 @@ def fifo_cache(maxsize=128, typed=False):
 
     """
     if maxsize is None:
-        return _cache({}, None, typed)
+        return _cache(dict, None, typed)
     elif callable(maxsize):
-        return _cache(FIFOCache(128), 128, typed)(maxsize)
+        return _cache(lambda: FIFOCache(128), 128, typed)(maxsize)
     else:
-        return _cache(FIFOCache(maxsize), maxsize, typed)
+        return _cache(lambda: FIFOCache(maxsize), maxsize, typed)
 
 
 def lfu_cache(maxsize=128, typed=False):
@@ -53,11 +58,11 @@ def lfu_cache(maxsize=128, typed=False):
 
     """
     if maxsize is None:
-        return _cache({}, None, typed)
+        return _cache(dict, None, typed)
     elif callable(maxsize):
-        return _cache(LFUCache(128), 128, typed)(maxsize)
+        return _cache(lambda: LFUCache(128), 128, typed)(maxsize)
     else:
-        return _cache(LFUCache(maxsize), maxsize, typed)
+        return _cache(lambda: LFUCache(maxsize), maxsize, typed)
 
 
 def lru_cache(maxsize=128, typed=False):
@@ -67,11 +72,11 @@ def lru_cache(maxsize=128, typed=False):
 
     """
     if maxsize is None:
-        return _cache({}, None, typed)
+        return _cache(dict, None, typed)
     elif callable(maxsize):
-        return _cache(LRUCache(128), 128, typed)(maxsize)
+        return _cache(lambda: LRUCache(128), 128, typed)(maxsize)
     else:
-        return _cache(LRUCache(maxsize), maxsize, typed)
+        return _cache(lambda: LRUCache(maxsize), maxsize, typed)
 
 
 def rr_cache(maxsize=128, choice=random.choice, typed=False):
@@ -81,11 +86,11 @@ def rr_cache(maxsize=128, choice=random.choice, typed=False):
 
     """
     if maxsize is None:
-        return _cache({}, None, typed)
+        return _cache(dict, None, typed)
     elif callable(maxsize):
-        return _cache(RRCache(128, choice), 128, typed)(maxsize)
+        return _cache(lambda: RRCache(128, choice), 128, typed)(maxsize)
     else:
-        return _cache(RRCache(maxsize, choice), maxsize, typed)
+        return _cache(lambda: RRCache(maxsize, choice), maxsize, typed)
 
 
 def ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False):
@@ -95,8 +100,8 @@ def ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False):
 
     """
     if maxsize is None:
-        return _cache(_UnboundTTLCache(ttl, timer), None, typed)
+        return _cache(lambda: _UnboundTTLCache(ttl, timer), None, typed)
     elif callable(maxsize):
-        return _cache(TTLCache(128, ttl, timer), 128, typed)(maxsize)
+        return _cache(lambda: TTLCache(128, ttl, timer), 128, typed)(maxsize)
     else:
-        return _cache(TTLCache(maxsize, ttl, timer), maxsize, typed)
+        return _cache(lambda: TTLCache(maxsize, ttl, timer), maxsize, typed)
