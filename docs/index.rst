@@ -649,29 +649,29 @@ often called with the same arguments:
 
    .. versionchanged:: 7.0
 
-   Added the `info` option for reporting per-instance cache
-   statistics.
+      Added the `info` option for reporting per-instance cache
+      statistics.
 
-   :func:`cachedmethod` attributes (:attr:`cache`, :attr:`cache_lock`,
-   etc.) are now implemented as properties for instance methods, and
-   are finally officially supported.
+      :func:`cachedmethod` attributes (:attr:`cache`, :attr:`cache_lock`,
+      etc.) are now implemented as properties for instance methods, and
+      are finally officially supported.
 
-   Require :attr:`__dict__` to be a mutable mapping to support
-   per-instance :func:`cache_info()`.
+      Using :func:`cachedmethod` with an instance that does not provide a
+      mutable :attr:`__dict__` attribute is no longer supported, and now
+      raises a :exc:`TypeError`.
 
-   Returning :const:`None` from `cache(self)` is no longer supported.
+      Require :attr:`__dict__` to be a mutable mapping to support
+      per-instance :func:`cache_info()`.
+
+      Returning :const:`None` from `cache(self)` is no longer supported.
 
    .. versionchanged:: 8.0
 
-   Using :func:`cachedmethod` with :func:`classmethod` is no longer
-   supported, and now raises a :exc:`TypeError`.  This is mostly due to
-   the fact that chaining descriptors, i.e. using descriptors with
-   :func:`classmethod`, was deprecated in Python 3.11 and removed in
-   Python 3.13.
-
-   Using :func:`cachedmethod` with an instance that does not provide a
-   mutable :attr:`__dict__` attribute is no longer supported, and now
-   raises a :exc:`TypeError`.
+      Using :func:`cachedmethod` with :func:`classmethod` is no longer
+      supported, and now raises a :exc:`TypeError`.  This is mostly due to
+      the fact that chaining descriptors, i.e. using descriptors with
+      :func:`classmethod`, was deprecated in Python 3.11 and removed in
+      Python 3.13.
 
 
 *****************************************************************
@@ -815,7 +815,7 @@ all the decorators in this module are thread-safe by default.
 .. _cache algorithm: https://en.wikipedia.org/wiki/Cache_algorithms
 .. _cache stampede: https://en.wikipedia.org/wiki/Cache_stampede
 .. _condition variable: https://docs.python.org/3/library/threading.html#condition-objects
-.. _context manager: https://docs.python.org/dev/glossary.html#term-context-manager
-.. _mapping: https://docs.python.org/dev/glossary.html#term-mapping
-.. _mutable: https://docs.python.org/dev/glossary.html#term-mutable
+.. _context manager: https://docs.python.org/3/glossary.html#term-context-manager
+.. _mapping: https://docs.python.org/3/glossary.html#term-mapping
+.. _mutable: https://docs.python.org/3/glossary.html#term-mutable
 .. _thread-safe: https://en.wikipedia.org/wiki/Thread_safety
