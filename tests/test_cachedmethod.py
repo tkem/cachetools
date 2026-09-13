@@ -70,6 +70,8 @@ class Cached:
     def get_lock_cond_info(self, value):
         return self.__get(value)
 
+    get_aliased = cachedmethod(lambda self: self.cache)(__get)
+
 
 class Unhashable(Cached):
     # https://github.com/tkem/cachetools/issues/107
@@ -420,6 +422,91 @@ class MethodDecoratorTestMixin(_TestCaseProtocol):
         cached.get_cond.cache_clear()
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.cond.count, 4)
+
+    def test_decorator_pickle(self):
+        import pickle
+
+        cache = self.cache(3)
+        cached = Cached(cache)
+        self.assertEqual(len(cache), 0)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(len(unpickled.get_cond.cache), 0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(unpickled.get_cond(0), 0)
+        self.assertEqual(len(unpickled.get_cond.cache), 1)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(unpickled.get_cond(1), 1)
+        self.assertEqual(len(unpickled.get_cond.cache), 2)
+        self.assertEqual(len(cache), 0)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_cond(0), 0)
+        self.assertEqual(len(cache), 1)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(len(unpickled.get_cond.cache), 1)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(unpickled.get_cond(0), 0)
+        self.assertEqual(len(unpickled.get_cond.cache), 1)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(unpickled.get_cond(1), 1)
+        self.assertEqual(len(unpickled.get_cond.cache), 2)
+        self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_info(self):
+        import pickle
+
+        cache = self.cache(3)
+        cached = Cached(cache)
+        maxsize = cache.maxsize if isinstance(cache, Cache) else None
+        self.assertEqual(len(cache), 0)
+
+        # hits and misses will be reset when unpickling - since these
+        # are primarily used for debugging/tuning, this is probably OK
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 0, maxsize, 0))
+        self.assertEqual(unpickled.get_cond_info(0), 0)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 1, maxsize, 1))
+        self.assertEqual(unpickled.get_cond_info(1), 1)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 2, maxsize, 2))
+        self.assertEqual(len(cache), 0)
+
+        self.assertEqual(cached.get_cond_info(0), 0)
+        self.assertEqual(len(cache), 1)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 0, maxsize, 1))
+        self.assertEqual(unpickled.get_cond_info(0), 0)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (1, 0, maxsize, 1))
+        self.assertEqual(unpickled.get_cond_info(1), 1)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (1, 1, maxsize, 2))
+        self.assertEqual(unpickled.get_cond_info(0), 0)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (2, 1, maxsize, 2))
+        self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_aliased(self):
+        import pickle
+
+        cache = self.cache(3)
+        cached = Cached(cache)
+        self.assertEqual(len(cache), 0)
+
+        self.assertEqual(cached.get_aliased(0), 0)
+        self.assertEqual(len(cache), 1)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(len(unpickled.get_aliased.cache), 1)
+        self.assertEqual(unpickled.get_aliased(0), 0)
+        self.assertEqual(len(unpickled.get_aliased.cache), 1)
+        self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_class_access(self):
+        import pickle
+
+        # decorated methods can no longer be pickled at class level
+        with self.assertRaisesRegex(TypeError, "Cached.get_cond"):
+            pickle.dumps(Cached.get_cond)
 
     def test_decorator_slots(self):
 
