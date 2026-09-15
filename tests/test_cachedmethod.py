@@ -369,26 +369,30 @@ class MethodDecoratorTestMixin(_TestCaseProtocol):
         cached = Cached(cache)
 
         self.assertIs(cached.get.cache, cache)
+        self.assertEqual(cached.get.cache_key(42), keys.methodkey(cached, 42))
         self.assertIs(cached.get.cache_lock, None)
         self.assertIs(cached.get.cache_condition, None)
-        self.assertEqual(cached.get.cache_key(42), keys.methodkey(cached, 42))
+        self.assertFalse(hasattr(cached.get, "cache_info"))
 
         self.assertIs(cached.get_lock.cache, cache)
+        self.assertEqual(cached.get_lock.cache_key(42), keys.methodkey(cached, 42))
         self.assertIs(cached.get_lock.cache_lock, cached.lock)
         self.assertIs(cached.get_lock.cache_condition, None)
-        self.assertEqual(cached.get_lock.cache_key(42), keys.methodkey(cached, 42))
+        self.assertFalse(hasattr(cached.get_lock, "cache_info"))
 
         self.assertIs(cached.get_cond.cache, cache)
+        self.assertEqual(cached.get_cond.cache_key(42), keys.methodkey(cached, 42))
         self.assertIs(cached.get_cond.cache_lock, cached.cond)
         self.assertIs(cached.get_cond.cache_condition, cached.cond)
-        self.assertEqual(cached.get_cond.cache_key(42), keys.methodkey(cached, 42))
+        self.assertFalse(hasattr(cached.get_cond, "cache_info"))
 
         self.assertIs(cached.get_lock_cond_info.cache, cache)
-        self.assertIs(cached.get_lock_cond_info.cache_lock, cached.lock)
-        self.assertIs(cached.get_lock_cond_info.cache_condition, cached.cond)
         self.assertEqual(
             cached.get_lock_cond_info.cache_key(42), keys.methodkey(cached, 42)
         )
+        self.assertIs(cached.get_lock_cond_info.cache_lock, cached.lock)
+        self.assertIs(cached.get_lock_cond_info.cache_condition, cached.cond)
+        self.assertTrue(hasattr(cached.get_lock_cond_info, "cache_info"))
 
     def test_decorator_clear(self):
         cache = self.cache(2)
