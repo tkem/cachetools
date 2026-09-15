@@ -9,6 +9,7 @@ valid combinations of parameters lock, condition and info.
 __all__ = ()
 
 import functools
+from typing import Any
 
 from ._descriptor import _MethodDescriptor
 
@@ -50,11 +51,11 @@ class _WrapperBase:
         return self.__key  # self._obj passed via functools.partial
 
     @property
-    def cache_lock(self):
+    def cache_lock(self) -> Any:
         return self.__lock(self._obj)
 
     @property
-    def cache_condition(self):
+    def cache_condition(self) -> Any:
         return self.__cond(self._obj)
 
 

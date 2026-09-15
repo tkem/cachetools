@@ -68,7 +68,7 @@ tox -e doctest                            # Run doctests
 
 ### Code Style
 - **ruff** formatter and linter (`tox -e ruff-format`, `tox -e ruff`); lint ignores `DTZ005` and `UP031` in `pyproject.toml`
-- **pyright** runs in `typeCheckingMode = "standard"`, with `reportFunctionMemberAccess` downgraded to `information` and `reportOptionalContextManager`/`reportOptionalMemberAccess` downgraded to `warning`
+- **pyright** runs in `typeCheckingMode = "standard"`, with only `reportFunctionMemberAccess` downgraded to `information` (the `@cached` wrappers attach `cache_clear`/`cache_info` to plain functions); `_WrapperBase.cache_lock`/`cache_condition` are annotated `-> Any` so the optional-access rules stay at their defaults
 
 ## Conventions
 
