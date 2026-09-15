@@ -171,6 +171,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, None)
         self.assertIs(wrapper.cache_condition, None)
+        self.assertFalse(hasattr(wrapper, "cache_info"))
 
     def test_decorator_attributes_lock(self):
         cache = self.cache(2)
@@ -181,6 +182,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, lock)
         self.assertIs(wrapper.cache_condition, None)
+        self.assertFalse(hasattr(wrapper, "cache_info"))
 
     def test_decorator_attributes_cond(self):
         cache = self.cache(2)
@@ -191,6 +193,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, lock)
         self.assertIs(wrapper.cache_condition, cond)
+        self.assertFalse(hasattr(wrapper, "cache_info"))
 
     def test_decorator_clear(self):
         cache = self.cache(2)
