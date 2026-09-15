@@ -45,10 +45,6 @@ class Cached:
     def get_cond(self, value):
         return self.__get(value)
 
-    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
-    def get_cond_error(self, _value):
-        raise ValueError("test error")
-
     @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond, info=True)
     def get_cond_info(self, value):
         return self.__get(value)
@@ -69,6 +65,10 @@ class Cached:
     )
     def get_lock_cond_info(self, value):
         return self.__get(value)
+
+    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
+    def get_cond_error(self, _value):
+        raise ValueError("test error")
 
     get_aliased = cachedmethod(lambda self: self.cache)(__get)
 
@@ -721,7 +721,7 @@ class WeakRefMethodTest(unittest.TestCase):
         import gc
         import weakref
 
-        # FIXME: in Python 3.9, `int` does not support weak references
+        # at least with Python 3.11, `int` does not support weak references
         # even when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
             def __add__(self, other):  # type: ignore
@@ -757,6 +757,13 @@ class NoneMethodTest(unittest.TestCase):
             wrapper.cache_info()
 
 
+class AutospecTest(unittest.TestCase):
+    def test_autospec(self):
+        cached = unittest.mock.create_autospec(Cached, instance=True)
+        self.assertIsNotNone(cached.get(0))
+        self.assertIsNotNone(cached.get_info(0))
+
+
 class ClassMethodTest(unittest.TestCase):
     class Cached(Cached):
         @classmethod
@@ -776,10 +783,3 @@ class ClassMethodTest(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "class method"):
             cached.get_class(42)
-
-
-class AutospecTest(unittest.TestCase):
-    def test_autospec(self):
-        cached = unittest.mock.create_autospec(Cached, instance=True)
-        self.assertIsNotNone(cached.get(0))
-        self.assertIsNotNone(cached.get_info(0))

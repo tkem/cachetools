@@ -17,6 +17,9 @@ class DecoratorTestMixin(_TestCaseProtocol):
             self.count = 0
         return self.count
 
+    def error_func(self, *args, **kwargs):
+        raise ValueError("test error")
+
     def test_decorator(self):
         cache = self.cache(2)
         wrapper = cachetools.cached(cache)(self.func)
@@ -86,7 +89,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(lock.count, 5)
 
-    def test_decorator_condition(self):
+    def test_decorator_cond(self):
         cache = self.cache(2)
         lock = cond = CountedCondition()
         wrapper = cachetools.cached(cache, condition=cond)(self.func)
@@ -105,7 +108,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertEqual(cond.wait_count, 3)
         self.assertEqual(cond.notify_count, 2)
 
-    def test_decorator_lock_condition(self):
+    def test_decorator_lock_cond(self):
         cache = self.cache(2)
         lock = CountedLock()
         cond = CountedCondition()
@@ -123,6 +126,26 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(lock.count, 7)
         self.assertEqual(cond.wait_count, 3)
+        self.assertEqual(cond.notify_count, 2)
+
+    def test_decorator_cond_error(self):
+        cache = self.cache(2)
+        lock = cond = CountedCondition()
+        wrapper = cachetools.cached(cache, condition=cond)(self.error_func)
+
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 2)
+        self.assertEqual(cond.wait_count, 1)
+        self.assertEqual(cond.notify_count, 1)
+
+        # verify pending set is cleaned up, otherwise this might deadlock
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 4)
+        self.assertEqual(cond.wait_count, 2)
         self.assertEqual(cond.notify_count, 2)
 
     def test_decorator_wrapped(self):
@@ -158,7 +181,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertIs(wrapper.cache_lock, lock)
         self.assertIs(wrapper.cache_condition, None)
 
-    def test_decorator_attributes_condition(self):
+    def test_decorator_attributes_cond(self):
         cache = self.cache(2)
         lock = cond = CountedCondition()
         wrapper = cachetools.cached(cache, condition=cond)(self.func)
@@ -187,7 +210,7 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertEqual(len(cache), 0)
         self.assertEqual(lock.count, 3)
 
-    def test_decorator_clear_condition(self):
+    def test_decorator_clear_cond(self):
         cache = self.cache(2)
         lock = cond = CountedCondition()
         wrapper = cachetools.cached(cache, condition=cond)(self.func)
@@ -241,7 +264,7 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
         self.assertEqual(lock.count, 11)
 
-    def test_decorator_condition_info(self):
+    def test_decorator_cond_info(self):
         cache = self.cache(2)
         lock = cond = CountedCondition()
         wrapper = cachetools.cached(cache, condition=cond, info=True)(self.func)
@@ -265,7 +288,7 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
         self.assertEqual(lock.count, 13)
 
-    def test_decorator_lock_condition_info(self):
+    def test_decorator_lock_cond_info(self):
         cache = self.cache(2)
         lock = CountedLock()
         cond = CountedCondition()
@@ -310,7 +333,7 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(len(cache), 0)
         self.assertEqual(lock.count, 2)
 
-    def test_zero_size_cache_decorator_condition(self):
+    def test_zero_size_cache_decorator_cond(self):
         cache = self.cache(0)
         lock = cond = CountedCondition()
         wrapper = cachetools.cached(cache, condition=cond)(self.func)
@@ -341,6 +364,20 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(lock.count, 3)
         self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
         self.assertEqual(lock.count, 4)
+
+    def test_zero_size_cache_decorator_cond_info(self):
+        cache = self.cache(0)
+        lock = cond = CountedCondition()
+        wrapper = cachetools.cached(cache, condition=cond, info=True)(self.func)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(lock.count, 1)
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 4)
+        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
+        self.assertEqual(lock.count, 5)
 
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
