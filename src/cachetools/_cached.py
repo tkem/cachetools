@@ -250,7 +250,6 @@ def _wrapper(func, cache, key, lock=None, cond=None, info=None):
             wrapper = _locked(func, cache, key, lock)
         else:
             wrapper = _unlocked(func, cache, key)
-        wrapper.cache_info = None
 
     wrapper.cache = cache
     wrapper.cache_key = key
