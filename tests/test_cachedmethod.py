@@ -690,3 +690,41 @@ class AutospecTest(unittest.TestCase):
             warnings.simplefilter("always")
             unittest.mock.create_autospec(Cached, instance=True)
         self.assertEqual(len(w), 0)
+
+
+class PickleTest(unittest.TestCase):
+    """Regression tests for pickling objects with @cachedmethod descriptors.
+
+    Since v7.1 the descriptor stores a locally-defined Wrapper instance in
+    obj.__dict__ on first attribute access.  Locally-defined classes cannot
+    be pickled by name, so pickle.dumps() raised AttributeError.
+    """
+
+    def test_pickle_before_access(self):
+        import pickle
+        cached = Cached(Cache(maxsize=10))
+        # Object not yet accessed — no Wrapper in __dict__; should still work
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            restored = pickle.loads(pickle.dumps(cached, protocol=proto))
+            self.assertIsNotNone(restored.get(1))
+
+    def test_pickle_after_access(self):
+        import pickle
+        cached = Cached(Cache(maxsize=10))
+        first = cached.get(1)  # triggers Wrapper caching in obj.__dict__
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            restored = pickle.loads(pickle.dumps(cached, protocol=proto))
+            # Wrapper is re-created via descriptor; method must be callable
+            result = restored.get(2)
+            self.assertIsNotNone(result)
+            # The restored object continues counting from where the original left off
+            self.assertGreaterEqual(result, first)
+
+    def test_pickle_with_lock(self):
+        import pickle
+        cached = Cached(Cache(maxsize=10))
+        cached.get_lock(1)
+        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+            restored = pickle.loads(pickle.dumps(cached, protocol=proto))
+            # Wrapper with lock must also survive round-trip
+            self.assertIsNotNone(restored.get_lock(2))

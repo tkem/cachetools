@@ -40,6 +40,15 @@ class _WrapperBase:
         self.__lock = lock if lock is not None else _none
         self.__cond = cond if cond is not None else _none
 
+    def __reduce__(self):
+        # Locally-defined Wrapper subclasses cannot be pickled by name.
+        # Reconstruct via getattr so that unpickling triggers the descriptor
+        # protocol, which creates a fresh Wrapper and re-caches it in
+        # obj.__dict__ — identical to what first attribute access does.
+        # functools.update_wrapper (called in __init__) copies __name__ from
+        # the decorated method, so getattr(obj, self.__name__) always works.
+        return (getattr, (self._obj, self.__name__))
+
     def __call__(self, *args, **kwargs):
         raise NotImplementedError()  # pragma: no cover
 
