@@ -5,9 +5,8 @@
 __all__ = ()
 
 import functools
-import weakref
 
-from ._descriptor import _ClassMethodDescriptor, _MethodDescriptor, _warn_classmethod
+from ._descriptor import _MethodDescriptor
 
 
 def _none(_):
@@ -18,8 +17,6 @@ class _WrapperBase:
     """Wrapper base class providing default implementations for properties."""
 
     def __init__(self, obj, method, cache, key, lock=None, cond=None):
-        if isinstance(obj, type):
-            _warn_classmethod(stacklevel=5)
         functools.update_wrapper(self, method)
         self._obj = obj  # protected
         self.__cache = cache
@@ -178,127 +175,100 @@ def _unlocked_info(method, cache, key, info):
 
 
 def _condition(method, cache, key, lock, cond):
-    # backward-compatible weakref dictionary for Python >= 3.13
-    pending = weakref.WeakKeyDictionary()
-
-    def wrapper(self, pending, *args, **kwargs):
-        c = cache(self)
-        k = key(self, *args, **kwargs)
-        with lock(self):
-            cond(self).wait_for(lambda: k not in pending)
-            try:
-                return c[k]
-            except KeyError:
-                pending.add(k)
-        try:
-            v = method(self, *args, **kwargs)
-            with lock(self):
-                try:
-                    c[k] = v
-                except ValueError:
-                    pass  # value too large
-                return v
-        finally:
-            with lock(self):
-                pending.remove(k)
-                cond(self).notify_all()
-
-    def cache_clear(self):
-        c = cache(self)
-        with lock(self):
-            c.clear()
-
-    def classmethod_wrapper(self, *args, **kwargs):
-        p = pending.setdefault(self, set())
-        return wrapper(self, p, *args, **kwargs)
-
-    class Descriptor(_ClassMethodDescriptor):
+    class Descriptor(_MethodDescriptor):
         class Wrapper(_WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock, cond)
                 self.__pending = set()
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self._obj, self.__pending, *args, **kwargs)
+                cache = self.cache
+                lock = self.cache_lock
+                cond = self.cache_condition
+                key = self.cache_key(*args, **kwargs)
 
-            # objtype: backward-compatible @classmethod handling with Python < 3.13
-            def cache_clear(self, _objtype=None):
-                return cache_clear(self._obj)
+                with lock:
+                    cond.wait_for(lambda: key not in self.__pending)
+                    try:
+                        return cache[key]
+                    except KeyError:
+                        self.__pending.add(key)
+                try:
+                    val = method(self._obj, *args, **kwargs)
+                    with lock:
+                        try:
+                            cache[key] = val
+                        except ValueError:
+                            pass  # value too large
+                        return val
+                finally:
+                    with lock:
+                        self.__pending.remove(key)
+                        cond.notify_all()
 
-    return Descriptor(classmethod_wrapper, cache_clear)
+            def cache_clear(self):
+                with self.cache_lock:
+                    self.cache.clear()
+
+    return Descriptor()
 
 
 def _locked(method, cache, key, lock):
-    def wrapper(self, *args, **kwargs):
-        c = cache(self)
-        k = key(self, *args, **kwargs)
-        with lock(self):
-            try:
-                return c[k]
-            except KeyError:
-                pass  # key not found
-        v = method(self, *args, **kwargs)
-        with lock(self):
-            try:
-                # In case of a race condition, i.e. if another thread
-                # stored a value for this key while we were calling
-                # method(), prefer the cached value.
-                return c.setdefault(k, v)
-            except ValueError:
-                return v  # value too large
-
-    def cache_clear(self):
-        c = cache(self)
-        with lock(self):
-            c.clear()
-
-    class Descriptor(_ClassMethodDescriptor):
+    class Descriptor(_MethodDescriptor):
         class Wrapper(_WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key, lock)
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self._obj, *args, **kwargs)
+                cache = self.cache
+                lock = self.cache_lock
+                key = self.cache_key(*args, **kwargs)
+                with lock:
+                    try:
+                        return cache[key]
+                    except KeyError:
+                        pass  # key not found
+                val = method(self._obj, *args, **kwargs)
+                with lock:
+                    try:
+                        # In case of a race condition, i.e. if another thread
+                        # stored a value for this key while we were calling
+                        # method(), prefer the cached value.
+                        return cache.setdefault(key, val)
+                    except ValueError:
+                        return val  # value too large
 
-            # objtype: backward-compatible @classmethod handling with Python < 3.13
-            def cache_clear(self, _objtype=None):
-                return cache_clear(self._obj)
+            def cache_clear(self):
+                with self.cache_lock:
+                    self.cache.clear()
 
-    return Descriptor(wrapper, cache_clear)
+    return Descriptor()
 
 
 def _unlocked(method, cache, key):
-    def wrapper(self, *args, **kwargs):
-        c = cache(self)
-        k = key(self, *args, **kwargs)
-        try:
-            return c[k]
-        except KeyError:
-            pass  # key not found
-        v = method(self, *args, **kwargs)
-        try:
-            c[k] = v
-        except ValueError:
-            pass  # value too large
-        return v
-
-    def cache_clear(self):
-        c = cache(self)
-        c.clear()
-
-    class Descriptor(_ClassMethodDescriptor):
+    class Descriptor(_MethodDescriptor):
         class Wrapper(_WrapperBase):
             def __init__(self, obj):
                 super().__init__(obj, method, cache, key)
 
             def __call__(self, *args, **kwargs):
-                return wrapper(self._obj, *args, **kwargs)
+                cache = self.cache
+                key = self.cache_key(*args, **kwargs)
+                try:
+                    return cache[key]
+                except KeyError:
+                    pass  # key not found
+                val = method(self._obj, *args, **kwargs)
+                try:
+                    cache[key] = val
+                except ValueError:
+                    pass  # value too large
+                return val
 
-            # objtype: backward-compatible @classmethod handling with Python < 3.13
-            def cache_clear(self, _objtype=None):
-                return cache_clear(self._obj)
+            def cache_clear(self):
+                self.cache.clear()
 
-    return Descriptor(wrapper, cache_clear)
+    return Descriptor()
 
 
 def _wrapper(method, cache, key, lock=None, cond=None, info=None):
@@ -321,12 +291,6 @@ def _wrapper(method, cache, key, lock=None, cond=None, info=None):
         else:
             wrapper = _unlocked(method, cache, key)
 
-    # backward-compatible properties for deprecated @classmethod use
-    wrapper.cache = cache  # type: ignore
-    wrapper.cache_key = key  # type: ignore
-    wrapper.cache_lock = lock if lock is not None else cond  # type: ignore
-    wrapper.cache_condition = cond  # type: ignore
-
     # functools.update_wrapper() will not accept descriptor (decorator) as wrapper
     # https://github.com/python/typeshed/issues/9846
-    return functools.update_wrapper(wrapper, method)  # type: ignore
+    return functools.update_wrapper(wrapper, method)
