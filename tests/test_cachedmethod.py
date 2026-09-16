@@ -447,14 +447,8 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         with self.assertRaises(TypeError):
             cached.get_info(42)
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            self.assertEqual(cached.get(0), 0)
-            self.assertEqual(cached.get(0), 0)
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(len(w), 2)
-        self.assertIs(w[0].category, DeprecationWarning)
-        self.assertIs(w[1].category, DeprecationWarning)
+        with self.assertRaises(TypeError):
+            cached.get(0)
 
     def test_decorator_immutable_dict(self):
 
@@ -484,14 +478,8 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         with self.assertRaises(TypeError):
             cached.get_info(42)
 
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
+        with self.assertRaises(TypeError):
             self.assertEqual(cached.get(0), 0)
-            self.assertEqual(cached.get(0), 0)
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(len(w), 2)
-        self.assertIs(w[0].category, DeprecationWarning)
-        self.assertIs(w[1].category, DeprecationWarning)
 
     def test_decorator_different_names(self):
         # RuntimeError for Python < 3.12, TypeError otherwise
@@ -520,14 +508,16 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
             def foo(_self):
                 pass
 
-        # __set_name__ currently only asserted with info, since this
-        # may also occur with deprecated @classmethod use
-        Cached.bar = cachedmethod(lambda _: self.cache(2), info=True)(Cached.foo)  # type: ignore
+        Cached.bar = cachedmethod(lambda _: self.cache(2))(Cached.foo)  # type: ignore
+        Cached.baz = cachedmethod(lambda _: self.cache(2), info=True)(Cached.foo)  # type: ignore
 
         cached = Cached()
 
         with self.assertRaises(TypeError):
             cached.bar()  # type: ignore
+
+        with self.assertRaises(TypeError):
+            cached.baz()  # type: ignore
 
 
 class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
@@ -772,11 +762,8 @@ class WeakRefMethodTest(unittest.TestCase):
 
 
 class NoneMethodTest(unittest.TestCase):
-    def cache(self, _minsize):
-        return None
-
     def test_none_info(self):
-        cached = Cached(self.cache(1))
+        cached = Cached(None)
         wrapper = cached.get_info
 
         with self.assertRaises(TypeError):
@@ -849,3 +836,17 @@ class UnboundMethodTest(unittest.TestCase):
         mock.get.assert_called_with(1)
         self.assertEqual(mock.get(value=1), 42)
         mock.get.assert_called_with(value=1)
+
+
+class ClassMethodTest(unittest.TestCase):
+    class Cached(Cached):
+        @classmethod
+        @cachedmethod(lambda cls: {})
+        def get_class(cls, value):
+            return 42
+
+    def test_classmethod(self):
+        cached = self.Cached({})
+
+        with self.assertRaisesRegex(TypeError, "class method"):
+            cached.get_class(42)

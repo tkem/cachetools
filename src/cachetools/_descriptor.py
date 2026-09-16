@@ -3,31 +3,13 @@
 __all__ = ()
 
 import functools
-import warnings
-
-
-def _warn_classmethod(stacklevel):
-    warnings.warn(
-        "decorating class methods with @cachedmethod is deprecated",
-        DeprecationWarning,
-        stacklevel=stacklevel,
-    )
-
-
-def _warn_instance_dict(msg, stacklevel):
-    warnings.warn(
-        msg,
-        DeprecationWarning,
-        stacklevel=stacklevel,
-    )
 
 
 class _MethodDescriptor:
     """Descriptor class implementing the basic descriptor protocol."""
 
-    def __init__(self, deprecated=False):
+    def __init__(self):
         self.__attrname = None
-        self.__deprecated = deprecated
         self.__unbound = None
 
     def __set_name__(self, owner, name):
@@ -70,27 +52,23 @@ class _MethodDescriptor:
                     f"No '__dict__' attribute on {type(obj).__name__!r} "
                     f"instance to cache {self.__attrname!r} property."
                 )
-                if self.__deprecated:
-                    _warn_instance_dict(msg, 3)
-                else:
-                    raise TypeError(msg) from None
+                raise TypeError(msg) from None
             except TypeError:
                 msg = (
                     f"The '__dict__' attribute on {type(obj).__name__!r} "
                     f"instance does not support item assignment for "
                     f"caching {self.__attrname!r} property."
                 )
-                if self.__deprecated:
-                    _warn_instance_dict(msg, 3)
-                else:
-                    raise TypeError(msg) from None
-        elif self.__deprecated:
-            # deprecated @classmethod, warning already raised elsewhere
-            wrapper = self.Wrapper(obj)  # type: ignore
+                raise TypeError(msg) from None
         else:
             msg = "Cannot use @cachedmethod instance without calling __set_name__ on it"
             raise TypeError(msg) from None
         return wrapper
+
+    # called for @classmethod with Python >= 3.13
+    def __call__(self, *args, **kwargs):
+        msg = "@cachedmethod does not support decorating class methods"
+        raise TypeError(msg)
 
     def __get_unbound(self):
         # Created once and shared by all class accesses; objtype is not
@@ -120,22 +98,3 @@ class _Unbound:
             raise TypeError(msg)
         obj, *args = args
         return self.__descriptor.__get__(obj)(*args, **kwargs)
-
-
-class _ClassMethodDescriptor(_MethodDescriptor):
-    """Descriptor base class supporting deprecated @classmethod use."""
-
-    def __init__(self, wrapper, cache_clear):
-        super().__init__(deprecated=True)
-        self.__wrapper = wrapper
-        self.__cache_clear = cache_clear
-
-    # called for @classmethod with Python >= 3.13
-    def __call__(self, *args, **kwargs):
-        _warn_classmethod(stacklevel=3)
-        return self.__wrapper(*args, **kwargs)
-
-    # backward-compatible @classmethod handling with Python >= 3.13
-    def cache_clear(self, objtype):
-        _warn_classmethod(stacklevel=3)
-        return self.__cache_clear(objtype)
