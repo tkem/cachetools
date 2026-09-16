@@ -1,3 +1,16 @@
+v7.2.0 (2026-09-16)
+===================
+
+- Deprecate use of ``cache=None`` to suppress caching with the
+  ``@cached`` decorator.
+
+- Add support for Python 3.15.
+
+- Minor test improvements.
+
+- Minor documentation updates.
+
+
 v7.1.8 (2026-08-31)
 ===================
 
