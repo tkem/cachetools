@@ -45,10 +45,6 @@ class Cached:
     def get_cond(self, value):
         return self.__get(value)
 
-    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
-    def get_cond_error(self, _value):
-        raise ValueError("test error")
-
     @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond, info=True)
     def get_cond_info(self, value):
         return self.__get(value)
@@ -69,6 +65,12 @@ class Cached:
     )
     def get_lock_cond_info(self, value):
         return self.__get(value)
+
+    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
+    def get_cond_error(self, _value):
+        raise ValueError("test error")
+
+    get_aliased = cachedmethod(lambda self: self.cache)(__get)
 
 
 class Unhashable(Cached):
@@ -425,6 +427,94 @@ class MethodDecoratorTestMixin(_TestCaseProtocol):
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.cond.count, 4)
 
+    def test_decorator_pickle(self):
+        import pickle
+
+        cache = self.cache(3)
+        cached = Cached(cache)
+        self.assertEqual(len(cache), 0)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(len(unpickled.get_cond.cache), 0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(unpickled.get_cond(0), 0)
+        self.assertEqual(len(unpickled.get_cond.cache), 1)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(unpickled.get_cond(1), 1)
+        self.assertEqual(len(unpickled.get_cond.cache), 2)
+        self.assertEqual(len(cache), 0)
+
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(cached.get_cond(0), 0)
+        self.assertEqual(len(cache), 1)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(len(unpickled.get_cond.cache), 1)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(unpickled.get_cond(0), 0)
+        self.assertEqual(len(unpickled.get_cond.cache), 1)
+        self.assertEqual(len(cache), 1)
+        self.assertEqual(unpickled.get_cond(1), 1)
+        self.assertEqual(len(unpickled.get_cond.cache), 2)
+        self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_info(self):
+        import pickle
+
+        cache = self.cache(3)
+        cached = Cached(cache)
+        maxsize = cache.maxsize if isinstance(cache, Cache) else None
+        self.assertEqual(len(cache), 0)
+
+        # hits and misses will be reset when unpickling - since these
+        # are primarily used for debugging/tuning, this is probably OK
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 0, maxsize, 0))
+        self.assertEqual(unpickled.get_cond_info(0), 0)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 1, maxsize, 1))
+        self.assertEqual(unpickled.get_cond_info(1), 1)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 2, maxsize, 2))
+        self.assertEqual(len(cache), 0)
+
+        self.assertEqual(cached.get_cond_info(0), 0)
+        self.assertEqual(len(cache), 1)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (0, 0, maxsize, 1))
+        self.assertEqual(unpickled.get_cond_info(0), 0)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (1, 0, maxsize, 1))
+        self.assertEqual(unpickled.get_cond_info(1), 1)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (1, 1, maxsize, 2))
+        self.assertEqual(unpickled.get_cond_info(0), 0)
+        self.assertEqual(unpickled.get_cond_info.cache_info(), (2, 1, maxsize, 2))
+        self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_aliased(self):
+        import pickle
+
+        cache = self.cache(3)
+        cached = Cached(cache)
+        self.assertEqual(len(cache), 0)
+
+        self.assertEqual(cached.get_aliased(0), 0)
+        self.assertEqual(len(cache), 1)
+
+        unpickled = pickle.loads(pickle.dumps(cached))
+        self.assertEqual(len(unpickled.get_aliased.cache), 1)
+        self.assertEqual(unpickled.get_aliased(0), 0)
+        self.assertEqual(len(unpickled.get_aliased.cache), 1)
+        self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_class_access(self):
+        import pickle
+
+        # decorated methods can no longer be pickled at class level
+        with self.assertRaisesRegex(TypeError, "get_cond"):
+            pickle.dumps(Cached.get_cond)
+
+        with self.assertRaisesRegex(TypeError, "get_aliased"):
+            pickle.dumps(Cached.get_aliased)
+
     def test_decorator_slots(self):
 
         class Slots:
@@ -638,7 +728,7 @@ class WeakRefMethodTest(unittest.TestCase):
         import gc
         import weakref
 
-        # FIXME: in Python 3.9, `int` does not support weak references
+        # at least with Python 3.11, `int` does not support weak references
         # even when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
             def __add__(self, other):  # type: ignore
@@ -674,6 +764,13 @@ class NoneMethodTest(unittest.TestCase):
             wrapper.cache_info()
 
 
+class AutospecTest(unittest.TestCase):
+    def test_autospec(self):
+        cached = unittest.mock.create_autospec(Cached, instance=True)
+        self.assertIsNotNone(cached.get(0))
+        self.assertIsNotNone(cached.get_info(0))
+
+
 class ClassMethodTest(unittest.TestCase):
     class Cached(Cached):
         @classmethod
@@ -693,10 +790,3 @@ class ClassMethodTest(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "class method"):
             cached.get_class(42)
-
-
-class AutospecTest(unittest.TestCase):
-    def test_autospec(self):
-        cached = unittest.mock.create_autospec(Cached, instance=True)
-        self.assertIsNotNone(cached.get(0))
-        self.assertIsNotNone(cached.get_info(0))

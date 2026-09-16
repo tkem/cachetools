@@ -1,4 +1,10 @@
-"""Function decorator helpers."""
+"""Function decorator helpers.
+
+At least for now, the implementation prefers clarity and performance
+over ease of maintenance, thus providing separate wrappers for all
+valid combinations of parameters lock, condition and info.
+
+"""
 
 # pyright: reportFunctionMemberAccess=false
 
@@ -6,11 +12,6 @@ __all__ = ()
 
 import functools
 import warnings
-
-# At least for now, the implementation prefers clarity and performance
-# over ease of maintenance, thus providing separate wrappers for
-# all valid combinations of decorator parameters lock, condition and
-# info.
 
 
 def _condition_info(func, cache, key, lock, cond, info):
