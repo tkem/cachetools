@@ -239,11 +239,7 @@ class _cachedmethod_unbound(Generic[_P, _R]):
     def __get__(
         self, obj: Any, objtype: type | None = None
     ) -> _cachedmethod_wrapper[_P, _R]: ...
-    @overload
     def __call__(self, obj: Any, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
-    # deprecated @classmethod use
-    @overload
-    def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
 
 @type_check_only
 class _cachedmethod_wrapper(Generic[_P, _R]):
