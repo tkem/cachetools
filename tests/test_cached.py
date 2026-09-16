@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 import cachetools
 import cachetools.keys
@@ -404,26 +405,34 @@ class NoneWrapperTest(unittest.TestCase):
         return args + tuple(kwargs.items())
 
     def test_decorator(self):
-        wrapper = cachetools.cached(None)(self.func)
+        with warnings.catch_warnings(record=True) as w:
+            wrapper = cachetools.cached(None)(self.func)
+            self.assertIs(w[0].category, DeprecationWarning)
 
         self.assertEqual(wrapper(0), (0,))
         self.assertEqual(wrapper(1), (1,))
         self.assertEqual(wrapper(1, foo="bar"), (1, ("foo", "bar")))
 
     def test_decorator_attributes(self):
-        wrapper = cachetools.cached(None)(self.func)
+        with warnings.catch_warnings(record=True) as w:
+            wrapper = cachetools.cached(None)(self.func)
+            self.assertIs(w[0].category, DeprecationWarning)
 
         self.assertIs(wrapper.cache, None)
         self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
         self.assertIs(wrapper.cache_lock, None)
 
     def test_decorator_clear(self):
-        wrapper = cachetools.cached(None)(self.func)
+        with warnings.catch_warnings(record=True) as w:
+            wrapper = cachetools.cached(None)(self.func)
+            self.assertIs(w[0].category, DeprecationWarning)
 
         wrapper.cache_clear()  # no-op
 
     def test_decorator_info(self):
-        wrapper = cachetools.cached(None, info=True)(self.func)
+        with warnings.catch_warnings(record=True) as w:
+            wrapper = cachetools.cached(None, info=True)(self.func)
+            self.assertIs(w[0].category, DeprecationWarning)
 
         self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
         self.assertEqual(wrapper(0), (0,))

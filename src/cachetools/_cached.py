@@ -3,6 +3,7 @@
 __all__ = ()
 
 import functools
+import warnings
 
 # At least for now, the implementation prefers clarity and performance
 # over ease of maintenance, thus providing separate wrappers for
@@ -227,6 +228,13 @@ def _uncached(func):
 
 
 def _wrapper(func, cache, key, lock=None, cond=None, info=None):
+    if cache is None:
+        warnings.warn(
+            "@cachetools.cached(cache=None) is deprecated",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+
     if info is not None:
         if cache is None:
             wrapper = _uncached_info(func, info)
