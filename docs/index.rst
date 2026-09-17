@@ -519,12 +519,10 @@ often called with the same arguments:
       >>> foo(1)
       >>> foo(a=1)
 
-   .. deprecated:: 7.2
+   .. versionchanged:: 8.0
 
-      Passing :const:`None` as `cache` parameter is deprecated, and
-      support will be removed in the next major version.  This is
-      mainly for consistency with :func:`cachedmethod`, which no
-      longer supports returning :const:`None` from `cache(self)`.
+      Passing :const:`None` as `cache` parameter is no longer
+      supported, and now raises a :exc:`TypeError`.
 
 
 .. decorator:: cachedmethod(cache, key=cachetools.keys.methodkey, lock=None, condition=None, info=False)
