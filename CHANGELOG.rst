@@ -1,3 +1,27 @@
+v8.0.0 (UNRELEASED)
+===================
+
+- Require Python 3.11 or later (breaking change).
+
+- Drop support for decorating class methods with ``@cachedmethod``
+  (breaking change).
+
+- Drop support for decorating instances with ``@cachedmethod`` that do
+  not provide a mutable ``__dict__`` attribute (breaking change).
+
+- Drop support for passing ``cache=None`` to the ``@cached``
+  decorator, which makes it more consistent with ``@cachedmethod``
+  (breaking change).
+
+- Remove the previously undocumented ``@cached`` attribute
+  ``cache_info``, set to ``None``, when ``info=False``, for
+  consistency with type stubs and ``@cachedmethod`` (potentially
+  breaking change).
+
+- Re-enable pickling of objects with cached methods (broken since
+  v7.0.0).
+
+
 v7.2.0 (2026-09-16)
 ===================
 
