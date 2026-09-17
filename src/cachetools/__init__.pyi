@@ -154,7 +154,7 @@ class _cached_wrapper(Generic[_P, _R]):
     __wrapped__: Callable[_P, _R]
     __name__: str
     __doc__: str | None
-    cache: MutableMapping[Any, Any] | None
+    cache: MutableMapping[Any, Any]
     cache_key: Callable[..., Any] = ...
     cache_lock: AbstractContextManager[Any] | None = None
     cache_condition: _AbstractCondition | None = None
@@ -167,7 +167,7 @@ class _cached_wrapper_info(_cached_wrapper[_P, _R]):
 
 @overload
 def cached(
-    cache: MutableMapping[_KT, Any] | None,
+    cache: MutableMapping[_KT, Any],
     key: Callable[..., _KT] = ...,
     lock: AbstractContextManager[Any] | None = None,
     condition: _AbstractCondition | None = None,
@@ -176,7 +176,7 @@ def cached(
 ) -> Callable[[Callable[_P, _R]], _cached_wrapper_info[_P, _R]]: ...
 @overload
 def cached(
-    cache: MutableMapping[_KT, Any] | None,
+    cache: MutableMapping[_KT, Any],
     key: Callable[..., _KT] = ...,
     lock: AbstractContextManager[Any] | None = None,
     condition: _AbstractCondition | None = None,
@@ -184,7 +184,7 @@ def cached(
 ) -> Callable[[Callable[_P, _R]], _cached_wrapper[_P, _R]]: ...
 @overload
 def cached(
-    cache: MutableMapping[_KT, Any] | None,
+    cache: MutableMapping[_KT, Any],
     key: Callable[..., _KT],
     lock: AbstractContextManager[Any] | None,
     condition: _AbstractCondition | None,
