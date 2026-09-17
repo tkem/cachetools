@@ -742,6 +742,11 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     """
     from ._cached import _wrapper
 
+    # TODO: require cache to be an instance of collections.abc.Mapping,
+    # as with @cachedmethod if info=True?
+    if cache is None:  # no longer supported since v8.0.0
+        raise TypeError("cache must not be None")
+
     def decorator(func):
         if info:
             if isinstance(cache, Cache):
