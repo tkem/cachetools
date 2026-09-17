@@ -1,5 +1,4 @@
 import unittest
-import warnings
 
 import cachetools
 import cachetools.keys
@@ -403,44 +402,60 @@ class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 0, None, 0))
 
 
-class NoneWrapperTest(unittest.TestCase):
+class NonMappingWrapperTest(unittest.TestCase, DecoratorTestMixin):
+    class NonMappingCache:
+        """Duck-typed cache that is not a `collections.abc.Mapping` instance."""
+
+        def __init__(self):
+            self.__data = {}
+
+        def __contains__(self, key):
+            return key in self.__data
+
+        def __getitem__(self, key):
+            return self.__data[key]
+
+        def __setitem__(self, key, value):
+            self.__data[key] = value
+
+        def __len__(self):
+            return len(self.__data)
+
+        def setdefault(self, key, value=None):
+            return self.__data.setdefault(key, value)
+
+        def clear(self):
+            self.__data.clear()
+
+    def cache(self, minsize):
+        return self.NonMappingCache()
+
+    def test_decorator_info(self):
+        # neither maxsize nor currsize can be determined for non-mappings
+        cache = self.cache(2)
+        wrapper = cachetools.cached(cache, info=True)(self.func)  # type: ignore
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
+        self.assertEqual(wrapper(1), 1)
+        self.assertEqual(wrapper.cache_info(), (0, 2, 0, 0))
+        self.assertEqual(wrapper(0), 0)
+        self.assertEqual(wrapper.cache_info(), (1, 2, 0, 0))
+        wrapper.cache_clear()
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+
+
+class InvalidCacheTest(unittest.TestCase):
     def func(self, *args, **kwargs):
         return args + tuple(kwargs.items())
 
     def test_decorator(self):
-        with warnings.catch_warnings(record=True) as w:
-            wrapper = cachetools.cached(None)(self.func)
-            self.assertIs(w[0].category, DeprecationWarning)
-
-        self.assertEqual(wrapper(0), (0,))
-        self.assertEqual(wrapper(1), (1,))
-        self.assertEqual(wrapper(1, foo="bar"), (1, ("foo", "bar")))
-
-    def test_decorator_attributes(self):
-        with warnings.catch_warnings(record=True) as w:
-            wrapper = cachetools.cached(None)(self.func)
-            self.assertIs(w[0].category, DeprecationWarning)
-
-        self.assertIs(wrapper.cache, None)
-        self.assertIs(wrapper.cache_key, cachetools.keys.hashkey)
-        self.assertIs(wrapper.cache_lock, None)
-
-    def test_decorator_clear(self):
-        with warnings.catch_warnings(record=True) as w:
-            wrapper = cachetools.cached(None)(self.func)
-            self.assertIs(w[0].category, DeprecationWarning)
-
-        wrapper.cache_clear()  # no-op
+        # passing cache=None is no longer supported since v8.0.0
+        with self.assertRaisesRegex(TypeError, "None"):
+            cachetools.cached(None)  # type: ignore
 
     def test_decorator_info(self):
-        with warnings.catch_warnings(record=True) as w:
-            wrapper = cachetools.cached(None, info=True)(self.func)
-            self.assertIs(w[0].category, DeprecationWarning)
-
-        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
-        self.assertEqual(wrapper(0), (0,))
-        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
-        self.assertEqual(wrapper(1), (1,))
-        self.assertEqual(wrapper.cache_info(), (0, 2, 0, 0))
-        wrapper.cache_clear()
-        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        # passing cache=None is no longer supported since v8.0.0
+        with self.assertRaisesRegex(TypeError, "None"):
+            cachetools.cached(None, info=True)  # type: ignore

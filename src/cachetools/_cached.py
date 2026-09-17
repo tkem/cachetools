@@ -9,7 +9,6 @@ valid combinations of parameters lock, condition and info.
 __all__ = ()
 
 import functools
-import warnings
 
 
 def _condition_info(func, cache, key, lock, cond, info):
@@ -126,23 +125,6 @@ def _unlocked_info(func, cache, key, info):
     return wrapper
 
 
-def _uncached_info(func, info):
-    misses = 0
-
-    def wrapper(*args, **kwargs):
-        nonlocal misses
-        misses += 1
-        return func(*args, **kwargs)
-
-    def cache_clear():
-        nonlocal misses
-        misses = 0
-
-    wrapper.cache_clear = cache_clear
-    wrapper.cache_info = lambda: info(0, misses)
-    return wrapper
-
-
 def _condition(func, cache, key, lock, cond):
     pending = set()
 
@@ -220,26 +202,9 @@ def _unlocked(func, cache, key):
     return wrapper
 
 
-def _uncached(func):
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-
-    wrapper.cache_clear = lambda: None
-    return wrapper
-
-
 def _wrapper(func, cache, key, lock=None, cond=None, info=None):
-    if cache is None:
-        warnings.warn(
-            "@cachetools.cached(cache=None) is deprecated",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-
     if info is not None:
-        if cache is None:
-            wrapper = _uncached_info(func, info)
-        elif cond is not None and lock is not None:
+        if cond is not None and lock is not None:
             wrapper = _condition_info(func, cache, key, lock, cond, info)
         elif cond is not None:
             wrapper = _condition_info(func, cache, key, cond, cond, info)
@@ -248,9 +213,7 @@ def _wrapper(func, cache, key, lock=None, cond=None, info=None):
         else:
             wrapper = _unlocked_info(func, cache, key, info)
     else:
-        if cache is None:
-            wrapper = _uncached(func)
-        elif cond is not None and lock is not None:
+        if cond is not None and lock is not None:
             wrapper = _condition(func, cache, key, lock, cond)
         elif cond is not None:
             wrapper = _condition(func, cache, key, cond, cond)
@@ -258,10 +221,8 @@ def _wrapper(func, cache, key, lock=None, cond=None, info=None):
             wrapper = _locked(func, cache, key, lock)
         else:
             wrapper = _unlocked(func, cache, key)
-
     wrapper.cache = cache
     wrapper.cache_key = key
     wrapper.cache_lock = lock if lock is not None else cond
     wrapper.cache_condition = cond
-
     return functools.update_wrapper(wrapper, func)
