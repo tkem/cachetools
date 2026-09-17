@@ -1,3 +1,33 @@
+v8.0.0 (UNRELEASED)
+===================
+
+- Require Python 3.11 or later (breaking change).
+
+- Drop support for decorating class methods with ``@cachedmethod``
+  (breaking change).
+
+- Drop support for decorating instances with ``@cachedmethod`` that do
+  not provide a mutable ``__dict__`` attribute (breaking change).
+
+- Drop support for passing ``cache=None`` to the ``@cached``
+  decorator, which makes it more consistent with ``@cachedmethod``
+  (breaking change).
+
+- Require custom cache classes to support ``__len__`` when used with
+  ``@cached`` or ``@cachedmethod`` and ``info=True`` (potentially
+  breaking change).
+
+- Remove the previously undocumented ``@cached`` attribute
+  ``cache_info``, set to ``None``, when ``info=False``, for
+  consistency with type stubs and ``@cachedmethod`` (potentially
+  breaking change).
+
+- Rename ``_CacheInfo`` to ``CacheInfo``, thus making it public.  Note
+  that this has been previously documented only as "a named tuple
+  showing ``hits``, ``misses``, ``maxsize`` and ``currsize``"
+  (potentially breaking change).
+
+
 v7.2.1 (2026-10-05)
 ===================
 
