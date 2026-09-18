@@ -468,6 +468,11 @@ class TTLCache(_TimedCache):
             next.prev = prev
 
     def __init__(self, maxsize, ttl, timer=time.monotonic, getsizeof=None):
+        # Reject negative / NaN TTL up front. Previously these constructed
+        # successfully but every item expired immediately (timer() < time+ttl
+        # is never true), which masked caller mistakes.
+        if not (ttl >= 0):
+            raise ValueError("ttl must be non-negative")
         _TimedCache.__init__(self, maxsize, timer, getsizeof)
         self.__root = root = TTLCache._Link()
         root.prev = root.next = root

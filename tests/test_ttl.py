@@ -84,6 +84,12 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(0, len(cache))
         self.assertEqual(set(), set(cache))
 
+    def test_ttl_rejects_negative(self):
+        with self.assertRaises(ValueError):
+            TTLCache(maxsize=2, ttl=-1)
+        with self.assertRaises(ValueError):
+            TTLCache(maxsize=2, ttl=float("nan"))
+
     def test_ttl_timer(self):
         cache = TTLCache[int, int, int](maxsize=2, ttl=2, timer=Timer())
         self.assertEqual(cache.timer.time, 0)
