@@ -264,4 +264,7 @@ def _wrapper(func, cache, key, lock=None, cond=None, info=None):
     wrapper.cache_lock = lock if lock is not None else cond
     wrapper.cache_condition = cond
 
-    return functools.update_wrapper(wrapper, func)
+    wrapper_attributes = wrapper.__dict__.copy()
+    functools.update_wrapper(wrapper, func)
+    wrapper.__dict__.update(wrapper_attributes)
+    return wrapper
