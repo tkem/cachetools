@@ -192,6 +192,59 @@ class DecoratorTestMixin(_TestCaseProtocol):
         self.assertIs(wrapper.cache_lock, lock)
         self.assertIs(wrapper.cache_condition, cond)
 
+    def test_stacked_decorator_attributes(self):
+        for lock, condition in (
+            (None, None),
+            (CountedLock(), None),
+            (None, CountedCondition()),
+        ):
+            inner_cache = self.cache(2)
+            outer_cache = self.cache(2)
+            inner = cachetools.cached(inner_cache, info=True)(self.func)
+            inner.__dict__["custom_attribute"] = object()
+            outer = cachetools.cached(
+                outer_cache,
+                key=cachetools.keys.typedkey,
+                lock=lock,
+                condition=condition,
+            )(inner)
+
+            self.assertIs(outer.__wrapped__, inner)
+            self.assertIs(
+                outer.__dict__["custom_attribute"], inner.__dict__["custom_attribute"]
+            )
+            self.assertIs(outer.cache, outer_cache)
+            self.assertIs(outer.cache_key, cachetools.keys.typedkey)
+            self.assertIs(outer.cache_lock, lock if lock is not None else condition)
+            self.assertIs(outer.cache_condition, condition)
+            self.assertIsNone(getattr(outer, "cache_info", None))
+            outer(1)
+            outer.cache_clear()
+            self.assertEqual(len(outer_cache), 0)
+            self.assertEqual(len(inner_cache), 1)
+
+    def test_stacked_decorator_info(self):
+        for lock, condition in (
+            (None, None),
+            (CountedLock(), None),
+            (None, CountedCondition()),
+        ):
+            inner_cache = self.cache(2)
+            outer_cache = self.cache(2)
+            inner = cachetools.cached(inner_cache, info=True)(self.func)
+            outer = cachetools.cached(
+                outer_cache, info=True, lock=lock, condition=condition
+            )(inner)
+            outer(1)
+            outer(1)
+            self.assertEqual(outer.cache_info()[:2], (1, 1))
+            self.assertEqual(inner.cache_info()[:2], (0, 1))
+            outer.cache_clear()
+            self.assertEqual(outer.cache_info()[:2], (0, 0))
+            self.assertEqual(inner.cache_info()[:2], (0, 1))
+            self.assertEqual(len(outer_cache), 0)
+            self.assertEqual(len(inner_cache), 1)
+
     def test_decorator_clear(self):
         cache = self.cache(2)
         wrapper = cachetools.cached(cache)(self.func)
