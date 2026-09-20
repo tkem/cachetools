@@ -742,8 +742,6 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     """
     from ._cached import _wrapper
 
-    # TODO: require cache to be an instance of collections.abc.Mapping,
-    # as with @cachedmethod if info=True?
     if cache is None:  # no longer supported since v8.0.0
         raise TypeError("cache must not be None")
 
@@ -754,15 +752,10 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
                 def make_info(hits, misses):
                     return _CacheInfo(hits, misses, cache.maxsize, cache.currsize)
 
-            elif isinstance(cache, collections.abc.Mapping):
-
-                def make_info(hits, misses):
-                    return _CacheInfo(hits, misses, None, len(cache))
-
             else:
 
                 def make_info(hits, misses):
-                    return _CacheInfo(hits, misses, 0, 0)
+                    return _CacheInfo(hits, misses, None, len(cache))
 
             return _wrapper(func, cache, key, lock, condition, info=make_info)
         else:
@@ -784,10 +777,8 @@ def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None, info=Fals
             def make_info(cache, hits, misses):
                 if isinstance(cache, Cache):
                     return _CacheInfo(hits, misses, cache.maxsize, cache.currsize)
-                elif isinstance(cache, collections.abc.Mapping):
-                    return _CacheInfo(hits, misses, None, len(cache))
                 else:
-                    raise TypeError("cache(self) must return a mutable mapping")
+                    return _CacheInfo(hits, misses, None, len(cache))
 
             return _wrapper(method, cache, key, lock, condition, info=make_info)
         else:
