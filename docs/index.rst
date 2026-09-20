@@ -756,8 +756,9 @@ this module provides several memoizing function decorators with a
 similar API.  All these decorators wrap a function with a memoizing
 callable that saves up to the `maxsize` most recent calls, using
 different caching strategies.  If `maxsize` is set to :const:`None`,
-the caching strategy is effectively disabled and the cache can grow
-without bound.
+the size limit is disabled and the cache can grow without bound.
+For :func:`ttl_cache`, the time-to-live still applies, so cached
+results expire after `ttl` even without a size limit.
 
 If the optional argument `typed` is set to :const:`True`, function
 arguments of different types will be cached separately.  For example,
