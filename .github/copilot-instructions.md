@@ -25,7 +25,7 @@
 - Since 8.0 (`Require custom cache classes to support __len__`), `cache_info()` reports only two shapes: `cache.maxsize`/`cache.currsize` for a `Cache`, else `(None, len(cache))`. Custom cache classes no longer need to be a `collections.abc.Mapping` — any object supporting `__len__` (and subscripting) works, and the old `(0, 0)` fallback for non-mappings is gone. Covered by `CustomCacheTest` in `test_cached.py` (renamed from `NonMappingWrapperTest`)
 - `CacheInfo` (`__init__.py`): public `NamedTuple` subclass (`hits`, `misses`, `maxsize`, `currsize`) returned by `cache_info()`; exported in `__all__` and importable directly, unlike the private `_CacheInfo` it replaced (mirroring, but not reusing, stdlib `functools`'s own private `_CacheInfo`). Two classmethods build instances, both branching on `isinstance(cache, Cache)`: `CacheInfo.maker(cache)` returns a `lambda h, m: ...` closure captured once by `cached()` decorator, since the cache is fixed at decoration time; `CacheInfo.make(cache, hits, misses)` is passed directly as `make_info` for `cachedmethod()`, since `cache(self)` must be re-evaluated per call/instance
 - `@cachedmethod` (`_cachedmethod.py`): Method memoization; `_WrapperBase` (per-instance callable, holds `__wrapped__`/cache/key/lock/cond) is subclassed by six explicit wrapper classes — `_UnlockedWrapper`, `_LockedWrapper`, `_ConditionWrapper`, and their `*Info` variants — one per lock/condition/info combination, selected by the `_wrapper()` factory (previously generated dynamically via nested per-combo classes); each `_Condition*Wrapper` keeps a per-instance pending set; `cache(self)` must return an object supporting `__len__` (or be a `Cache`), not `None` — a plain `None` still fails late via `len(None)`
-- `_MethodDescriptor` (`_descriptor.py`): generic descriptor helper (not `@cachedmethod`-specific, reusable by other decorators) implementing `__set_name__`/`__get__`/`__call__`; wraps a `wrapper(obj, name)` factory passed into its constructor, where `name` is the attribute name recorded by `__set_name__`; replaces itself in the instance `__dict__` via `setdefault` for thread safety; `obj is None` (class access) returns the bare wrapper so `mock.patch(autospec=True)` works
+- `_MethodDescriptor` (`_descriptor.py`): generic descriptor helper (not `@cachedmethod`-specific — also used by `@acachedmethod`) implementing `__set_name__`/`__get__`/`__call__`; wraps a `wrapper(obj, name)` factory passed into its constructor, where `name` is the attribute name recorded by `__set_name__`; replaces itself in the instance `__dict__` via `setdefault` for thread safety; `obj is None` (class access) returns the bare wrapper so `mock.patch(autospec=True)` works
 - `_MethodDescriptor` error cases: `__set_name__` raises `TypeError` if the same descriptor is bound to two names; `__get__` raises `TypeError` when the instance has no writable `__dict__` (e.g. `__slots__`) or when `__set_name__` was never called
 - `_WrapperBase.__reduce__` makes wrappers (and their owning instances) picklable by rebuilding them via `getattr(obj, name)`, using the attribute name handed down by the descriptor rather than the wrapped function's `__name__`, so aliases (`get_aliased = cachedmethod(...)(__get)`) round-trip correctly; it relies on the `cache`/`lock`/`cond` getters being lazy, since `getattr()` runs while the unpickled instance `__dict__` is still empty. Wrappers obtained through class access (`_obj is None`) have no instance to rebuild from and raise `TypeError` at dump time rather than failing later on load; that message also names the attribute (`Cannot pickle 'get_cond'`), not the wrapped function
 - Pickling a wrapper does **not** pickle wrapper state: `__wrapped__` and the lock/condition closures are dropped and rebuilt, and `*Info` hit/miss counters reset to zero on load (only the cache itself, pickled as part of the owning instance, survives). This is accepted behavior, not a bug — the counters are debugging/tuning aids. Unlike cache pickling, restoring objects with cached methods *is* a supported, tested feature (re-enabled in 8.0, broken since 7.0)
@@ -33,6 +33,10 @@
 - Both support `key`, `lock`, `condition`, and `info` parameters; when `condition` is given without `lock`, `condition` serves as both lock and condition
 - `info=True` adds `cache_info()`/`cache_clear()`; `info=False` (default) only provides `cache_clear()`, and accessing `cache_info` raises `AttributeError`.
 - `func.py`: `functools.lru_cache`-compatible wrappers; all use `threading.Condition()` by default for thread safety + stampede prevention; `_UnboundTTLCache` extends `TTLCache` with `math.inf` maxsize for `maxsize=None`; each wrapper also gets a `cache_parameters()` function returning `{"maxsize": ..., "typed": ...}`
+- `@acached` (`aio.py`/`_acached.py`): async-only counterpart of `@cached` for coroutine functions; no `lock`/`condition` parameters and no `cache_lock`/`cache_condition` attributes — asyncio has no thread lock/condition equivalent here. Reuses `CacheInfo.maker(cache)` directly as `make_info`, the same classmethod `cached()` uses — no duplicated branching logic. `_acached.py` uses plain closures (`_acache`/`_acache_info`), not wrapper classes. A `# TODO` in `_acached.py` tracks cache-stampede handling (e.g. storing futures in the cache), since concurrent tasks awaiting the same key currently both compute and race to store. `aio.pyi` provides typed stubs (`_acached_wrapper`/`_acached_wrapper_info`) mirroring `_cached_wrapper`, but `__call__` returns `Awaitable[_R]`
+- `@acachedmethod` (`aio.py`/`_acachedmethod.py`): async-only counterpart of `@cachedmethod`, default `key=keys.methodkey`. Only **two** wrapper classes instead of six — `_AsyncWrapper` and `_AsyncInfoWrapper`, both deriving from `_AsyncWrapperBase` — since there are no `lock`/`condition` parameters; the `_wrapper()` factory picks between them and hands the result to the shared `_MethodDescriptor`. `_AsyncWrapperBase` mirrors `_WrapperBase` (same `__reduce__` rebuild-via-`getattr` pickling, same `cache`/`cache_key` lazy properties, same `functools.update_wrapper` + `__wrapped__` FIXME comment), minus the `cache_lock`/`cache_condition` properties; `__call__` is `async def` and awaits `self.__wrapped__(self._obj, ...)`. The same `# TODO` about cache stampede applies (it points at `_acached.py`)
+- Unlike `acached()`, `acachedmethod()` has **no** eager `cache is None` check — it matches sync `cachedmethod()` and fails late (`NoneMethodTest`). It passes `CacheInfo.make` directly as `make_info` (same classmethod `cachedmethod()` uses), since `cache(self)` must be resolved per call/instance rather than once at decoration time
+- Unlike `cached()`/`cachedmethod()`, the `info` parameter of `acached()`/`acachedmethod()` is keyword-only (`*, info=False`) — a deliberate API difference from the sync decorators, noted by a comment in `aio.py`, to leave room for adding parameters ahead of `info` later without breaking positional callers
 
 ### Thread Safety
 3-tier locking: **Unlocked** | **Locked** (release during compute) | **Condition** (lock + pending set + `wait_for`/`notify_all` to prevent thundering herd)
@@ -66,10 +70,12 @@ tox -e doctest                            # Run doctests
 - `CustomCacheTest` in `test_cached.py` (renamed from `NonMappingWrapperTest`; nested fixture renamed `CustomCache`) supplies a duck-typed cache that is not a `collections.abc.Mapping` but does support `__len__`, confirming `cached(..., info=True)` reports `(None, len(cache))` for it instead of the old `(0, 0)`; `DictTest` (renamed from `DictWrapperTest`) covers the plain-`dict` case
 - The `Cached` fixture in `test_cachedmethod.py` provides one method per wrapper combination plus `get_cond_error` (raises, for pending-set cleanup) and `get_aliased` (descriptor bound to a name other than the function's `__name__`); `test_decorator_pickle`, `test_decorator_pickle_info`, `test_decorator_pickle_aliased` and `test_decorator_pickle_class_access` cover the restored wrapper pickling, and `test_decorator_slots` / `test_decorator_immutable_dict` / `test_decorator_different_names` / `test_decorator_no_set_name` cover the `_MethodDescriptor` error paths
 - `ClassMethodTest` in `test_cachedmethod.py` asserts that `@cachedmethod` + `@classmethod` raises `TypeError`; the former standalone `tests/test_classmethod.py` was removed
+- `test_acached.py` mirrors `test_cached.py` for `@acached`: `AsyncDecoratorTestMixin` (async `func`/`error_func`), `AsyncCacheTest`/`AsyncDictTest`/`AsyncCustomCacheTest` (duck-typed `CustomCache` supporting `__len__` but not `collections.abc.Mapping`) parallel `CacheWrapperTest`/`DictTest`/`CustomCacheTest`, and `AsyncInvalidCacheTest` parallels `InvalidCacheTest` for the `cache=None` guard; there is no async equivalent of condition/lock variants or pickling tests
+- `test_acachedmethod.py` mirrors `test_cachedmethod.py` for `@acachedmethod`: all test classes derive from `unittest.IsolatedAsyncioTestCase` plus `AsyncMethodDecoratorTestMixin`, and the `Cached` fixture only needs `get`/`get_typed`/`get_info`/`get_aliased` (no lock/condition/error variants). It covers the same descriptor error paths (`test_decorator_slots`, `test_decorator_immutable_dict`, `test_decorator_different_names`, `test_decorator_no_set_name`), pickling (`test_decorator_pickle`, `*_info`, `*_aliased`, `*_class_access`), `ClassMethodTest`, and `NoneMethodTest` (late `TypeError` since `acachedmethod` has no eager `None` check). `AutospecTest` is `@unittest.skip`-ped with a FIXME: `unittest.mock.create_autospec` returns an `AsyncMock` for async functions
 - Threading tests (`test_threading.py`) cover both condition-based stampede prevention and lock-only race resolution under real concurrency; `TIMEOUT` class constant + `thread.join(timeout=TIMEOUT)` + `assertFalse(t.is_alive())` guard against deadlock hangs
 - CI (`.github/workflows/ci.yml`) runs `tox` on 3.11–3.15 including the free-threaded builds (`3.13t`/`3.14t`/`3.15t`) and `pypy3.11`; coverage is uploaded to Codecov per interpreter
 - Coverage is 100% only on Python ≥ 3.13. On older interpreters `test_classmethod` is skipped, leaving `_MethodDescriptor.__call__` (2 lines) uncovered — expected, not a gap to "fix"
-- Current baseline: 352 tests pass, 100% coverage on Python 3.11
+- Current baseline on Python 3.11: 412 tests collected, 409 passed, 3 skipped (`_descriptor.py` at 93%, everything else 100%)
 
 ### Code Style
 - **ruff** formatter and linter (`tox -e ruff-format`, `tox -e ruff`); lint ignores `DTZ005` and `UP031` in `pyproject.toml`
@@ -88,6 +94,12 @@ tox -e doctest                            # Run doctests
 ### Changelog
 **Do not edit `CHANGELOG.rst`.** It is updated by the maintainer only, immediately before a release is published. Never add, amend, or reorder entries as part of a regular code change.
 
+### Code Review
+Review findings live in `.github/copilot-review.md` — update that file rather than dumping a review into chat or creating a new markdown file:
+- Sections are `Code — Potential Issues`, `Async (aio)`, `Tests — Gaps`, `Docs`, each a markdown table numbered from 1
+- **Always order items by severity/priority, highest first** (High → Medium → Low → Info) within every table; renumber after reordering and fix cross-references between sections (e.g. "see Docs item 2")
+- Drop findings once they are fixed instead of marking them resolved; refresh the header (date, reviewed ref, validation/test/coverage numbers) from an actual `tox` run
+
 ### Type Stubs
 Inline stubs ship with the package (`py.typed` marker):
 - `@overload` distinguishes `info=True` vs `info=False`; the two `Literal[True]` variants are listed **first**, followed by the `Literal[False]` default overload (the literal types are disjoint, but keep the usual most-specific-first order)
@@ -97,7 +109,8 @@ Inline stubs ship with the package (`py.typed` marker):
 - `_cached_wrapper` / `_cachedmethod_wrapper` use `ParamSpec(_P)` to preserve decorated function signatures; `__call__` uses `_P.args`/`_P.kwargs`
 - `cache_info` is declared only on the `*_info` wrapper classes, matching the runtime (no `cache_info` attribute at all when `info=False`)
 - `_cachedmethod_wrapper` models the descriptor protocol: `__set_name__`, `__get__`, `__call__`, and `__reduce__`; uses `Concatenate[Any, _P]` so `_P` excludes `self`
-- `_cachedmethod.py` uses `# type: ignore` for `functools.update_wrapper()` (typeshed #9846)
+- `aio.pyi` repeats that pattern for `_acachedmethod_wrapper`/`_acachedmethod_wrapper_info`, with `__call__` returning `Awaitable[_R]` and no `cache_lock`/`cache_condition`
+- `_cachedmethod.py` uses `# type: ignore` for `functools.update_wrapper()` (typeshed #9846); `_acachedmethod.py` does the same
 - Validate stubs with `tox -e pyright`
 
 ## Key Files
@@ -105,10 +118,14 @@ Inline stubs ship with the package (`py.typed` marker):
 - `src/cachetools/__init__.pyi` — Type stubs for caches and decorators
 - `src/cachetools/_cached.py` — `@cached` decorator variants
 - `src/cachetools/_cachedmethod.py` — `@cachedmethod` wrapper classes and `_wrapper()` factory
-- `src/cachetools/_descriptor.py` — Generic `_MethodDescriptor` descriptor helper, shared by `@cachedmethod`
+- `src/cachetools/aio.py` / `aio.pyi` — `@acached` / `@acachedmethod` public API and stubs
+- `src/cachetools/_acached.py` — `@acached` closure-based wrappers
+- `src/cachetools/_acachedmethod.py` — `@acachedmethod` wrapper classes and `_wrapper()` factory
+- `src/cachetools/_descriptor.py` — Generic `_MethodDescriptor` descriptor helper, shared by `@cachedmethod` and `@acachedmethod`
 - `src/cachetools/keys.py` / `keys.pyi` — Key functions
 - `src/cachetools/func.py` / `func.pyi` — Functools-compatible wrappers (`lru_cache`, `ttl_cache`, etc.)
 - `tests/__init__.py` — Test mixin and helpers
 - `tox.ini` — Test/lint/docs environments; `envlist = py,docs,doctest,pyright,ruff,ruff-format`
 - `pyproject.toml` — Build config plus `ruff`/`pyright` settings; version: `{attr = "cachetools.__version__"}` (`__version__` lives in `src/cachetools/__init__.py`)
+- `.github/copilot-review.md` — Running code review; priority-ordered findings per section
 - `CHANGELOG.rst` — Maintainer-only, written at release time; do not modify
