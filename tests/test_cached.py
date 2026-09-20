@@ -441,7 +441,7 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(Cached.get_static(1), 1)
 
 
-class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
+class DictTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
         return {}
 
@@ -460,8 +460,8 @@ class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 0, None, 0))
 
 
-class NonMappingWrapperTest(unittest.TestCase, DecoratorTestMixin):
-    class NonMappingCache:
+class CustomCacheTest(unittest.TestCase, DecoratorTestMixin):
+    class CustomCache:
         """Duck-typed cache that is not a `collections.abc.Mapping` instance."""
 
         def __init__(self):
@@ -486,22 +486,21 @@ class NonMappingWrapperTest(unittest.TestCase, DecoratorTestMixin):
             self.__data.clear()
 
     def cache(self, minsize):
-        return self.NonMappingCache()
+        return self.CustomCache()
 
     def test_decorator_info(self):
-        # neither maxsize nor currsize can be determined for non-mappings
         cache = self.cache(2)
         wrapper = cachetools.cached(cache, info=True)(self.func)  # type: ignore
-        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(wrapper.cache_info(), (0, 0, None, 0))
         self.assertEqual(wrapper(0), 0)
-        self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
+        self.assertEqual(wrapper.cache_info(), (0, 1, None, 1))
         self.assertEqual(wrapper(1), 1)
-        self.assertEqual(wrapper.cache_info(), (0, 2, 0, 0))
+        self.assertEqual(wrapper.cache_info(), (0, 2, None, 2))
         self.assertEqual(wrapper(0), 0)
-        self.assertEqual(wrapper.cache_info(), (1, 2, 0, 0))
+        self.assertEqual(wrapper.cache_info(), (1, 2, None, 2))
         wrapper.cache_clear()
         self.assertEqual(len(cache), 0)
-        self.assertEqual(wrapper.cache_info(), (0, 0, 0, 0))
+        self.assertEqual(wrapper.cache_info(), (0, 0, None, 0))
 
 
 class InvalidCacheTest(unittest.TestCase):
