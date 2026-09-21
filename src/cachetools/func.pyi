@@ -1,7 +1,7 @@
 from collections.abc import Callable, Sequence
 from typing import Any, Final, Generic, ParamSpec, TypeVar, overload, type_check_only
 
-from . import _CacheInfo
+from . import CacheInfo
 
 __all__: Final = ("fifo_cache", "lfu_cache", "lru_cache", "rr_cache", "ttl_cache")
 
@@ -15,7 +15,7 @@ class _cachetools_cache_wrapper(Generic[_P, _R]):
     __name__: str
     __doc__: str | None
     def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
-    def cache_info(self) -> _CacheInfo: ...
+    def cache_info(self) -> CacheInfo: ...
     def cache_clear(self) -> None: ...
     def cache_parameters(self) -> dict[str, Any]: ...
 

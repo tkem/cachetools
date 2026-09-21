@@ -384,8 +384,9 @@ often called with the same arguments:
 
    If `info` is set to :const:`True`, the wrapped function is
    instrumented with a :func:`cache_info()` function that returns a
-   named tuple showing `hits`, `misses`, `maxsize` and `currsize`, to
-   help measure the effectiveness of the cache.
+   :class:`CacheInfo` instance, a named tuple with fields `hits`,
+   `misses`, `maxsize` and `currsize`, to help measure the
+   effectiveness of the cache.
 
    .. note::
 
