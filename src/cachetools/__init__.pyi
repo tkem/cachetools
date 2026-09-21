@@ -17,6 +17,7 @@ from typing import (
 
 __all__: Final = (
     "Cache",
+    "CacheInfo",
     "FIFOCache",
     "LFUCache",
     "LRUCache",
@@ -138,7 +139,7 @@ class TLRUCache(_TimedCache[_KT, _VT, _TT]):
     def ttu(self) -> Callable[[_KT, _VT, _TT], _TT]: ...
     def expire(self, time: _TT | None = None) -> list[tuple[_KT, _VT]]: ...
 
-class _CacheInfo(NamedTuple):
+class CacheInfo(NamedTuple):
     hits: int
     misses: int
     maxsize: float | None
@@ -198,7 +199,7 @@ class _cached_wrapper_info(_cached_wrapper[_P, _R]):
     def __get__(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, obj: object, objtype: type | None = None
     ) -> _cached_wrapper_info[_P, _R]: ...
-    def cache_info(self) -> _CacheInfo: ...
+    def cache_info(self) -> CacheInfo: ...
 
 @overload
 def cached(
@@ -274,7 +275,7 @@ class _cachedmethod_wrapper_info(_cachedmethod_wrapper[_P, _R]):
     def __get__(
         self, obj: Any, objtype: type | None = None
     ) -> _cachedmethod_wrapper_info[_P, _R]: ...
-    def cache_info(self) -> _CacheInfo: ...
+    def cache_info(self) -> CacheInfo: ...
 
 @overload
 def cachedmethod(
