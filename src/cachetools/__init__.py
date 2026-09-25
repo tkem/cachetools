@@ -358,12 +358,11 @@ class RRCache(Cache):
 
     def popitem(self):
         """Remove and return a random `(key, value)` pair."""
-        try:
-            key = self.__choice(self.__keys)
-        except IndexError:
+        keys = self.__keys
+        if not keys:
             raise KeyError("%s is empty" % type(self).__name__) from None
-        else:
-            return (key, self.pop(key))
+        key = self.__choice(keys)
+        return (key, self.pop(key))
 
     def clear(self):
         Cache.clear(self)
