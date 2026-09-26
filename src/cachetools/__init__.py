@@ -50,7 +50,7 @@ class Cache(collections.abc.MutableMapping):
     __size = _DefaultSize()
 
     def __init__(self, maxsize, getsizeof=None):
-        if maxsize < 0:
+        if not maxsize >= 0:
             raise ValueError("maxsize must be non-negative")
         if getsizeof:
             self.getsizeof = getsizeof
@@ -77,7 +77,7 @@ class Cache(collections.abc.MutableMapping):
     def __setitem__(self, key, value):
         maxsize = self.__maxsize
         size = self.getsizeof(value)
-        if size < 0:
+        if not size >= 0:
             raise ValueError("value size must be non-negative")
         if size > maxsize:
             raise ValueError("value too large")

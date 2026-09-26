@@ -49,6 +49,27 @@ class CacheTestMixin(_TestCaseProtocol):
         with self.assertRaises(ValueError):
             self.Cache(maxsize=-math.inf)
 
+    def test_maxsize_nan(self):
+        with self.assertRaises(ValueError):
+            self.Cache(maxsize=math.nan)
+
+    def test_getsizeof_nan(self):
+        cache = self.Cache(maxsize=2, getsizeof=lambda value: value)
+        cache[1] = 1
+        cache[2] = 1
+
+        # Neither a new item nor an update may poison size accounting.
+        for key in (3, 1):
+            with self.assertRaises(ValueError):
+                cache[key] = math.nan
+            self.assertEqual({1: 1, 2: 1}, dict(cache))
+            self.assertEqual(2, cache.currsize)
+
+        cache[3] = 1
+        self.assertEqual(2, len(cache))
+        self.assertEqual(2, cache.currsize)
+        self.assertIn(3, cache)
+
     def test_maxsize_zero(self):
         cache = self.Cache(maxsize=0)
 
