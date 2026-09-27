@@ -1,5 +1,7 @@
 """Function decorator helpers."""
 
+# pyright: reportFunctionMemberAccess=false
+
 __all__ = ()
 
 import functools

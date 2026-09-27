@@ -40,6 +40,8 @@
 ## Developer Workflows
 
 ### Testing
+**Always run tests via `tox`, never bare `pytest`/`python -m pytest`** — tox
+pins the environment (dependencies, coverage, etc.) that CI relies on.
 ```bash
 tox -e py                                 # Run tests with coverage
 tox -e ruff                               # Linting (ruff check)
@@ -57,7 +59,7 @@ tox -e doctest                            # Run doctests
 
 ### Code Style
 - **ruff** formatter and linter (`tox -e ruff-format`, `tox -e ruff`); lint ignores `DTZ005` and `UP031` in `pyproject.toml`
-- **pyright** runs in `typeCheckingMode = "standard"`, with `reportFunctionMemberAccess` downgraded to `information`
+- **pyright** runs in `typeCheckingMode = "standard"` project-wide (no global rule downgrades); `_cached.py` and `_cachedmethod.py` carry file-level `# pyright: rule=false` comments (`reportFunctionMemberAccess` / `reportOptionalContextManager` + `reportOptionalMemberAccess`) for known-safe patterns (dynamic attrs on plain functions; lock/condition always non-`None` at their call sites) — prefer this scoped suppression over relaxing rules globally
 
 ## Conventions
 

@@ -1,5 +1,7 @@
 """Method decorator helpers."""
 
+# pyright: reportOptionalContextManager=false, reportOptionalMemberAccess=false
+
 __all__ = ()
 
 import functools
