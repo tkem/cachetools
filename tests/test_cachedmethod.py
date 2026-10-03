@@ -683,6 +683,85 @@ class NoneMethodTest(unittest.TestCase):
             wrapper.cache_info()
 
 
+class InheritanceTest(unittest.TestCase):
+    def test_decorated_override(self):
+        class Base:
+            def __init__(self):
+                self.base_cache = {}
+                self.child_cache = {}
+
+            @cachedmethod(lambda self: self.base_cache, info=True)
+            def get(self, value):
+                return value * 2
+
+        class Child(Base):
+            @cachedmethod(lambda self: self.child_cache, info=True)
+            def get(self, value):
+                return super().get(value) + 1
+
+        child = Child()
+        self.assertEqual(child.get(3), 7)
+        self.assertEqual(child.get(3), 7)
+        self.assertEqual(child.get.cache_info(), (1, 1, None, 1))
+        base_get = super(Child, child).get
+        self.assertIs(base_get, super(Child, child).get)
+        self.assertEqual(base_get(3), 6)
+        self.assertEqual(base_get.cache_info(), (1, 1, None, 1))
+
+    def test_multilevel_override(self):
+        class Base:
+            def __init__(self):
+                self.cache = {}
+
+            @cachedmethod(
+                lambda self: self.cache,
+                key=lambda self, value: keys.hashkey("base", value),
+            )
+            def get(self, value):
+                return value * 2
+
+        class Child(Base):
+            @cachedmethod(
+                lambda self: self.cache,
+                key=lambda self, value: keys.hashkey("child", value),
+            )
+            def get(self, value):
+                return super().get(value) + 1
+
+        class GrandChild(Child):
+            @cachedmethod(
+                lambda self: self.cache,
+                key=lambda self, value: keys.hashkey("grandchild", value),
+            )
+            def get(self, value):
+                return super().get(value) + 1
+
+        child = GrandChild()
+        self.assertEqual(child.get(3), 8)
+        self.assertEqual(child.get(3), 8)
+        self.assertEqual(super(GrandChild, child).get(3), 7)
+        self.assertEqual(super(Child, child).get(3), 6)
+        self.assertEqual(child.get(4), 10)
+
+    def test_undecorated_override(self):
+        class Base:
+            def __init__(self):
+                self.cache = {}
+
+            @cachedmethod(lambda self: self.cache)
+            def get(self, value):
+                return value * 2
+
+        class Child(Base):
+            def get(self, value):  # type: ignore[reportIncompatibleVariableOverride]
+                return super().get(value) + 1
+
+        child = Child()
+        self.assertEqual(child.get(3), 7)
+        self.assertEqual(child.get(3), 7)
+        self.assertEqual(child.get(4), 9)
+
+
 class AutospecTest(unittest.TestCase):
     def test_autospec_no_warnings(self):
 
