@@ -86,3 +86,12 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
     def test_rr_default_choice(self):
         cache = RRCache[int, int](maxsize=2)
         self.assertIs(cache.choice, random.choice)
+    def test_rr_popitem_empty_custom_choice(self):
+        # RRCache.popitem() on empty cache should raise KeyError
+        # regardless of the choice function (issue #423)
+        for choice_fn in [min, max, lambda s: next(iter(s))]:
+            cache = RRCache(maxsize=2, choice=choice_fn)
+            with self.assertRaises(KeyError) as cm:
+                cache.popitem()
+            self.assertEqual(cm.exception.args[0], "RRCache is empty")
+
