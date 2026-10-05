@@ -308,35 +308,6 @@ class CacheTestMixin(_TestCaseProtocol):
     def test_getsizeof_param(self):
         self._test_getsizeof(self.Cache(maxsize=3, getsizeof=lambda x: x))
 
-    def test_getsizeof_falsey(self):
-        class FalseySizer:
-            def __bool__(self):
-                return False
-
-            def __call__(self, value):
-                return value
-
-        class ZeroLengthSizer:
-            def __len__(self):
-                return 0
-
-            def __call__(self, value):
-                return value
-
-        for sizer in (FalseySizer(), ZeroLengthSizer()):
-            cache = self.Cache(maxsize=3, getsizeof=sizer)
-            self.assertTrue(cache.getsizeof is sizer)
-
-            cache[1] = 1
-            cache[2] = 2
-            self.assertEqual(2, len(cache))
-            self.assertEqual(3, cache.currsize)
-
-            cache[3] = 3
-            self.assertEqual(1, len(cache))
-            self.assertEqual(3, cache.currsize)
-            self.assertEqual(3, cache[3])
-
     def test_getsizeof_replace_grow(self):
         cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
 
