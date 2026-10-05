@@ -35,6 +35,15 @@ class _WrapperBase:
         self.__lock = lock if lock is not None else lambda _: None
         self.__cond = cond if cond is not None else lambda _: None
 
+    def __reduce__(self):
+        # rebuild via the descriptor instead of pickling unpicklable
+        # internals, e.g. __wrapped__, lock/cond closures; note that
+        # this will also reset hits and misses counts for *Info*
+        # wrappers
+        if self.__obj is None:
+            raise TypeError(f"Cannot pickle {self.__name!r}")
+        return (getattr, (self.__obj, self.__name))
+
     @property
     def cache(self):
         return self.__cache(self.__obj)
