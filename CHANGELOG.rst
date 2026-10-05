@@ -1,3 +1,14 @@
+v7.2.1 (2026-10-05)
+===================
+
+- Improve error handling for ``RRCache.popitem()`` when the cache is
+  empty.
+
+- Minor style and documentation improvements.
+
+- Update CI environment.
+
+
 v7.2.0 (2026-09-16)
 ===================
 

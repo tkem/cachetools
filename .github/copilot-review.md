@@ -1,8 +1,10 @@
-# Code Review — cachetools 7.1.8
+# Code Review — cachetools 7.2.1
 
-**Date:** 2026-09-01
-**Reviewed:** `develop` @ v7.1.8 (no source changes since the release tag)
-**CI status:** All green (tox: py, docs, doctest, pyright, ruff, ruff-format)
+**Date:** 2026-10-05
+**Reviewed:** `develop` @ pending v7.2.1 (post-v7.2.0 fixes: #430 falsey `getsizeof`, #423
+`RRCache.popitem()` empty check, pyright file-level suppression change, TTL docs clarification)
+**CI status:** All green (tox: py — 338 passed, 99% coverage; docs; doctest; pyright —
+0 errors; ruff; ruff-format)
 
 ## Type Stubs (`__init__.pyi`, `keys.pyi`, `func.pyi`)
 
@@ -17,7 +19,14 @@ preserve decorated function signatures (`__call__` uses `_P.args`/`_P.kwargs`).
 for `_cachetools_cache_wrapper` since the `func.*_cache` decorators
 rewrite signatures (adding `cache_info`, `cache_clear`, `cache_parameters`).
 
-## Code — Potential Issues (checked against develop / v7.1.8)
+## Code — Fixed Since Last Review
+
+| # | Issue | Finding |
+|---|-------|---------|
+| 1 | #430 | `Cache.__init__` used to test `if getsizeof:`, silently ignoring any falsey-but-callable `getsizeof` (e.g. an object whose `__bool__`/`__len__` returns `False`). Now correctly checks `getsizeof is not None`. |
+| 2 | #423 | `RRCache.popitem()` used to rely on `choice()` raising `IndexError` on an empty sequence — true for `random.choice`, but not contractually required of a custom `choice` function. Now detects an empty `__keys` list itself before calling `choice`, consistent with how the other cache types detect emptiness on their own structure. |
+
+## Code — Potential Issues (checked against develop / pending v7.2.1)
 
 | # | Severity | Location | Finding |
 |---|----------|----------|---------|
@@ -44,6 +53,7 @@ No implementation bugs found beyond the items above.
 |---|----------|---------|
 | 1 | Low | `condition` docs say it must provide `wait()`, `wait_for()`, `notify()` and `notify_all()`, but only `wait_for()` and `notify_all()` are used at runtime. The `_AbstractCondition` protocol could be relaxed. |
 | 2 | Info | Pickling is correctly absent from the docs and should stay that way — see code finding #4. |
+| 3 | Info | `docs/index.rst` now clarifies that `ttl_cache(maxsize=None)` still expires entries after `ttl` even though the size limit is disabled — good, addresses a previously likely point of confusion. |
 
 ## Keys & Func Modules
 

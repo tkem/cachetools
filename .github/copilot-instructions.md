@@ -8,6 +8,7 @@
 - Subclasses override `__setitem__`, `__getitem__`, `__delitem__`, and `popitem()` to implement eviction policies
 - **Critical:** Subclasses use default parameter trick (e.g., `cache_setitem=Cache.__setitem__`) to call parent methods efficiently while avoiding recursion
 - `Cache.__init__` rejects negative `maxsize` eagerly (`ValueError`); `maxsize=0` (no-space cache) and `math.inf` (unbounded) remain valid
+- `Cache.__init__` checks `getsizeof is not None` (not truthiness) before overriding `self.getsizeof`, so falsey-but-callable `getsizeof` objects (e.g. a callable whose `__bool__`/`__len__` returns `False`) are still honored
 - `Cache.__setitem__` rejects negative `getsizeof` results and values larger than `maxsize` (`ValueError`); when replacing an existing key it evicts until the *new* size fits, recomputing `diffsize` if the key itself gets evicted
 - `Cache` rolls its own `get()`/`pop()`/`setdefault()` instead of inheriting them, because the `MutableMapping` defaults assume `__getitem__` raises `KeyError` — untrue when `__missing__` is implemented
 - Every subclass overrides `clear()` so it is O(1) instead of the `MutableMapping` O(n) `popitem()` loop; `_TimedCache.clear()` deliberately skips `expire()` for the same reason
@@ -17,7 +18,7 @@
 - `FIFOCache`: Evicts oldest inserted (`OrderedDict`)
 - `LRUCache`: Evicts least recently used (`OrderedDict.move_to_end()`)
 - `LFUCache`: Evicts least frequently used; doubly-linked list of `_Link` frequency buckets (`__slots__`, `keys` set) anchored at a sentinel `__root`, plus a `__links` key→bucket dict
-- `RRCache`: Random eviction (`__keys` list with `__index` dict for O(1) removal)
+- `RRCache`: Random eviction (`__keys` list with `__index` dict for O(1) removal); `popitem()` checks `__keys` for emptiness itself before calling `choice`, since a custom `choice` function is only contractually required to handle non-empty sequences (not guaranteed to raise `IndexError` like `random.choice`)
 - `TTLCache`/`TLRUCache`: Time-based eviction via `_TimedCache` base; `_Timer` context manager freezes time during operations to prevent TOCTOU bugs (re-entrant via `__nesting`, proxies the wrapped timer through `__getattr__`); `expire()` returns `list[tuple[key, value]]`
 
 ### Decorators
