@@ -52,7 +52,7 @@ class Cache(collections.abc.MutableMapping):
     def __init__(self, maxsize, getsizeof=None):
         if maxsize < 0:
             raise ValueError("maxsize must be non-negative")
-        if getsizeof:
+        if getsizeof is not None:
             self.getsizeof = getsizeof
         if self.getsizeof is not Cache.getsizeof:
             self.__size = {}
