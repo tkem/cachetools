@@ -1,229 +1,90 @@
-"""Function decorator helpers."""
+"""Function decorator helpers.
 
-# pyright: reportFunctionMemberAccess=false
+At least for now, the implementation prefers clarity and performance
+over ease of maintenance, thus providing separate wrappers for all
+valid combinations of parameters lock, condition and info.
+
+"""
+
+# pyright: reportArgumentType=false
 
 __all__ = ()
 
 import functools
 
-# At least for now, the implementation prefers clarity and performance
-# over ease of maintenance, thus providing separate wrappers for
-# all valid combinations of decorator parameters lock, condition and
-# info.
+from ._decorator import (
+    _BasicMixin,
+    _ConditionInfoMixin,
+    _ConditionMixin,
+    _InfoMixin,
+    _LockedInfoMixin,
+    _LockedMixin,
+)
 
 
-def _condition_info(func, cache, key, lock, cond, info):
-    hits = misses = 0
-    pending = set()
+class _WrapperBase:
+    """Wrapper base class providing default implementations for properties."""
 
-    def wrapper(*args, **kwargs):
-        nonlocal hits, misses
-        k = key(*args, **kwargs)
-        with lock:
-            cond.wait_for(lambda: k not in pending)
-            try:
-                result = cache[k]
-                hits += 1
-                return result
-            except KeyError:
-                pending.add(k)
-                misses += 1
-        try:
-            v = func(*args, **kwargs)
-            with lock:
-                try:
-                    cache[k] = v
-                except ValueError:
-                    pass  # value too large
-                return v
-        finally:
-            with lock:
-                pending.remove(k)
-                cond.notify_all()
-
-    def cache_clear():
-        nonlocal hits, misses
-        with lock:
-            cache.clear()
-            hits = misses = 0
-
-    def cache_info():
-        with lock:
-            return info(hits, misses)
-
-    wrapper.cache_clear = cache_clear
-    wrapper.cache_info = cache_info
-    return wrapper
+    def __init__(self, cache, key, lock=None, cond=None):
+        self.cache = cache
+        self.cache_key = key
+        self.cache_lock = lock
+        self.cache_condition = cond
 
 
-def _locked_info(func, cache, key, lock, info):
-    hits = misses = 0
-
-    def wrapper(*args, **kwargs):
-        nonlocal hits, misses
-        k = key(*args, **kwargs)
-        with lock:
-            try:
-                result = cache[k]
-                hits += 1
-                return result
-            except KeyError:
-                misses += 1
-        v = func(*args, **kwargs)
-        with lock:
-            try:
-                # In case of a race condition, i.e. if another thread
-                # stored a value for this key while we were calling
-                # func(), prefer the cached value.
-                return cache.setdefault(k, v)
-            except ValueError:
-                return v  # value too large
-
-    def cache_clear():
-        nonlocal hits, misses
-        with lock:
-            cache.clear()
-            hits = misses = 0
-
-    def cache_info():
-        with lock:
-            return info(hits, misses)
-
-    wrapper.cache_clear = cache_clear
-    wrapper.cache_info = cache_info
-    return wrapper
+class _BasicWrapper(_WrapperBase, _BasicMixin):
+    def __init__(self, func, cache, key):
+        _WrapperBase.__init__(self, cache, key)
+        _BasicMixin.__init__(self, func)
 
 
-def _unlocked_info(func, cache, key, info):
-    hits = misses = 0
-
-    def wrapper(*args, **kwargs):
-        nonlocal hits, misses
-        k = key(*args, **kwargs)
-        try:
-            result = cache[k]
-            hits += 1
-            return result
-        except KeyError:
-            misses += 1
-        v = func(*args, **kwargs)
-        try:
-            cache[k] = v
-        except ValueError:
-            pass  # value too large
-        return v
-
-    def cache_clear():
-        nonlocal hits, misses
-        cache.clear()
-        hits = misses = 0
-
-    def cache_info():
-        return info(hits, misses)
-
-    wrapper.cache_clear = cache_clear
-    wrapper.cache_info = cache_info
-    return wrapper
+class _LockedWrapper(_WrapperBase, _LockedMixin):
+    def __init__(self, func, cache, key, lock):
+        _WrapperBase.__init__(self, cache, key, lock)
+        _LockedMixin.__init__(self, func)
 
 
-def _condition(func, cache, key, lock, cond):
-    pending = set()
-
-    def wrapper(*args, **kwargs):
-        k = key(*args, **kwargs)
-        with lock:
-            cond.wait_for(lambda: k not in pending)
-            try:
-                result = cache[k]
-                return result
-            except KeyError:
-                pending.add(k)
-        try:
-            v = func(*args, **kwargs)
-            with lock:
-                try:
-                    cache[k] = v
-                except ValueError:
-                    pass  # value too large
-                return v
-        finally:
-            with lock:
-                pending.remove(k)
-                cond.notify_all()
-
-    def cache_clear():
-        with lock:
-            cache.clear()
-
-    wrapper.cache_clear = cache_clear
-    return wrapper
+class _ConditionWrapper(_WrapperBase, _ConditionMixin):
+    def __init__(self, func, cache, key, lock, cond):
+        _WrapperBase.__init__(self, cache, key, lock, cond)
+        _ConditionMixin.__init__(self, func)
 
 
-def _locked(func, cache, key, lock):
-    def wrapper(*args, **kwargs):
-        k = key(*args, **kwargs)
-        with lock:
-            try:
-                return cache[k]
-            except KeyError:
-                pass  # key not found
-        v = func(*args, **kwargs)
-        with lock:
-            try:
-                # In case of a race condition, i.e. if another thread
-                # stored a value for this key while we were calling
-                # func(), prefer the cached value.
-                return cache.setdefault(k, v)
-            except ValueError:
-                return v  # value too large
-
-    def cache_clear():
-        with lock:
-            cache.clear()
-
-    wrapper.cache_clear = cache_clear
-    return wrapper
+class _InfoWrapper(_WrapperBase, _InfoMixin):
+    def __init__(self, func, cache, key, info):
+        _WrapperBase.__init__(self, cache, key)
+        _InfoMixin.__init__(self, func, info)
 
 
-def _unlocked(func, cache, key):
-    def wrapper(*args, **kwargs):
-        k = key(*args, **kwargs)
-        try:
-            return cache[k]
-        except KeyError:
-            pass  # key not found
-        v = func(*args, **kwargs)
-        try:
-            cache[k] = v
-        except ValueError:
-            pass  # value too large
-        return v
+class _LockedInfoWrapper(_WrapperBase, _LockedInfoMixin):
+    def __init__(self, func, cache, key, lock, info):
+        _WrapperBase.__init__(self, cache, key, lock)
+        _LockedInfoMixin.__init__(self, func, info)
 
-    wrapper.cache_clear = lambda: cache.clear()
-    return wrapper
+
+class _ConditionInfoWrapper(_WrapperBase, _ConditionInfoMixin):
+    def __init__(self, func, cache, key, lock, cond, info):
+        _WrapperBase.__init__(self, cache, key, lock, cond)
+        _ConditionInfoMixin.__init__(self, func, info)
 
 
 def _wrapper(func, cache, key, lock=None, cond=None, info=None):
     if info is not None:
         if cond is not None and lock is not None:
-            wrapper = _condition_info(func, cache, key, lock, cond, info)
+            wrapper = _ConditionInfoWrapper(func, cache, key, lock, cond, info)
         elif cond is not None:
-            wrapper = _condition_info(func, cache, key, cond, cond, info)
+            wrapper = _ConditionInfoWrapper(func, cache, key, cond, cond, info)
         elif lock is not None:
-            wrapper = _locked_info(func, cache, key, lock, info)
+            wrapper = _LockedInfoWrapper(func, cache, key, lock, info)
         else:
-            wrapper = _unlocked_info(func, cache, key, info)
+            wrapper = _InfoWrapper(func, cache, key, info)
     else:
         if cond is not None and lock is not None:
-            wrapper = _condition(func, cache, key, lock, cond)
+            wrapper = _ConditionWrapper(func, cache, key, lock, cond)
         elif cond is not None:
-            wrapper = _condition(func, cache, key, cond, cond)
+            wrapper = _ConditionWrapper(func, cache, key, cond, cond)
         elif lock is not None:
-            wrapper = _locked(func, cache, key, lock)
+            wrapper = _LockedWrapper(func, cache, key, lock)
         else:
-            wrapper = _unlocked(func, cache, key)
-    wrapper.cache = cache
-    wrapper.cache_key = key
-    wrapper.cache_lock = lock if lock is not None else cond
-    wrapper.cache_condition = cond
+            wrapper = _BasicWrapper(func, cache, key)
     return functools.update_wrapper(wrapper, func)

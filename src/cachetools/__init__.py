@@ -731,19 +731,13 @@ class TLRUCache(_TimedCache):
 class CacheInfo(collections.namedtuple("CacheInfo", "hits misses maxsize currsize")):
     """Named tuple holding cache statistics."""
 
+    # TODO: rename make() from_...()?
     @classmethod
     def make(cls, cache, hits, misses):
         if isinstance(cache, Cache):
             return cls(hits, misses, cache.maxsize, cache.currsize)
         else:
             return cls(hits, misses, None, len(cache))
-
-    @classmethod
-    def maker(cls, cache):
-        if isinstance(cache, Cache):
-            return lambda h, m: cls(h, m, cache.maxsize, cache.currsize)
-        else:
-            return lambda h, m: cls(h, m, None, len(cache))
 
 
 def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
@@ -757,7 +751,7 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
         raise TypeError("cache must not be None")
 
     def decorator(func):
-        make_info = CacheInfo.maker(cache) if info else None
+        make_info = CacheInfo.make if info else None
         return _wrapper(func, cache, key, lock, condition, make_info)
 
     return decorator
