@@ -1,6 +1,7 @@
 import threading
 import time
 import unittest
+from collections.abc import Callable
 from typing import Any
 
 from cachetools import LRUCache, cached, cachedmethod
@@ -120,3 +121,59 @@ class ThreadingTest(unittest.TestCase):
         info = self.locked_method.cache_info()
         self.assertEqual(info.hits + info.misses, self.NTHREADS)
         self.assertGreaterEqual(info.misses, 1)
+
+    def test_cached_locked_race(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+                cache: LRUCache[Any, object] = LRUCache(1)
+                barrier = threading.Barrier(self.NTHREADS, timeout=self.TIMEOUT)
+
+                @cached(cache=cache, lock=threading.Lock(), info=info)
+                def func(barrier=barrier):
+                    result = object()
+                    # Every thread misses before any result can be cached.
+                    barrier.wait()
+                    return result
+
+                self.assert_race_results(func, cache)
+
+    def test_cachedmethod_locked_race(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+                cache: LRUCache[Any, object] = LRUCache(1)
+                lock = threading.Lock()
+                barrier = threading.Barrier(self.NTHREADS, timeout=self.TIMEOUT)
+
+                class Cached:
+                    @cachedmethod(
+                        cache=lambda self: cache, lock=lambda self: lock, info=info
+                    )
+                    def method(self, barrier=barrier):
+                        result = object()
+                        barrier.wait()
+                        return result
+
+                self.assert_race_results(Cached().method, cache)
+
+    def assert_race_results(
+        self, func: Callable[[], object], cache: LRUCache[Any, object]
+    ):
+        results: list[Any] = [None] * self.NTHREADS
+
+        def call(index):
+            results[index] = func()
+
+        threads = [
+            threading.Thread(target=call, args=(index,))
+            for index in range(self.NTHREADS)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=self.TIMEOUT)
+            self.assertFalse(thread.is_alive())
+
+        self.assertEqual(len(cache), 1)
+        cached_result = next(iter(cache.values()))
+        for result in results:
+            self.assertIs(result, cached_result)
