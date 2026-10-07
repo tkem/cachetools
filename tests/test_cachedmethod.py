@@ -1,6 +1,7 @@
 import unittest
 import unittest.mock
 import warnings
+from typing import Any
 
 from cachetools import Cache, cachedmethod, keys
 
@@ -681,6 +682,50 @@ class NoneMethodTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             wrapper.cache_info()
+
+
+class UnboundMethodTest(unittest.TestCase):
+    def test_class_call(self):
+        for name in (
+            "get",
+            "get_typed",
+            "get_info",
+            "get_lock",
+            "get_lock_info",
+            "get_cond",
+            "get_cond_info",
+            "get_lock_cond",
+            "get_lock_cond_info",
+        ):
+            with self.subTest(name=name):
+                cached = Cached(Cache(2))
+                unbound = getattr(Cached, name)
+                self.assertEqual(unbound(cached, 1), 0)
+                bound = getattr(cached, name)
+                self.assertEqual(bound(1), 0)
+                self.assertEqual(unbound(self=cached, value=2), 1)
+                self.assertEqual(bound(value=2), 1)
+                self.assertEqual(cached.count, 2)
+                if name.endswith("info"):
+                    self.assertEqual(bound.cache_info(), (2, 2, 2, 2))
+                other = Cached(Cache(2), count=10)
+                self.assertEqual(unbound(other, 1), 10)
+                self.assertEqual(bound(1), 0)
+
+    def test_base_class_call(self):
+        cached = Unhashable(Cache(2))
+        unbound: Any = Cached.get
+        self.assertEqual(unbound(cached, 1), 0)
+        self.assertEqual(cached.get(1), 0)
+        self.assertEqual(cached.count, 1)
+
+    def test_wrapped_method(self):
+        cached = Cached(Cache(2))
+        unbound = Cached.get
+        self.assertIs(unbound.__wrapped__, cached.get.__wrapped__)
+        self.assertEqual(unbound.__wrapped__(cached, 1), 0)
+        self.assertEqual(unbound.__wrapped__(cached, 1), 1)
+        self.assertEqual(len(cached.cache), 0)
 
 
 class AutospecTest(unittest.TestCase):

@@ -84,10 +84,13 @@ class _DescriptorBase:
     def __get__(self, obj, objtype=None):
         wrapper = self.Wrapper(obj)  # type: ignore
         if obj is None:
-            # Return the wrapper itself without modification when accessed
-            # through the class to support class-level introspection, such
-            # as for mocking with autospec=True in unittest.mock.
-            pass
+            descriptor = self
+
+            @functools.wraps(wrapper.__wrapped__)
+            def unbound(self, *args, **kwargs):
+                return descriptor.__get__(self, objtype)(*args, **kwargs)
+
+            return unbound
         elif self.__attrname is not None:
             # replace descriptor instance with wrapper in instance dict
             try:
