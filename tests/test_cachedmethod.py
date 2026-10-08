@@ -1,6 +1,7 @@
 import unittest
 import unittest.mock
 import warnings
+from typing import Any, cast
 
 from cachetools import Cache, cachedmethod, keys
 
@@ -681,6 +682,111 @@ class NoneMethodTest(unittest.TestCase):
 
         with self.assertRaises(TypeError):
             wrapper.cache_info()
+
+
+class InheritanceTest(unittest.TestCase):
+    def test_super_decorated_override(self):
+        for info in (False, True):
+            for sync in ("none", "lock", "condition", "both"):
+                for parent_first in (False, True):
+                    with self.subTest(info=info, sync=sync, parent_first=parent_first):
+                        options: dict[str, Any] = {"info": info}
+                        if sync in ("lock", "both"):
+                            options["lock"] = lambda self: self.lock
+                        if sync in ("condition", "both"):
+                            options["condition"] = lambda self: self.cond
+
+                        class Base:
+                            def __init__(self):
+                                self.base_cache = {}
+                                self.child_cache = {}
+                                self.lock = CountedLock()
+                                self.cond = CountedCondition()
+
+                            @cachedmethod(lambda self: self.base_cache, **options)
+                            def get(self, value):
+                                return value * 2
+
+                        class Child(Base):
+                            @cachedmethod(lambda self: self.child_cache, **options)
+                            def get(self, value):
+                                return super().get(value) + 1
+
+                        child = Child()
+                        parent = super(Child, child).get if parent_first else None
+                        self.assertEqual(child.get(3), 7)
+                        self.assertEqual(child.get(3), 7)
+                        if parent is None:
+                            parent = super(Child, child).get
+                        self.assertIs(parent, super(Child, child).get)
+                        self.assertIs(child.get, child.get)
+                        self.assertEqual(parent(3), 6)
+                        self.assertEqual(child.base_cache, {keys.hashkey(3): 6})
+                        self.assertEqual(child.child_cache, {keys.hashkey(3): 7})
+                        if info:
+                            self.assertEqual(
+                                cast(Any, parent).cache_info(), (1, 1, None, 1)
+                            )
+                            self.assertEqual(
+                                cast(Any, child.get).cache_info(), (1, 1, None, 1)
+                            )
+                        parent.cache_clear()
+                        self.assertEqual(child.base_cache, {})
+                        self.assertEqual(child.get(3), 7)
+
+    def test_super_undecorated_override(self):
+        class Base:
+            def __init__(self):
+                self.cache = {}
+
+            @cachedmethod(lambda self: self.cache, info=True)
+            def get(self, value):
+                return value * 2
+
+        class Child(Base):
+            def get(self, value):  # type: ignore[reportIncompatibleVariableOverride]
+                return super().get(value) + 1
+
+        child = Child()
+        self.assertEqual(child.get(3), 7)
+        self.assertEqual(child.get(3), 7)
+        self.assertEqual(child.get(4), 9)
+        self.assertNotIn("get", vars(child))
+        self.assertEqual(super(Child, child).get.cache_info(), (1, 2, None, 2))
+
+    def test_super_multilevel_override(self):
+        class Base:
+            def __init__(self):
+                self.cache = {}
+
+            @cachedmethod(
+                lambda self: self.cache,
+                key=lambda self, value: keys.hashkey("base", value),
+            )
+            def get(self, value):
+                return value * 2
+
+        class Child(Base):
+            @cachedmethod(
+                lambda self: self.cache,
+                key=lambda self, value: keys.hashkey("child", value),
+            )
+            def get(self, value):
+                return super().get(value) + 1
+
+        class GrandChild(Child):
+            @cachedmethod(
+                lambda self: self.cache,
+                key=lambda self, value: keys.hashkey("grandchild", value),
+            )
+            def get(self, value):
+                return super().get(value) + 1
+
+        child = GrandChild()
+        self.assertEqual(child.get(3), 8)
+        self.assertEqual(child.get(3), 8)
+        self.assertEqual(super(GrandChild, child).get(3), 7)
+        self.assertEqual(super(Child, child).get(3), 6)
 
 
 class AutospecTest(unittest.TestCase):

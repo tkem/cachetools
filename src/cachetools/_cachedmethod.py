@@ -93,7 +93,21 @@ class _DescriptorBase:
             try:
                 # In case of a race condition where another thread already replaced
                 # the descriptor, prefer the initial wrapper.
-                wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
+                descriptor = next(
+                    (
+                        cls.__dict__[self.__attrname]
+                        for cls in type(obj).__mro__
+                        if self.__attrname in cls.__dict__
+                    ),
+                    None,
+                )
+                if descriptor is self:
+                    wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
+                else:
+                    # A super() lookup must neither reuse the override's wrapper
+                    # nor replace it. Preserve state separately for each descriptor.
+                    wrappers = obj.__dict__.setdefault("__cachetools_cachedmethods", {})
+                    wrapper = wrappers.setdefault(self, wrapper)
             except AttributeError:
                 # not all objects have __dict__ (e.g. class defines slots)
                 msg = (
