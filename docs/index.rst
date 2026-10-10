@@ -538,6 +538,10 @@ often called with the same arguments:
    their sole argument to retrieve a valid cache, lock, or condition
    object for the respective instance.
 
+   A decorated method can also be called through its class by passing
+   the instance explicitly, as in ``MyClass.method(instance, ...)``.
+   This uses the same cache and statistics as ``instance.method(...)``.
+
    .. note::
 
       As with :func:`cached`, the context manager obtained by calling
