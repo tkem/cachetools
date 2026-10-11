@@ -86,6 +86,7 @@ class _DescriptorBase:
         if obj is None:
             descriptor = self
 
+            # As in the previous function wrapper, the receiver is named self.
             @functools.wraps(wrapper.__wrapped__)
             def unbound(self, *args, **kwargs):
                 return descriptor.__get__(self, objtype)(*args, **kwargs)
