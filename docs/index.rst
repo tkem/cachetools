@@ -348,6 +348,25 @@ often called with the same arguments:
       actual use case.  Providing a `condition` variable will mitigate
       these situations, but will inflict some performance penalty.
 
+   .. figure:: diagrams/condition-coordination.png
+      :alt: Two concurrent callers use the same cache key. Caller A marks the
+            key pending and computes outside the lock. Caller B waits while
+            releasing the lock. A stores the result, clears pending and wakes
+            B, which rechecks the cache and returns the cached result.
+      :width: 662px
+
+      Coordination with a `condition` for two calls sharing a key. The example
+      assumes A succeeds and its result remains cached until B reads it.
+      Downward arrows follow each caller; the horizontal arrow shows waking
+      the waiter to recheck the cache, not passing A's result directly to B.
+      :download:`Download SVG <diagrams/condition-coordination.svg>` ·
+      Diagram by `svgdiagram.ai <https://svgdiagram.ai>`__.
+
+   The pending key is cleared and waiters are notified even if the wrapped
+   function raises an exception or the result cannot be cached. A waiter
+   that finds no cached result then computes the value itself. Calls with
+   different keys can still compute concurrently.
+
    If no separate `lock` parameter is provided, `condition` must also
    implement the `context manager`_ protocol, and will also be used to
    guard access to the cache.
