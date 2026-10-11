@@ -495,6 +495,7 @@ class TTLCache(_TimedCache):
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         with self.timer as time:
+            expires = time + self.__ttl
             self.expire(time)
             cache_setitem(self, key, value)
         try:
@@ -503,7 +504,7 @@ class TTLCache(_TimedCache):
             self.__links[key] = link = TTLCache._Link(key)
         else:
             link.unlink()
-        link.expires = time + self.__ttl
+        link.expires = expires
         link.next = root = self.__root
         link.prev = prev = root.prev
         prev.next = root.prev = link
