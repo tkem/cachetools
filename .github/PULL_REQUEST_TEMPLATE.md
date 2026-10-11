@@ -26,3 +26,14 @@ When adding new features or code not already covered by existing unit
 tests, please also add some tests covering your changes under the
 `tests` directory.  For new features, please consider adding to the
 existing documentation under the `docs` directory.
+
+When providing tests and/or documentation changes with your PR, please
+consider pushing these as seperate commits, e.g.
+
+- Fix #123: ...
+- Test for #123: ...
+- Docs for #123: ...
+
+This will allow maintainers to more easily apply tests against
+different branches and earlier versions, and integrate documentation
+changes with recent rewrites.
