@@ -292,16 +292,16 @@ class LRUCache(Cache):
         self.__order = collections.OrderedDict()
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
-    try:
-        value = self._Cache__data[key]
-    except KeyError:
-        value = self.__missing__(key)
-        if key in self:  # __missing__ may not store item
+        try:
+            value = self._Cache__data[key]
+        except KeyError:
+            value = self.__missing__(key)
+            if key in self:  # __missing__ may not store item
+                self.__touch(key)
+            return value
+        else:
             self.__touch(key)
-        return value
-    else:
-        self.__touch(key)
-        return value
+            return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
