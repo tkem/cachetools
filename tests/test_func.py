@@ -4,10 +4,10 @@ from typing import Any
 
 import cachetools.func
 
-from . import _TestCaseProtocol
+from . import SimplifiedTestCaseProtocol
 
 
-class DecoratorTestMixin(_TestCaseProtocol):
+class DecoratorTestMixin(SimplifiedTestCaseProtocol):
     DECORATOR: Callable[..., Any]
 
     def decorator(self, maxsize, **kwargs):

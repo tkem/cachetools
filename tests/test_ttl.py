@@ -1,6 +1,5 @@
 import math
 import unittest
-from datetime import datetime, timedelta
 
 from cachetools import TTLCache
 
@@ -98,20 +97,6 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.timer.tick()
         self.assertEqual(cache.timer.time, 2)
         self.assertNotIn(1, cache)
-
-    def test_ttl_expiration_overflow(self):
-        cache = TTLCache[str, int, datetime](
-            maxsize=1, ttl=timedelta(days=1), timer=lambda: datetime.max
-        )
-
-        with self.assertRaises(OverflowError):
-            cache["overflow"] = 1
-
-        self.assertNotIn("overflow", cache)
-        self.assertEqual(0, len(cache))
-        self.assertEqual(0, cache.currsize)
-        self.assertEqual([], list(cache))
-        self.assertEqual([], cache.expire())
 
     def test_ttl_lru(self):
         cache = TTLCache[int, int, int](maxsize=2, ttl=1, timer=Timer())
@@ -232,6 +217,22 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         items = cache.expire(datetime.now() + timedelta(days=1))
         self.assertEqual([(1, 1)], list(items))
         self.assertEqual(0, len(cache))
+
+    def test_ttl_datetime_overflow(self):
+        from datetime import datetime, timedelta
+
+        cache = TTLCache[str, int, datetime](
+            maxsize=1, ttl=timedelta(days=1), timer=lambda: datetime.max
+        )
+
+        with self.assertRaises(OverflowError):
+            cache["overflow"] = 1
+
+        self.assertNotIn("overflow", cache)
+        self.assertEqual(0, len(cache))
+        self.assertEqual(0, cache.currsize)
+        self.assertEqual([], list(cache))
+        self.assertEqual([], cache.expire())
 
     def test_ttl_clear(self):
         cache = TTLCache[int, int, int](maxsize=2, ttl=2, timer=Timer())

@@ -4,10 +4,10 @@ import warnings
 import cachetools
 import cachetools.keys
 
-from . import CountedCondition, CountedLock, _TestCaseProtocol
+from . import CountedCondition, CountedLock, SimplifiedTestCaseProtocol
 
 
-class DecoratorTestMixin(_TestCaseProtocol):
+class DecoratorTestMixin(SimplifiedTestCaseProtocol):
     def cache(self, minsize):
         raise NotImplementedError
 

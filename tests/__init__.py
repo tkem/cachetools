@@ -5,7 +5,7 @@ from typing import Any, Protocol
 import cachetools
 
 
-class _TestCaseProtocol(Protocol):
+class SimplifiedTestCaseProtocol(Protocol):
     def assertEqual(self, first: Any, second: Any, msg: Any = None) -> None: ...
     def assertNotEqual(self, first: Any, second: Any, msg: Any = None) -> None: ...
     def assertTrue(self, expr: Any, msg: Any = None) -> None: ...
@@ -29,7 +29,7 @@ class _TestCaseProtocol(Protocol):
     ) -> Any: ...
 
 
-class CacheTestMixin(_TestCaseProtocol):
+class CacheTestMixin(SimplifiedTestCaseProtocol):
     Cache: type[cachetools.Cache]
 
     def test_defaults(self):
