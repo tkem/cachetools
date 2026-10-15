@@ -778,6 +778,12 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 0)
         self.assertEqual(cached.count, 1)
 
+    def test_class_access_identity(self):
+        self.assertIs(Cached.get, Cached.get)
+        self.assertIs(Cached.get_info, Cached.get_info)
+        self.assertIs(Unhashable.get, Cached.get)
+        self.assertIsNot(Cached.get, Cached.get_info)
+
     def test_wrapped_method(self):
         cached = Cached(Cache(2))
         self.assertIs(Cached.get.__wrapped__, cached.get.__wrapped__)
