@@ -109,6 +109,29 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         # Then do a call which will cause a deadlock with a non-reentrant lock.
         self.assertEqual(cached(RecursiveEquals(True)), RecursiveEquals(True))
 
+    def test_decorator_method(self):
+        """Though it is not encouraged, like functools.lru_cache, the
+        cachetools.func decorators may be used on methods, too.
+
+        """
+
+        decorator = self.decorator(maxsize=2)
+
+        class Cached:
+            @decorator
+            def get(self, n):
+                return n
+
+        cached = Cached()
+        self.assertEqual(cached.get(1), 1)
+        self.assertEqual(cached.get(1), 1)
+        self.assertEqual(Cached.get(cached, 1), 1)
+        self.assertEqual(cached.get.cache_info(), (2, 1, 2, 1))
+        self.assertEqual(Cached.get.cache_info(), (2, 1, 2, 1))
+        cached.get.cache_clear()
+        self.assertEqual(cached.get.cache_info(), (0, 0, 2, 0))
+        self.assertEqual(Cached.get.cache_info(), (0, 0, 2, 0))
+
 
 class FIFODecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.fifo_cache)

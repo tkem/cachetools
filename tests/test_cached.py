@@ -380,6 +380,27 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 1, 0, 0))
         self.assertEqual(lock.count, 5)
 
+    def test_decorator_method(self):
+        """Though it is not encouraged, like functools.lru_cache, the
+        @cached decorator may be used on methods, too.
+
+        """
+
+        class Cached:
+            @cachetools.cached(self.cache(2), key=cachetools.keys.methodkey, info=True)
+            def get(self, value):
+                return value
+
+        cached = Cached()
+        self.assertEqual(cached.get(1), 1)  # type: ignore
+        self.assertEqual(cached.get(1), 1)  # type: ignore
+        self.assertEqual(Cached.get(cached, 1), 1)
+        self.assertEqual(cached.get.cache_info(), (2, 1, 2, 1))
+        self.assertEqual(Cached.get.cache_info(), (2, 1, 2, 1))
+        cached.get.cache_clear()
+        self.assertEqual(cached.get.cache_info(), (0, 0, 2, 0))
+        self.assertEqual(Cached.get.cache_info(), (0, 0, 2, 0))
+
 
 class DictWrapperTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
