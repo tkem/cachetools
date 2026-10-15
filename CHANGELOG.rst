@@ -1,3 +1,18 @@
+v7.2.2 (2026-10-15)
+===================
+
+- Fix ``@cachedmethod`` for subclasses that override a decorated
+  method and call the base class implementation via ``super()``.
+
+- Restore class access to instance methods decorated with
+  ``@cachedmethod``.
+
+- Improve ``TTLCache`` robustness when calculating expiration time
+  fails.
+
+- Various unit test improvements.
+
+
 v7.2.1 (2026-10-05)
 ===================
 
