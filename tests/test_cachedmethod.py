@@ -356,6 +356,7 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.get.__wrapped__(cached, 0), 0)
         self.assertEqual(cached.get.__name__, "get")
+        self.assertEqual(cached.get.__qualname__, "Cached.get")
         self.assertEqual((cached.get.__doc__ or "").strip(), "docstring")
         self.assertEqual(len(cache), 0)
         self.assertEqual(cached.get(0), 1)
@@ -784,6 +785,8 @@ class UnboundMethodTest(unittest.TestCase):
     def test_wrapped_method(self):
         cached = Cached(Cache(2))
         self.assertIs(Cached.get.__wrapped__, cached.get.__wrapped__)
+        self.assertEqual(Cached.get.__name__, "get")
+        self.assertEqual(Cached.get.__qualname__, "Cached.get")
         self.assertEqual(Cached.get.__wrapped__(cached, 1), 0)
         self.assertEqual(Cached.get.__wrapped__(cached, 1), 1)
         self.assertEqual(len(cached.cache), 0)

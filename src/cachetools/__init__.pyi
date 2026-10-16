@@ -155,6 +155,7 @@ class _AbstractCondition(AbstractContextManager[Any], Protocol):
 class _cached_wrapper(Generic[_P, _R]):
     __wrapped__: Callable[_P, _R]
     __name__: str
+    __qualname__: str
     __doc__: str | None
     cache: MutableMapping[Any, Any] | None
     cache_key: Callable[..., Any] = ...
@@ -227,6 +228,7 @@ def cached(
 class _cachedmethod_unbound(Generic[_P, _R]):
     __wrapped__: Callable[Concatenate[Any, _P], _R]
     __name__: str
+    __qualname__: str
     __doc__: str | None
     @overload
     def __call__(self, obj: Any, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
@@ -238,6 +240,7 @@ class _cachedmethod_unbound(Generic[_P, _R]):
 class _cachedmethod_wrapper(Generic[_P, _R]):
     __wrapped__: Callable[Concatenate[Any, _P], _R]
     __name__: str
+    __qualname__: str
     __doc__: str | None
     cache: MutableMapping[Any, Any]
     cache_key: Callable[..., Any] = ...

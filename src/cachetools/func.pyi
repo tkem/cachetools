@@ -24,6 +24,7 @@ _T = TypeVar("_T")
 class _cachetools_cache_wrapper(Generic[_P, _R]):
     __wrapped__: Callable[_P, _R]
     __name__: str
+    __qualname__: str
     __doc__: str | None
     @overload  # class access, e.g. Cls.method
     def __get__(

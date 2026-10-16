@@ -154,6 +154,8 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         wrapper = cachetools.cached(cache)(self.func)
 
         self.assertEqual(wrapper.__wrapped__, self.func)
+        self.assertEqual(wrapper.__name__, "func")
+        self.assertEqual(wrapper.__qualname__, "DecoratorTestMixin.func")
 
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper.__wrapped__(0), 0)
