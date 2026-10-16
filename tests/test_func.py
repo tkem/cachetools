@@ -132,6 +132,24 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(cached.get.cache_info(), (0, 0, 2, 0))
         self.assertEqual(Cached.get.cache_info(), (0, 0, 2, 0))
 
+    def test_stacked_decorators(self):
+        inner_wrapper = self.decorator(maxsize=2)(lambda n: n)
+        outer_wrapper = self.decorator(maxsize=3, typed=True)(inner_wrapper)
+        self.assertIs(outer_wrapper.__wrapped__, inner_wrapper)
+        self.assertEqual(
+            inner_wrapper.cache_parameters(), {"maxsize": 2, "typed": False}
+        )
+        self.assertEqual(
+            outer_wrapper.cache_parameters(), {"maxsize": 3, "typed": True}
+        )
+        self.assertEqual(outer_wrapper(1), 1)
+        self.assertEqual(outer_wrapper(1), 1)
+        self.assertEqual(outer_wrapper.cache_info(), (1, 1, 3, 1))
+        self.assertEqual(inner_wrapper.cache_info(), (0, 1, 2, 1))
+        outer_wrapper.cache_clear()
+        self.assertEqual(outer_wrapper.cache_info(), (0, 0, 3, 0))
+        self.assertEqual(inner_wrapper.cache_info(), (0, 1, 2, 1))
+
 
 class FIFODecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.fifo_cache)

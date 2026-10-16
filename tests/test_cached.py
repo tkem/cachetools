@@ -316,6 +316,21 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(wrapper.cache_info(), (0, 0, 2, 0))
         self.assertEqual(lock.count, 13)
 
+    def test_stacked_decorators(self):
+        inner_cache = self.cache(2)
+        outer_cache = self.cache(2)
+        inner_wrapper = cachetools.cached(inner_cache, info=True)(self.func)
+        outer_wrapper = cachetools.cached(outer_cache, info=True)(inner_wrapper)
+        self.assertIs(outer_wrapper.__wrapped__, inner_wrapper)
+        self.assertIs(outer_wrapper.cache, outer_cache)
+        self.assertEqual(outer_wrapper(0), 0)
+        self.assertEqual(outer_wrapper(0), 0)
+        self.assertEqual(outer_wrapper.cache_info(), (1, 1, 2, 1))
+        self.assertEqual(inner_wrapper.cache_info(), (0, 1, 2, 1))
+        outer_wrapper.cache_clear()
+        self.assertEqual(len(outer_cache), 0)
+        self.assertEqual(len(inner_cache), 1)
+
     def test_zero_size_cache_decorator(self):
         cache = self.cache(0)
         wrapper = cachetools.cached(cache)(self.func)
