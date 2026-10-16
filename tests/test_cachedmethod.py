@@ -1,6 +1,3 @@
-# TODO: type stub overloads for unbound methods?
-# pyright: reportCallIssue=false
-
 import unittest
 import warnings
 
@@ -636,7 +633,7 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
 
     def test_undecorated_override(self):
         class Child(Cached):
-            def get_info(self, value):  # type: ignore[reportIncompatibleVariableOverride]
+            def get_info(self, value):  # type: ignore
                 return super().get_info(value) + 1
 
         cache = self.cache(2)
