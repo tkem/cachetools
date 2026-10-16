@@ -154,6 +154,32 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
 class FIFODecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.fifo_cache)
 
+    def test_method_typed(self):
+        """Type-checked by pyright via the stub __get__ overloads."""
+
+        class Cached:
+            @cachetools.func.fifo_cache(maxsize=2)
+            def get(self, n: int) -> int:
+                return n
+
+            @cachetools.func.fifo_cache
+            def get_bare(self, n: int) -> int:
+                return n
+
+            @staticmethod
+            @cachetools.func.fifo_cache
+            def get_static(n: int) -> int:
+                return n
+
+        cached = Cached()
+        result: int = cached.get(1)
+        self.assertEqual(result, 1)
+        self.assertEqual(Cached.get(cached, 1), 1)
+        self.assertEqual(cached.get.cache_info(), (1, 1, 2, 1))
+        self.assertEqual(cached.get_bare(1), 1)
+        self.assertEqual(cached.get_static(1), 1)
+        self.assertEqual(Cached.get_static(1), 1)
+
 
 class LFUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.lfu_cache)

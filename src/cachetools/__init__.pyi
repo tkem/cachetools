@@ -29,7 +29,9 @@ __all__: Final = (
 __version__: str
 
 _P = ParamSpec("_P")
+_Q = ParamSpec("_Q")
 _R = TypeVar("_R")
+_S = TypeVar("_S")
 _T = TypeVar("_T")
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -158,11 +160,41 @@ class _cached_wrapper(Generic[_P, _R]):
     cache_key: Callable[..., Any] = ...
     cache_lock: AbstractContextManager[Any] | None = None
     cache_condition: _AbstractCondition | None = None
+    @overload  # class access, e.g. Cls.method
+    def __get__(
+        self, obj: None, objtype: type | None = None
+    ) -> _cached_wrapper[_P, _R]: ...
+    @overload  # instance access binds the first parameter
+    def __get__(
+        self: _cached_wrapper[Concatenate[_S, _Q], _R],
+        obj: _S,
+        objtype: type | None = None,
+    ) -> _cached_wrapper[_Q, _R]: ...
+    @overload  # fallback, e.g. when wrapped by @staticmethod or @classmethod
+    def __get__(
+        self, obj: object, objtype: type | None = None
+    ) -> _cached_wrapper[_P, _R]: ...
     def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
     def cache_clear(self) -> None: ...
 
 @type_check_only
 class _cached_wrapper_info(_cached_wrapper[_P, _R]):
+    @overload
+    def __get__(
+        self, obj: None, objtype: type | None = None
+    ) -> _cached_wrapper_info[_P, _R]: ...
+    @overload
+    def __get__(
+        self: _cached_wrapper_info[Concatenate[_S, _Q], _R],
+        obj: _S,
+        objtype: type | None = None,
+    ) -> _cached_wrapper_info[_Q, _R]: ...
+    # pyright cannot match the self-typed base overload; each return type is
+    # the _cached_wrapper_info subtype of the corresponding base return type
+    @overload
+    def __get__(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self, obj: object, objtype: type | None = None
+    ) -> _cached_wrapper_info[_P, _R]: ...
     def cache_info(self) -> _CacheInfo: ...
 
 @overload

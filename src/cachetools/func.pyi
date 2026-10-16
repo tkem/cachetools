@@ -1,19 +1,44 @@
 from collections.abc import Callable, Sequence
-from typing import Any, Final, Generic, ParamSpec, TypeVar, overload, type_check_only
+from typing import (
+    Any,
+    Concatenate,
+    Final,
+    Generic,
+    ParamSpec,
+    TypeVar,
+    overload,
+    type_check_only,
+)
 
 from . import _CacheInfo
 
 __all__: Final = ("fifo_cache", "lfu_cache", "lru_cache", "rr_cache", "ttl_cache")
 
 _P = ParamSpec("_P")
-_T = TypeVar("_T")
+_Q = ParamSpec("_Q")
 _R = TypeVar("_R")
+_S = TypeVar("_S")
+_T = TypeVar("_T")
 
 @type_check_only
 class _cachetools_cache_wrapper(Generic[_P, _R]):
     __wrapped__: Callable[_P, _R]
     __name__: str
     __doc__: str | None
+    @overload  # class access, e.g. Cls.method
+    def __get__(
+        self, obj: None, objtype: type | None = None
+    ) -> _cachetools_cache_wrapper[_P, _R]: ...
+    @overload  # instance access binds the first parameter
+    def __get__(
+        self: _cachetools_cache_wrapper[Concatenate[_S, _Q], _R],
+        obj: _S,
+        objtype: type | None = None,
+    ) -> _cachetools_cache_wrapper[_Q, _R]: ...
+    @overload  # fallback, e.g. when wrapped by @staticmethod or @classmethod
+    def __get__(
+        self, obj: object, objtype: type | None = None
+    ) -> _cachetools_cache_wrapper[_P, _R]: ...
     def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
     def cache_info(self) -> _CacheInfo: ...
     def cache_clear(self) -> None: ...
