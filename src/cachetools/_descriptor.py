@@ -1,5 +1,7 @@
 """Descriptor helpers."""
 
+# pyright: reportAttributeAccessIssue=false
+
 __all__ = ()
 
 import functools
@@ -8,10 +10,11 @@ import functools
 class _MethodDescriptor:
     """Descriptor class implementing the basic descriptor protocol."""
 
-    def __init__(self):
+    def __init__(self, wrapper):
         self.__owner = None
         self.__attrname = None
         self.__unbound = None
+        self.__wrapper = wrapper  # called as wrapper(obj, descriptor)
 
     def __set_name__(self, owner, name):
         if self.__attrname is None:
@@ -19,45 +22,51 @@ class _MethodDescriptor:
             self.__attrname = name
         elif name != self.__attrname:
             raise TypeError(
-                "Cannot assign the same @cachedmethod to two different names "
+                "Cannot assign the same descriptor to two different names "
                 f"({self.__attrname!r} and {name!r})."
             )
 
     def __get__(self, obj, objtype=None):
-        if obj is None:
-            # objtype is not used for instance lookups, so it need not be bound here
-            return self.__get_unbound()
-        elif self.__attrname is not None:
-            descriptor = next(
-                (
-                    cls.__dict__[self.__attrname]
-                    for cls in type(obj).__mro__
-                    if self.__attrname in cls.__dict__
-                ),
-                None,
-            )
-            if descriptor is self:
-                # In case of a race condition where another thread already replaced
-                # the descriptor, prefer the initial wrapper.
-                wrapper = self.Wrapper(obj, self)  # type: ignore
-                try:
-                    wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
-                except (AttributeError, TypeError) as e:
-                    self.__instance_dict_error(obj, e)
-            else:
-                # A super() lookup must neither reuse the override's wrapper
-                # nor replace it, so preserve state separately for each descriptor.
-                try:
-                    wrappers = obj.__dict__.setdefault("__cachetools_cachedmethods", {})
-                except (AttributeError, TypeError) as e:
-                    self.__instance_dict_error(obj, e)
-                wrapper = wrappers.get(self)
-                if wrapper is None:
-                    wrapper = self.Wrapper(obj, self)  # type: ignore
-                    wrapper = wrappers.setdefault(self, wrapper)
-        else:
-            msg = "Cannot use @cachedmethod instance without calling __set_name__ on it"
+        if self.__attrname is None:
+            if isinstance(obj, type):
+                # before Python 3.13, @classmethod calls __get__(cls, type(cls))
+                # without forwarding __set_name__
+                self.__call__()  # raise TypeError as in Python >= 3.13
+            msg = "Cannot use descriptor instance without calling __set_name__ on it"
             raise TypeError(msg) from None
+
+        if obj is None:
+            # objtype is not used for instance lookups, so it need not be bound
+            return self.__get_unbound()
+
+        descriptor = next(
+            (
+                cls.__dict__[self.__attrname]
+                for cls in type(obj).__mro__
+                if self.__attrname in cls.__dict__
+            ),
+            None,
+        )
+        if descriptor is self:
+            # replace descriptor instance with wrapper in instance dict; in case
+            # of a race condition where another thread already replaced the
+            # descriptor, prefer the initial wrapper.
+            wrapper = self.__wrapper(obj, self)
+            try:
+                wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
+            except (AttributeError, TypeError) as e:
+                self.__instance_dict_error(obj, e)
+        else:
+            # A super() lookup must neither reuse the override's wrapper
+            # nor replace it, so preserve state separately for each descriptor.
+            try:
+                wrappers = obj.__dict__.setdefault("__cachetools_cachedmethods", {})
+            except (AttributeError, TypeError) as e:
+                self.__instance_dict_error(obj, e)
+            wrapper = wrappers.get(self)
+            if wrapper is None:
+                wrapper = self.__wrapper(obj, self)
+                wrapper = wrappers.setdefault(self, wrapper)
         return wrapper
 
     def __reduce__(self):
@@ -69,14 +78,12 @@ class _MethodDescriptor:
     def _lookup(owner, name):
         return owner.__dict__[name]
 
-    # called for @classmethod with Python >= 3.13
+    # called for @classmethod since Python 3.13
     def __call__(self, *args, **kwargs):
-        msg = "@cachedmethod does not support decorating class methods"
-        raise TypeError(msg)
+        raise TypeError("Decorating class methods is not supported")
 
     def __get_unbound(self):
-        # Created once and shared by all class accesses; objtype is not
-        # used for instance lookups, so it need not be bound here.
+        # created once and shared by all class accesses
         if self.__unbound is None:
             self.__unbound = _Unbound(self)
         return self.__unbound
@@ -114,6 +121,10 @@ class _Unbound:
     def __reduce__(self):
         # pickle and copy by reference, as functions are
         return (self.__descriptor.__get__, (None,))
+
+    def __repr__(self):
+        wrapped = self.__wrapped__
+        return f"<cachedmethod {wrapped!r}>"
 
     # bind like a method when aliased in another class body
     def __get__(self, obj, objtype=None):
