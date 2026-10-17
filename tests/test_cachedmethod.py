@@ -1,6 +1,7 @@
 import sys
 import unittest
 import warnings
+from collections.abc import Callable
 
 from cachetools import Cache, cachedmethod, keys
 
@@ -71,6 +72,16 @@ class Cached:
         raise ValueError("test error")
 
     get_aliased = cachedmethod(lambda self: self.cache)(__get)
+
+
+class CachedChild(Cached):
+    def __init__(self, cache, child_cache):
+        super().__init__(cache)
+        self.child_cache = child_cache
+
+    @cachedmethod(lambda self: self.child_cache, info=True)
+    def get_info(self, value):
+        return super().get_info(value) + 1
 
 
 class Unhashable(Cached):
@@ -489,6 +500,43 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(unpickled.get_cond_info(0), 0)
         self.assertEqual(unpickled.get_cond_info.cache_info(), (2, 1, maxsize, 2))
         self.assertEqual(len(cache), 1)
+
+    def test_decorator_pickle_super(self):
+        import pickle
+
+        self._test_copy_super(lambda obj: pickle.loads(pickle.dumps(obj)))
+
+    def test_decorator_deepcopy_super(self):
+        import copy
+
+        self._test_copy_super(copy.deepcopy)
+
+    def _test_copy_super(self, copyfunc: Callable[[CachedChild], CachedChild]):
+        base_cache = self.cache(3)
+        maxsize = base_cache.maxsize if isinstance(base_cache, Cache) else None
+        cached = CachedChild(base_cache, self.cache(3))
+        self.assertEqual(cached.get_info(0), 1)
+
+        copied = copyfunc(cached)
+        child = copied.get_info
+        base = super(CachedChild, copied).get_info
+        self.assertIsNot(base, child)
+        self.assertIs(base, super(CachedChild, copied).get_info)
+        self.assertIs(child.cache, copied.child_cache)
+        self.assertIs(base.cache, copied.cache)
+        self.assertEqual(len(vars(copied)["__cachetools_cachedmethods"]), 1)
+        # hits and misses are reset
+        self.assertEqual(child.cache_info(), (0, 0, maxsize, 1))
+        self.assertEqual(base.cache_info(), (0, 0, maxsize, 1))
+
+        self.assertEqual(copied.get_info(0), 1)
+        self.assertEqual(child.cache_info(), (1, 0, maxsize, 1))
+        self.assertEqual(base.cache_info(), (0, 0, maxsize, 1))
+        self.assertEqual(copied.get_info(1), 2)
+        self.assertEqual(child.cache_info(), (1, 1, maxsize, 2))
+        self.assertEqual(base.cache_info(), (0, 1, maxsize, 2))
+        self.assertEqual(len(vars(copied)["__cachetools_cachedmethods"]), 1)
+        self.assertEqual(len(base_cache), 1)
 
     def test_decorator_pickle_aliased(self):
         import pickle

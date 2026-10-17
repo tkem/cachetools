@@ -5,16 +5,23 @@ __all__ = ()
 import functools
 
 
+def _rebind(owner, name, obj):
+    # module-level, so wrappers can be pickled as (_rebind, (owner, name, obj))
+    return owner.__dict__[name].__get__(obj, owner)
+
+
 class _MethodDescriptor:
     """Descriptor class implementing the basic descriptor protocol."""
 
     def __init__(self, wrapper):
+        self.__owner = None
         self.__attrname = None
         self.__unbound = None
-        self.__wrapper = wrapper  # called as wrapper(obj, attrname)
+        self.__wrapper = wrapper  # called as wrapper(obj, owner, attrname)
 
     def __set_name__(self, owner, name):
         if self.__attrname is None:
+            self.__owner = owner
             self.__attrname = name
         elif name != self.__attrname:
             raise TypeError(
@@ -30,7 +37,7 @@ class _MethodDescriptor:
             # objtype is not used for instance lookups, so it need not be bound here
             return self.__get_unbound()
         # replace descriptor instance with wrapper in instance dict
-        wrapper = self.__wrapper(obj, self.__attrname)
+        wrapper = self.__wrapper(obj, self.__owner, self.__attrname)
         try:
             descriptor = next(
                 (
@@ -47,8 +54,10 @@ class _MethodDescriptor:
             else:
                 # A super() lookup must neither reuse the override's wrapper
                 # nor replace it, so preserve state separately for each descriptor.
+                # Key by (owner, name) rather than self, so the instance dict stays
+                # picklable and deep copies still find their entries.
                 wrappers = obj.__dict__.setdefault("__cachetools_cachedmethods", {})
-                wrapper = wrappers.setdefault(self, wrapper)
+                wrapper = wrappers.setdefault((self.__owner, self.__attrname), wrapper)
             return wrapper
         except AttributeError:
             # not all objects have __dict__ (e.g. class defines slots)
