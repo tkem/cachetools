@@ -26,14 +26,21 @@ from ._descriptor import _MethodDescriptor
 class _WrapperBase:
     """Wrapper base class providing default implementations for properties."""
 
-    def __init__(self, obj, name, method, cache, key, lock=None, cond=None):
+    def __init__(self, obj, descriptor, method, cache, key, lock=None, cond=None):
         functools.update_wrapper(self, method)
         self.__obj = obj
-        self.__name = name  # attribute name, may differ from method.__name__
+        self.__descriptor = descriptor
         self.__cache = cache
         self.__key = functools.partial(key, obj)
         self.__lock = lock if lock is not None else lambda _: None
         self.__cond = cond if cond is not None else lambda _: None
+
+    def __reduce__(self):
+        # rebuild via the descriptor instead of pickling unpicklable
+        # internals, e.g. __wrapped__, lock/cond closures; note that
+        # this will also reset hits and misses counts for *Info*
+        # wrappers
+        return (self.__descriptor.__get__, (self.__obj,))
 
     @property
     def cache(self):
@@ -53,73 +60,75 @@ class _WrapperBase:
 
 
 class _BasicWrapper(_WrapperBase, _BasicMixin):
-    def __init__(self, obj, name, method, cache, key):
-        _WrapperBase.__init__(self, obj, name, method, cache, key)
+    def __init__(self, obj, descriptor, method, cache, key):
+        _WrapperBase.__init__(self, obj, descriptor, method, cache, key)
         _BasicMixin.__init__(self, functools.partial(method, obj))
 
 
 class _LockedWrapper(_WrapperBase, _LockedMixin):
-    def __init__(self, obj, name, method, cache, key, lock):
-        _WrapperBase.__init__(self, obj, name, method, cache, key, lock)
+    def __init__(self, obj, descriptor, method, cache, key, lock):
+        _WrapperBase.__init__(self, obj, descriptor, method, cache, key, lock)
         _LockedMixin.__init__(self, functools.partial(method, obj))
 
 
 class _ConditionWrapper(_WrapperBase, _ConditionMixin):
-    def __init__(self, obj, name, method, cache, key, lock, cond):
-        _WrapperBase.__init__(self, obj, name, method, cache, key, lock, cond)
+    def __init__(self, obj, descriptor, method, cache, key, lock, cond):
+        _WrapperBase.__init__(self, obj, descriptor, method, cache, key, lock, cond)
         _ConditionMixin.__init__(self, functools.partial(method, obj))
 
 
 class _InfoWrapper(_WrapperBase, _InfoMixin):
-    def __init__(self, obj, name, method, cache, key, info):
-        _WrapperBase.__init__(self, obj, name, method, cache, key)
+    def __init__(self, obj, descriptor, method, cache, key, info):
+        _WrapperBase.__init__(self, obj, descriptor, method, cache, key)
         _InfoMixin.__init__(self, functools.partial(method, obj), info)
 
 
 class _LockedInfoWrapper(_WrapperBase, _LockedInfoMixin):
-    def __init__(self, obj, name, method, cache, key, lock, info):
-        _WrapperBase.__init__(self, obj, name, method, cache, key, lock)
+    def __init__(self, obj, descriptor, method, cache, key, lock, info):
+        _WrapperBase.__init__(self, obj, descriptor, method, cache, key, lock)
         _LockedInfoMixin.__init__(self, functools.partial(method, obj), info)
 
 
 class _ConditionInfoWrapper(_WrapperBase, _ConditionInfoMixin):
-    def __init__(self, obj, name, method, cache, key, lock, cond, info):
-        _WrapperBase.__init__(self, obj, name, method, cache, key, lock, cond)
+    def __init__(self, obj, descriptor, method, cache, key, lock, cond, info):
+        _WrapperBase.__init__(self, obj, descriptor, method, cache, key, lock, cond)
         _ConditionInfoMixin.__init__(self, functools.partial(method, obj), info)
 
 
 def _wrapper(method, cache, key, lock=None, cond=None, info=None):
     if info is not None:
         if cond is not None and lock is not None:
-            wrapper = lambda obj, name: _ConditionInfoWrapper(
-                obj, name, method, cache, key, lock, cond, info
+            wrapper = lambda obj, descriptor: _ConditionInfoWrapper(
+                obj, descriptor, method, cache, key, lock, cond, info
             )
         elif cond is not None:
-            wrapper = lambda obj, name: _ConditionInfoWrapper(
-                obj, name, method, cache, key, cond, cond, info
+            wrapper = lambda obj, descriptor: _ConditionInfoWrapper(
+                obj, descriptor, method, cache, key, cond, cond, info
             )
         elif lock is not None:
-            wrapper = lambda obj, name: _LockedInfoWrapper(
-                obj, name, method, cache, key, lock, info
+            wrapper = lambda obj, descriptor: _LockedInfoWrapper(
+                obj, descriptor, method, cache, key, lock, info
             )
         else:
-            wrapper = lambda obj, name: _InfoWrapper(
-                obj, name, method, cache, key, info
+            wrapper = lambda obj, descriptor: _InfoWrapper(
+                obj, descriptor, method, cache, key, info
             )
     else:
         if cond is not None and lock is not None:
-            wrapper = lambda obj, name: _ConditionWrapper(
-                obj, name, method, cache, key, lock, cond
+            wrapper = lambda obj, descriptor: _ConditionWrapper(
+                obj, descriptor, method, cache, key, lock, cond
             )
         elif cond is not None:
-            wrapper = lambda obj, name: _ConditionWrapper(
-                obj, name, method, cache, key, cond, cond
+            wrapper = lambda obj, descriptor: _ConditionWrapper(
+                obj, descriptor, method, cache, key, cond, cond
             )
         elif lock is not None:
-            wrapper = lambda obj, name: _LockedWrapper(
-                obj, name, method, cache, key, lock
+            wrapper = lambda obj, descriptor: _LockedWrapper(
+                obj, descriptor, method, cache, key, lock
             )
         else:
-            wrapper = lambda obj, name: _BasicWrapper(obj, name, method, cache, key)
+            wrapper = lambda obj, descriptor: _BasicWrapper(
+                obj, descriptor, method, cache, key
+            )
     descriptor = _MethodDescriptor(wrapper)
     return functools.update_wrapper(descriptor, method)
