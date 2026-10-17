@@ -1,4 +1,4 @@
-v7.2.3 (2026-10-16)
+v7.2.3 (2026-10-17)
 ===================
 
 - Fix ``@cached`` decorator stacking behavior.
