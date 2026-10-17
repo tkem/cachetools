@@ -9,12 +9,14 @@ class _MethodDescriptor:
     """Descriptor class implementing the basic descriptor protocol."""
 
     def __init__(self, wrapper):
+        self.__owner = None
         self.__attrname = None
         self.__unbound = None
-        self.__wrapper = wrapper  # called as wrapper(obj, attrname)
+        self.__wrapper = wrapper  # called as wrapper(obj, descriptor)
 
     def __set_name__(self, owner, name):
         if self.__attrname is None:
+            self.__owner = owner
             self.__attrname = name
         elif name != self.__attrname:
             raise TypeError(
@@ -32,11 +34,11 @@ class _MethodDescriptor:
             raise TypeError(msg) from None
 
         if obj is None:
-            # objtype is not used for instance lookups, so it need not be bound here
+            # objtype is not used for instance lookups, so it need not be bound
             return self.__get_unbound()
 
         # replace descriptor instance with wrapper in instance dict
-        wrapper = self.__wrapper(obj, self.__attrname)
+        wrapper = self.__wrapper(obj, self)
         try:
             descriptor = next(
                 (
@@ -71,13 +73,21 @@ class _MethodDescriptor:
             )
             raise TypeError(msg) from None
 
+    def __reduce__(self):
+        # pickle and copy by reference, so wrappers and their keys in
+        # "__cachetools_cachedmethods" can be pickled and deep-copied
+        return (self._lookup, (self.__owner, self.__attrname))
+
+    @staticmethod
+    def _lookup(owner, name):
+        return owner.__dict__[name]
+
     # called for @classmethod since Python 3.13
     def __call__(self, *args, **kwargs):
         raise TypeError("Decorating class methods is not supported")
 
     def __get_unbound(self):
-        # Created once and shared by all class accesses; objtype is not
-        # used for instance lookups, so it need not be bound here.
+        # created once and shared by all class accesses
         if self.__unbound is None:
             descriptor = self
 
