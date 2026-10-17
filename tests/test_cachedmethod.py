@@ -1,4 +1,3 @@
-import sys
 import unittest
 import warnings
 
@@ -45,10 +44,6 @@ class Cached:
     def get_cond(self, value):
         return self.__get(value)
 
-    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
-    def get_cond_error(self, _value):
-        raise ValueError("test error")
-
     @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond, info=True)
     def get_cond_info(self, value):
         return self.__get(value)
@@ -69,6 +64,10 @@ class Cached:
     )
     def get_lock_cond_info(self, value):
         return self.__get(value)
+
+    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
+    def get_cond_error(self, _value):
+        raise ValueError("test error")
 
 
 class Unhashable(Cached):
@@ -702,7 +701,7 @@ class WeakRefMethodTest(unittest.TestCase):
         import gc
         import weakref
 
-        # FIXME: in Python 3.9, `int` does not support weak references
+        # at least with Python 3.11, `int` does not support weak references
         # even when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
             def __add__(self, other):  # type: ignore
@@ -799,13 +798,6 @@ class ClassMethodTest(unittest.TestCase):
         def get_class(cls, value):
             return 42
 
-    def test_classmethod_basic(self):
-        cached = self.Cached({})
-
-        with self.assertRaises(TypeError):
-            cached.get_class(42)
-
-    @unittest.skipIf(sys.version_info < (3, 13), "only supported with Python >= 3.13")
     def test_classmethod(self):
         cached = self.Cached({})
 
