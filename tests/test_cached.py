@@ -516,3 +516,37 @@ class InvalidCacheTest(unittest.TestCase):
         # passing cache=None is no longer supported since v8.0.0
         with self.assertRaisesRegex(TypeError, "None"):
             cachetools.cached(None, info=True)  # type: ignore
+
+
+class PickleTest(unittest.TestCase):
+    # wrappers are pickled by qualified name, so they must be reachable
+    # via attribute lookup from module level
+
+    @staticmethod
+    @cachetools.cached(cachetools.LRUCache(maxsize=2), info=True)
+    def pickled_func(n):
+        return n
+
+    class Pickled:
+        @cachetools.cached(cachetools.LRUCache(maxsize=2))
+        def method(self, n):
+            return n
+
+    def test_pickle(self):
+        import pickle
+
+        func = self.pickled_func
+        self.assertIs(pickle.loads(pickle.dumps(func)), func)
+
+    def test_pickle_method(self):
+        import pickle
+
+        method = self.Pickled.method
+        self.assertIs(pickle.loads(pickle.dumps(method)), method)
+
+    def test_copy(self):
+        import copy
+
+        func = self.pickled_func
+        self.assertIs(copy.copy(func), func)
+        self.assertIs(copy.deepcopy(func), func)
