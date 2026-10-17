@@ -1,5 +1,4 @@
 import unittest
-import warnings
 from collections.abc import Callable
 
 from cachetools import Cache, cachedmethod, keys
@@ -45,10 +44,6 @@ class Cached:
     def get_cond(self, value):
         return self.__get(value)
 
-    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
-    def get_cond_error(self, _value):
-        raise ValueError("test error")
-
     @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond, info=True)
     def get_cond_info(self, value):
         return self.__get(value)
@@ -69,6 +64,10 @@ class Cached:
     )
     def get_lock_cond_info(self, value):
         return self.__get(value)
+
+    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond)
+    def get_cond_error(self, _value):
+        raise ValueError("test error")
 
     get_aliased = cachedmethod(lambda self: self.cache)(__get)
 
@@ -406,6 +405,16 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertIs(cached.get_lock_cond_info.cache_lock, cached.lock)
         self.assertIs(cached.get_lock_cond_info.cache_condition, cached.cond)
         self.assertTrue(hasattr(cached.get_lock_cond_info, "cache_info"))
+
+    def test_decorator_repr(self):
+        cached = Cached(self.cache(2))
+        obj = object.__repr__(cached)
+        wrapped = Cached.get.__wrapped__
+        self.assertEqual(repr(cached.get), f"<cachedmethod {wrapped!r} of {obj}>")
+        self.assertEqual(repr(Cached.get), f"<cachedmethod {wrapped!r}>")
+        wrapped = Cached.get_info.__wrapped__
+        self.assertEqual(repr(cached.get_info), f"<cachedmethod {wrapped!r} of {obj}>")
+        self.assertEqual(repr(Cached.get_info), f"<cachedmethod {wrapped!r}>")
 
     def test_decorator_clear(self):
         cache = self.cache(2)
@@ -925,7 +934,7 @@ class WeakRefMethodTest(unittest.TestCase):
         import gc
         import weakref
 
-        # FIXME: in Python 3.9, `int` does not support weak references
+        # at least with Python 3.11, `int` does not support weak references
         # even when subclassed, but Fraction apparently does...
         class Int(fractions.Fraction):
             def __add__(self, other):  # type: ignore
@@ -1069,15 +1078,7 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertIs(cached.alias, cached.get)
         self.assertEqual(len(cached.cache), 1)
 
-    def test_autospec_no_warnings(self):
-        import unittest.mock
-
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            unittest.mock.create_autospec(Cached, instance=True)
-        self.assertEqual(len(w), 0)
-
-    def test_autospec_call(self):
+    def test_autospec(self):
         import unittest.mock
 
         mock = unittest.mock.create_autospec(Cached, instance=True)

@@ -196,6 +196,11 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertIs(wrapper.cache_condition, cond)
         self.assertFalse(hasattr(wrapper, "cache_info"))
 
+    def test_decorator_repr(self):
+        for info in (False, True):
+            wrapper = cachetools.cached(self.cache(2), info=info)(self.func)
+            self.assertEqual(repr(wrapper), f"<cached {self.func!r}>")
+
     def test_decorator_clear(self):
         cache = self.cache(2)
         wrapper = cachetools.cached(cache)(self.func)
@@ -516,3 +521,37 @@ class InvalidCacheTest(unittest.TestCase):
         # passing cache=None is no longer supported since v8.0.0
         with self.assertRaisesRegex(TypeError, "None"):
             cachetools.cached(None, info=True)  # type: ignore
+
+
+class PickleTest(unittest.TestCase):
+    # wrappers are pickled by qualified name, so they must be reachable
+    # via attribute lookup from module level
+
+    @staticmethod
+    @cachetools.cached(cachetools.LRUCache(maxsize=2), info=True)
+    def pickled_func(n):
+        return n
+
+    class Pickled:
+        @cachetools.cached(cachetools.LRUCache(maxsize=2))
+        def method(self, n):
+            return n
+
+    def test_pickle(self):
+        import pickle
+
+        func = self.pickled_func
+        self.assertIs(pickle.loads(pickle.dumps(func)), func)
+
+    def test_pickle_method(self):
+        import pickle
+
+        method = self.Pickled.method
+        self.assertIs(pickle.loads(pickle.dumps(method)), method)
+
+    def test_copy(self):
+        import copy
+
+        func = self.pickled_func
+        self.assertIs(copy.copy(func), func)
+        self.assertIs(copy.deepcopy(func), func)
