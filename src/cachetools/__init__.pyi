@@ -143,7 +143,8 @@ class _CacheInfo(NamedTuple):
 
 @type_check_only
 class _AbstractCondition(AbstractContextManager[Any], Protocol):
-    # implementation and unit tests do not use plain wait() and notify()
+    # implementation and unit tests currently do not use plain wait()
+    # and notify(); these are reserved for future use
     def wait(self, timeout: float | None = None) -> bool: ...
     def wait_for(
         self, predicate: Callable[[], _T], timeout: float | None = None

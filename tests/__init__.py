@@ -5,6 +5,39 @@ from typing import Any, Protocol
 import cachetools
 
 
+class CountedLock:
+    def __init__(self):
+        self.count = 0
+
+    def __enter__(self):
+        self.count += 1
+
+    def __exit__(self, *exc):
+        pass
+
+
+class CountedCondition(CountedLock):
+    def __init__(self):
+        super().__init__()
+        self.wait_count = 0
+        self.notify_count = 0
+
+    def wait(self, timeout=None):
+        self.wait_count += 1
+        return True
+
+    def wait_for(self, predicate, timeout=None):
+        res = predicate()
+        self.wait_count += 1
+        return res
+
+    def notify(self, n=1):
+        self.notify_count += 1
+
+    def notify_all(self):
+        self.notify_count += 1
+
+
 class SimplifiedTestCaseProtocol(Protocol):
     def assertEqual(self, first: Any, second: Any, msg: Any = None) -> None: ...
     def assertNotEqual(self, first: Any, second: Any, msg: Any = None) -> None: ...
@@ -460,39 +493,3 @@ class CacheTestMixin(SimplifiedTestCaseProtocol):
             cache = pickle.loads(pickle.dumps(source))
             self.assertEqual(n, len(cache))
             self.assertEqual(source, cache)
-
-
-class CountedLock:
-    def __init__(self):
-        self.count = 0
-
-    def __enter__(self):
-        self.count += 1
-
-    def __exit__(self, *exc):
-        pass
-
-
-class CountedCondition(CountedLock):
-    def __init__(self):
-        super().__init__()
-        self.wait_count = 0
-        self.notify_count = 0
-
-    # only wait_for() and notify_all() are currently used, but wait()
-    # and notify() are also required according to the docs...
-
-    def wait(self, timeout=None):
-        self.wait_count += 1
-        return True
-
-    def wait_for(self, predicate, timeout=None):
-        res = predicate()
-        self.wait_count += 1
-        return res
-
-    def notify(self, n=1):
-        self.notify_count += 1
-
-    def notify_all(self):
-        self.notify_count += 1
