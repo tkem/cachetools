@@ -78,6 +78,16 @@ inserted into the cache.
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
 
+   .. note::
+
+      Even though :class:`Cache` and the subclasses provided by this
+      module can generally be `pickled`_, the byte stream format is an
+      implementation detail that *any* release may change, even a
+      bugfix release.  Therefore, do not rely on being able to
+      unpickle a cache, e.g. one stored in a file or database, with a
+      different :mod:`cachetools` version than the one it was pickled
+      with.
+
 .. autoclass:: FIFOCache(maxsize, getsizeof=None)
    :members: popitem
 
@@ -387,7 +397,7 @@ often called with the same arguments:
       get_pep.cache_clear()
 
    If `info` is set to :const:`True`, the wrapped function is
-   instrumented with a :func:`cache_info()` function that returns a
+   instrumented with a :meth:`cache_info()` function that returns a
    :class:`CacheInfo` instance, a named tuple with fields `hits`,
    `misses`, `maxsize` and `currsize`, to help measure the
    effectiveness of the cache.
@@ -526,7 +536,7 @@ often called with the same arguments:
 
    .. versionchanged:: 8.0
 
-      Passing :const:`None` as `cache` parameter is no longer
+      Passing :const:`None` as the `cache` parameter is no longer
       supported, and now raises a :exc:`TypeError`.
 
 
@@ -682,6 +692,23 @@ often called with the same arguments:
       provide a mutable :attr:`__dict__` attribute is no longer
       supported, and now raises a :exc:`TypeError`.
 
+.. autoclass:: CacheInfo
+
+   A named tuple with the fields `hits`, `misses`, `maxsize` and
+   `currsize`, as returned by the :meth:`cache_info()` function of the
+   :func:`cached` and :func:`cachedmethod` decorators.  If the
+   decorator's `cache` is a :class:`Cache` instance, `maxsize` and
+   `currsize` report its :attr:`~Cache.maxsize` and
+   :attr:`~Cache.currsize` properties.  For any other mutable mapping,
+   `maxsize` is :const:`None` and `currsize` is `len(cache)`, so
+   custom cache classes used with `info=True` must support :func:`len`.
+
+   .. versionchanged:: 8.0
+
+      :class:`CacheInfo` is now part of the public API.  Cache objects
+      that are not :class:`Cache` instances must support :func:`len`
+      when used with `info=True`.
+
 
 *****************************************************************
 :mod:`cachetools.keys` --- Key functions for memoizing decorators
@@ -829,4 +856,5 @@ all the decorators in this module are thread-safe.
 .. _context manager: https://docs.python.org/3/glossary.html#term-context-manager
 .. _mapping: https://docs.python.org/3/glossary.html#term-mapping
 .. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+.. _pickled: https://docs.python.org/3/library/pickle.html
 .. _thread-safe: https://en.wikipedia.org/wiki/Thread_safety

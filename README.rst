@@ -37,14 +37,18 @@ function decorator.
    # cache least recently used Python Enhancement Proposals
    @cached(cache=LRUCache(maxsize=32))
    def get_pep(num):
-       url = 'http://www.python.org/dev/peps/pep-%04d/' % num
-       with urllib.request.urlopen(url) as s:
+       from urllib.request import urlopen
+       url = 'https://peps.python.org/pep-%04d/' % num
+       with urlopen(url) as s:
            return s.read()
 
-   # cache weather data for no longer than ten minutes
+   # cache PyOWM weather data for no longer than ten minutes
+   from pyowm.owm import OWM
+   owm = OWM('your-free-api-key')
+
    @cached(cache=TTLCache(maxsize=1024, ttl=600))
    def get_weather(place):
-       return owm.weather_at_place(place).get_weather()
+       return owm.weather_manager().weather_at_place(place).weather
 
 For the purpose of this module, a *cache* is a mutable_ mapping_ of a
 fixed maximum size.  When the cache is full, i.e. by adding another
@@ -94,8 +98,8 @@ Licensed under the `MIT License`_.
 
 
 .. _@lru_cache: https://docs.python.org/3/library/functools.html#functools.lru_cache
-.. _mutable: https://docs.python.org/dev/glossary.html#term-mutable
-.. _mapping: https://docs.python.org/dev/glossary.html#term-mapping
+.. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+.. _mapping: https://docs.python.org/3/glossary.html#term-mapping
 .. _cache algorithm: https://en.wikipedia.org/wiki/Cache_algorithms
 
 .. _PyPI: https://pypi.org/project/cachetools/
