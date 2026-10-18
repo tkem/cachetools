@@ -36,21 +36,23 @@ Cache implementations
 This module provides several classes implementing caches using
 different cache algorithms.  All these classes derive from class
 :class:`Cache`, which in turn derives from
-:class:`collections.abc.MutableMapping`, and provide :attr:`maxsize`
-and :attr:`currsize` properties to retrieve the maximum and current
+:class:`collections.abc.MutableMapping`, and provide
+:attr:`~Cache.maxsize` and :attr:`~Cache.currsize` properties to
+retrieve the maximum and current
 size of the cache.  When a cache is full, :meth:`Cache.__setitem__()`
 calls :meth:`self.popitem()` repeatedly until there is enough room for
 the item to be added.
 
-In general, a cache's size is the total size of its item's values.
-Therefore, :class:`Cache` provides a :meth:`getsizeof` method, which
+In general, a cache's size is the total size of its items' values.
+Therefore, :class:`Cache` provides a :meth:`~Cache.getsizeof` method, which
 returns the size of a given `value`.  The default implementation of
-:meth:`getsizeof` returns :const:`1` irrespective of its argument,
+:meth:`~Cache.getsizeof` returns :const:`1` irrespective of its argument,
 making the cache's size equal to the number of its items, or
 `len(cache)`.  For convenience, all cache classes accept an optional
 named constructor parameter `getsizeof`, which may specify a callable
-``getsizeof(value) -> int`` used to retrieve the size of an item's
-value.
+``getsizeof(value)`` returning a non-negative number as the size of
+an item's value.  An item whose size exceeds `maxsize` cannot be
+stored, and trying to do so raises :exc:`ValueError`.
 
 The values of a :class:`Cache` are mutable by default, as are e.g. the
 values of a :class:`dict`.  It is the user's responsibility to take
@@ -76,6 +78,16 @@ inserted into the cache.
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
 
+   .. note::
+
+      Even though :class:`Cache` and the subclasses provided by this
+      module can generally be `pickled`_, the byte stream format is an
+      implementation detail that *any* release may change, even a
+      bugfix release.  Therefore, do not rely on being able to
+      unpickle a cache, e.g. one stored in a file or database, with a
+      different :mod:`cachetools` version than the one it was pickled
+      with.
+
 .. autoclass:: FIFOCache(maxsize, getsizeof=None)
    :members: popitem
 
@@ -91,6 +103,9 @@ inserted into the cache.
 
    This class counts how often an item is retrieved, and discards the
    items used least often to make space when necessary.
+
+   Updating a cache item via :meth:`LFUCache.__setitem__` also counts
+   as a use of the item, i.e. it will increment the item's use count.
 
 .. autoclass:: LRUCache(maxsize, getsizeof=None)
    :members: popitem
@@ -113,8 +128,8 @@ inserted into the cache.
    :members: popitem, timer, ttl
 
    This class associates a time-to-live value with each item.  Items
-   that expire because they have exceeded their time-to-live will be
-   no longer accessible, and will be removed eventually.  If no
+   that expire because they have exceeded their time-to-live will no
+   longer be accessible, and will be removed eventually.  If no
    expired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
 
@@ -140,14 +155,13 @@ inserted into the cache.
 
    .. method:: expire(self, time=None)
 
-      Expired items will be removed from a cache only at the next
-      mutating operation, e.g. :meth:`__setitem__` or
-      :meth:`__delitem__`, and therefore may still claim memory.
-      Calling this method removes all items whose time-to-live would
-      have expired by `time`, so garbage collection is free to reuse
-      their memory.  If `time` is :const:`None`, this removes all
-      items that have expired by the current value returned by
-      :attr:`timer`.
+      Expired items will be removed from a cache lazily, e.g. when
+      :meth:`__setitem__` is next called, and therefore may still
+      claim memory.  Calling this method removes all items whose
+      time-to-live would have expired by `time`, so garbage collection
+      is free to reuse their memory.  If `time` is :const:`None`, this
+      removes all items that have expired by the current value
+      returned by :attr:`timer`.
 
       :returns: An iterable of expired `(key, value)` pairs.
 
@@ -187,20 +201,19 @@ inserted into the cache.
       cache = TLRUCache(maxsize=10, ttu=datetime_ttu, timer=datetime.now)
 
    Items that expire because they have exceeded their time-to-use will
-   be no longer accessible, and will be removed eventually.  If no
+   no longer be accessible, and will be removed eventually.  If no
    expired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
 
    .. method:: expire(self, time=None)
 
-      Expired items will be removed from a cache only at the next
-      mutating operation, e.g. :meth:`__setitem__` or
-      :meth:`__delitem__`, and therefore may still claim memory.
-      Calling this method removes all items whose time-to-use would
-      have expired by `time`, so garbage collection is free to reuse
-      their memory.  If `time` is :const:`None`, this removes all
-      items that have expired by the current value returned by
-      :attr:`timer`.
+      Expired items will be removed from a cache lazily, e.g. when
+      :meth:`__setitem__` is next called, and therefore may still
+      claim memory.  Calling this method removes all items whose
+      time-to-use would have expired by `time`, so garbage collection
+      is free to reuse their memory.  If `time` is :const:`None`, this
+      removes all items that have expired by the current value
+      returned by :attr:`timer`.
 
       :returns: An iterable of expired `(key, value)` pairs.
 
@@ -208,10 +221,11 @@ inserted into the cache.
 Extending cache classes
 =======================
 
-Sometimes it may be desirable to notice when and what cache items are
-evicted, i.e. removed from a cache to make room for new items.  Since
-all cache implementations call :meth:`popitem` to evict items from the
-cache, this can be achieved by overriding this method in a subclass:
+Sometimes it may be desirable to be notified when cache items are
+evicted, i.e. removed from a cache to make room for new items, and
+which ones.  Since all cache implementations call :meth:`popitem` to
+evict items from the cache, this can be achieved by overriding this
+method in a subclass:
 
 .. doctest::
 
@@ -229,10 +243,10 @@ cache, this can be achieved by overriding this method in a subclass:
 
 With :class:`TTLCache` and :class:`TLRUCache`, items may also be
 removed after they expire.  In this case, :meth:`popitem` will *not*
-be called, but :meth:`expire` will be called from the next mutating
-operation and will return an iterable of the expired `(key, value)`
-pairs.  By overriding :meth:`expire`, a subclass will be able to track
-expired items:
+be called, but :meth:`expire` will be called lazily, e.g. from the
+next :meth:`__setitem__`, and will return an iterable of the expired
+`(key, value)` pairs.  By overriding :meth:`expire`, a subclass will
+be able to track expired items:
 
 .. doctest::
 
@@ -329,16 +343,16 @@ often called with the same arguments:
       therefore must be `thread-safe`_ by itself.
 
    If `condition` is not :const:`None`, it must specify a `condition
-   variable`_, i.e. an object providing :func:`wait()`,
-   :func:`wait_for()`, :func:`notify()` and :func:`notify_all()`
+   variable`_, i.e. an object providing :meth:`wait()`,
+   :meth:`wait_for()`, :meth:`notify()` and :meth:`notify_all()`
    methods as defined by :class:`threading.Condition`.  Using a
    `condition` variable will prevent concurrent execution of the
    wrapped function with *identical* parameters, or cache keys.
    Instead, a calling thread will check if an identical function call
-   is already executing, and will then :func:`wait()` for the pending
-   call to finish.  The executing thread will :func:`notify()` any
-   waiting threads as soon as the function completes, which will then
-   return the cached function result.
+   is already executing, and will then wait for the pending call to
+   finish.  The executing thread will notify any waiting threads as
+   soon as the function completes, which will then return the cached
+   function result.
 
    .. note::
 
@@ -346,7 +360,7 @@ often called with the same arguments:
       make :func:`cached` `thread-safe`_, it may still be subject to
       `cache stampede`_ issues under high load, depending on your
       actual use case.  Providing a `condition` variable will mitigate
-      these situations, but will inflict some performance penalty.
+      these situations, but will incur a performance penalty.
 
    If no separate `lock` parameter is provided, `condition` must also
    implement the `context manager`_ protocol, and will also be used to
@@ -374,7 +388,7 @@ often called with the same arguments:
           get_pep.cache.pop(key, None)
 
    For the common use case of clearing or invalidating the cache, the
-   decorator also provides a :func:`cache_clear()` function which
+   decorator also provides a :meth:`cache_clear()` function which
    takes care of locking automatically, if needed:
 
    .. testcode::
@@ -383,15 +397,15 @@ often called with the same arguments:
       get_pep.cache_clear()
 
    If `info` is set to :const:`True`, the wrapped function is
-   instrumented with a :func:`cache_info()` function that returns a
+   instrumented with a :meth:`cache_info()` function that returns a
    :class:`CacheInfo` instance, a named tuple with fields `hits`,
    `misses`, `maxsize` and `currsize`, to help measure the
    effectiveness of the cache.
 
    .. note::
 
-      Note that this will inflict some performance penalty, so it has
-      to be enabled explicitly.
+      This will incur a performance penalty, so it has to be
+      enabled explicitly.
 
    .. doctest::
 
@@ -428,18 +442,18 @@ often called with the same arguments:
       >>> # compute Fibonacci numbers
       >>> @cached(numcache, key=partial(hashkey, 'fib'))
       ... def fib(n):
-      ...    return n if n < 2 else fib(n - 1) + fib(n - 2)
+      ...     return n if n < 2 else fib(n - 1) + fib(n - 2)
 
       >>> # compute Lucas numbers
       >>> @cached(numcache, key=partial(hashkey, 'luc'))
       ... def luc(n):
-      ...    return 2 - n if n < 2 else luc(n - 1) + luc(n - 2)
+      ...     return 2 - n if n < 2 else luc(n - 1) + luc(n - 2)
 
       >>> fib(42)
       267914296
       >>> luc(42)
       599074578
-      >>> list(sorted(numcache.items()))
+      >>> sorted(numcache.items())
       [..., (('fib', 42), 267914296), ..., (('luc', 42), 599074578)]
 
 
@@ -508,7 +522,7 @@ often called with the same arguments:
    .. doctest::
 
       >>> def foo(a=1):
-      ...     _foo(a)
+      ...     return _foo(a)
       ...
       >>> @cached(LRUCache(maxsize=100))
       ... def _foo(a):
@@ -522,7 +536,7 @@ often called with the same arguments:
 
    .. versionchanged:: 8.0
 
-      Passing :const:`None` as `cache` parameter is no longer
+      Passing :const:`None` as the `cache` parameter is no longer
       supported, and now raises a :exc:`TypeError`.
 
 
@@ -532,10 +546,10 @@ often called with the same arguments:
    saves results in a cache.
 
    The main difference between this and the :func:`cached` function
-   decorator is that `cache`, `lock` and `condition` are not passed
-   objects, but functions.  Those will be called with :const:`self` as
-   their sole argument to retrieve a valid cache, lock, or condition
-   object for the respective instance.
+   decorator is that `cache`, `lock` and `condition` are not objects
+   but functions.  These will be called with `self` as their sole
+   argument to retrieve the cache, lock and condition objects for the
+   respective instance.
 
    .. note::
 
@@ -548,15 +562,15 @@ often called with the same arguments:
    `key`, `lock` and `condition` parameters are also available as
    :attr:`cache`, :attr:`cache_key`, :attr:`cache_lock` and
    :attr:`cache_condition` attributes of the wrapped instance method.
-   A :func:`cache_clear()` function will also be provided, as well as
-   an optional :func:`cache_info()` function reporting per-instance
+   A :meth:`cache_clear()` function will also be provided, as well as
+   an optional :meth:`cache_info()` function reporting per-instance
    cache statistics.
 
    Also, mostly for efficiency, this decorator requires that the
    :attr:`__dict__` attribute on each instance be a mutable mapping.
-   This means it will not work with some types, such as metaclasses,
-   and those that specify :attr:`__slots__` without including
-   :attr:`__dict__` as one of the defined slots.
+   This means it will not work with some types, such as those that
+   specify :attr:`__slots__` without including :attr:`__dict__` as one
+   of the defined slots.
 
    One advantage of :func:`cachedmethod` over the :func:`cached`
    function decorator is that cache properties such as `maxsize` can
@@ -586,7 +600,7 @@ often called with the same arguments:
       >>> # remove an individual cached PEP from the cache
       >>> key = peps.get.cache_key(320)
       >>> with peps.get.cache_lock:
-      ...    del peps.get.cache[key]
+      ...     del peps.get.cache[key]
 
       >>> peps.get.cache_info()
       CacheInfo(hits=3, misses=8, maxsize=32, currsize=7)
@@ -600,13 +614,12 @@ often called with the same arguments:
    The `key` function will be called as `key(self, *args, **kwargs)`
    to retrieve a suitable cache key.  Note that the default `key`
    function, :func:`cachetools.keys.methodkey`, ignores its first
-   implicit argument, i.e. :const:`self`.  This has mostly historical
-   reasons, but also ensures that :const:`self` does not have to be
-   hashable.
+   implicit argument, i.e. `self`.  This is mostly for historical
+   reasons, but also ensures that `self` does not have to be hashable.
 
    You may provide a different `key` function,
-   e.g. :func:`cachetools.keys.hashkey`, if you need :const:`self` to
-   be part of the cache key.
+   e.g. :func:`cachetools.keys.hashkey`, if you need `self` to be part
+   of the cache key.
 
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when
@@ -633,7 +646,7 @@ often called with the same arguments:
           @cachedmethod(lambda self: self.cache, key=partial(methodkey, method='rfc'))
           def get_rfc(self, num):
               """Retrieve text of an IETF Request for Comments"""
-              url = 'https://tools.ietf.org/rfc/rfc%d.txt' % num
+              url = 'https://www.rfc-editor.org/rfc/rfc%d.txt' % num
               with urllib.request.urlopen(url) as s:
                   return s.read()
 
@@ -651,7 +664,7 @@ often called with the same arguments:
 
    Note how keyword arguments are used with :func:`functools.partial`
    to create distinct cache keys, to avoid issues with
-   :func:`methodkey` skipping its initial `self` argument.
+   :func:`~cachetools.keys.methodkey` skipping its initial `self` argument.
 
    .. versionchanged:: 7.0
 
@@ -663,7 +676,7 @@ often called with the same arguments:
       instance methods, and are finally officially supported.
 
       Require :attr:`__dict__` to be a mutable mapping to support
-      per-instance :func:`cache_info()`.
+      per-instance :meth:`cache_info()`.
 
       Returning :const:`None` from `cache(self)` is no longer supported.
 
@@ -679,6 +692,23 @@ often called with the same arguments:
       provide a mutable :attr:`__dict__` attribute is no longer
       supported, and now raises a :exc:`TypeError`.
 
+.. autoclass:: CacheInfo
+
+   A named tuple with the fields `hits`, `misses`, `maxsize` and
+   `currsize`, as returned by the :meth:`cache_info()` function of the
+   :func:`cached` and :func:`cachedmethod` decorators.  If the
+   decorator's `cache` is a :class:`Cache` instance, `maxsize` and
+   `currsize` report its :attr:`~Cache.maxsize` and
+   :attr:`~Cache.currsize` properties.  For any other mutable mapping,
+   `maxsize` is :const:`None` and `currsize` is `len(cache)`, so
+   custom cache classes used with `info=True` must support :func:`len`.
+
+   .. versionchanged:: 8.0
+
+      :class:`CacheInfo` is now part of the public API.  Cache objects
+      that are not :class:`Cache` instances must support :func:`len`
+      when used with `info=True`.
+
 
 *****************************************************************
 :mod:`cachetools.keys` --- Key functions for memoizing decorators
@@ -687,18 +717,19 @@ often called with the same arguments:
 .. module:: cachetools.keys
 
 This module provides several functions that can be used as key
-functions with the :func:`cached` and :func:`cachedmethod` decorators:
+functions with the :func:`~cachetools.cached` and
+:func:`~cachetools.cachedmethod` decorators:
 
 .. autofunction:: hashkey
 
    This function returns a :class:`tuple` instance suitable as a cache
-   key, provided the positional and keywords arguments are hashable.
+   key, provided the positional and keyword arguments are hashable.
 
 .. autofunction:: methodkey
 
    This function is similar to :func:`hashkey`, but ignores its
    first positional argument, i.e. `self` when used with the
-   :func:`cachedmethod` decorator.
+   :func:`~cachetools.cachedmethod` decorator.
 
 .. autofunction:: typedkey
 
@@ -710,12 +741,12 @@ functions with the :func:`cached` and :func:`cachedmethod` decorators:
 
    This function is similar to :func:`typedkey`, but ignores its
    first positional argument, i.e. `self` when used with the
-   :func:`cachedmethod` decorator.
+   :func:`~cachetools.cachedmethod` decorator.
 
 These functions can also be helpful when implementing custom key
 functions for handling some non-hashable arguments.  For example,
 calling the following function with a dictionary as its `env` argument
-will raise a :class:`TypeError`, since :class:`dict` is not hashable::
+will raise a :exc:`TypeError`, since :class:`dict` is not hashable::
 
   @cached(LRUCache(maxsize=128))
   def foo(x, y, z, env={}):
@@ -730,7 +761,7 @@ specially::
       key += tuple(sorted(env.items()))
       return key
 
-The :func:`envkey` function can then be used in decorator declarations
+The ``envkey`` function can then be used in decorator declarations
 like this::
 
   @cached(LRUCache(maxsize=128), key=envkey)
@@ -741,19 +772,19 @@ like this::
 
 
 ****************************************************************************
-:mod:`cachetools.func` --- :func:`functools.lru_cache` compatible decorators
+:mod:`cachetools.func` --- :func:`functools.lru_cache`-compatible decorators
 ****************************************************************************
 
 .. module:: cachetools.func
 
-To ease migration from (or to) Python 3's :func:`functools.lru_cache`,
-this module provides several memoizing function decorators with a
-similar API.  All these decorators wrap a function with a memoizing
-callable that saves up to the `maxsize` most recent calls, using
-different caching strategies.  If `maxsize` is set to :const:`None`,
-the size limit is disabled and the cache can grow without bound.
-For :func:`ttl_cache`, the time-to-live still applies, so cached
-results expire after `ttl` even without a size limit.
+To ease migration from (or to) :func:`functools.lru_cache`, this
+module provides several memoizing function decorators with a similar
+API.  All these decorators wrap a function with a memoizing callable
+that saves up to `maxsize` results, using different caching
+strategies.  If `maxsize` is set to :const:`None`, the size limit is
+disabled and the cache can grow without bound.  For :func:`ttl_cache`,
+the time-to-live still applies, so cached results expire after `ttl`
+even without a size limit.
 
 If the optional argument `typed` is set to :const:`True`, function
 arguments of different types will be cached separately.  For example,
@@ -769,16 +800,16 @@ leaving the `maxsize` at its default value of 128::
       sentence = sentence.casefold()
       return sum(sentence.count(vowel) for vowel in 'aeiou')
 
-The wrapped function is instrumented with a :func:`cache_parameters`
+The wrapped function is instrumented with a :meth:`cache_parameters`
 function that returns a new :class:`dict` showing the values for
 `maxsize` and `typed`.  This is for information purposes only.
 Mutating the values has no effect.
 
-The wrapped function is also instrumented with :func:`cache_info` and
-:func:`cache_clear` functions to provide information about cache
+The wrapped function is also instrumented with :meth:`cache_info` and
+:meth:`cache_clear` functions to provide information about cache
 performance and clear the cache.  Please see the
 :func:`functools.lru_cache` documentation for details.  Also note that
-all the decorators in this module are thread-safe by default.
+all the decorators in this module are thread-safe.
 
 
 .. decorator:: fifo_cache(user_function)
@@ -812,8 +843,8 @@ all the decorators in this module are thread-safe by default.
 .. decorator:: ttl_cache(user_function)
                ttl_cache(maxsize=128, ttl=600, timer=time.monotonic, typed=False)
 
-   Decorator to wrap a function with a memoizing callable that saves
-   up to `maxsize` results based on a Least Recently Used (LRU)
+   Decorator that wraps a function with a memoizing callable that
+   saves up to `maxsize` results based on a Least Recently Used (LRU)
    algorithm with a per-item time-to-live (TTL) value.  By default,
    the time-to-live is set to 600 seconds and :func:`time.monotonic`
    is used to retrieve the current time.
@@ -825,4 +856,5 @@ all the decorators in this module are thread-safe by default.
 .. _context manager: https://docs.python.org/3/glossary.html#term-context-manager
 .. _mapping: https://docs.python.org/3/glossary.html#term-mapping
 .. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+.. _pickled: https://docs.python.org/3/library/pickle.html
 .. _thread-safe: https://en.wikipedia.org/wiki/Thread_safety
