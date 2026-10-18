@@ -44,15 +44,15 @@ calls :meth:`self.popitem()` repeatedly until there is enough room for
 the item to be added.
 
 In general, a cache's size is the total size of its items' values.
-Therefore, :class:`Cache` provides a :meth:`~Cache.getsizeof` method, which
-returns the size of a given `value`.  The default implementation of
-:meth:`~Cache.getsizeof` returns :const:`1` irrespective of its argument,
-making the cache's size equal to the number of its items, or
+Therefore, :class:`Cache` provides a :meth:`~Cache.getsizeof` method,
+which returns the size of a given `value`.  The default implementation
+of :meth:`~Cache.getsizeof` returns :const:`1` irrespective of its
+argument, making the cache's size equal to the number of its items, or
 `len(cache)`.  For convenience, all cache classes accept an optional
 named constructor parameter `getsizeof`, which may specify a callable
-``getsizeof(value)`` returning a non-negative number as the size of
-an item's value.  An item whose size exceeds :attr:`~Cache.maxsize` cannot be
-stored, and trying to do so raises :exc:`ValueError`.
+``getsizeof(value)`` returning a non-negative number as the size of an
+item's value.  An item whose size exceeds :attr:`~Cache.maxsize`
+cannot be stored, and trying to do so raises :exc:`ValueError`.
 
 The values of a :class:`Cache` are mutable by default, as are e.g. the
 values of a :class:`dict`.  It is the user's responsibility to take
@@ -77,6 +77,16 @@ inserted into the cache.
    keep track of item access, insertion or deletion, it may
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
+
+   .. note::
+
+      Even though :class:`Cache` and the subclasses provided by this
+      module can generally be `pickled`_, the byte stream format is an
+      implementation detail that *any* release may change, even a
+      bugfix release.  Therefore, do not rely on being able to
+      unpickle a cache, e.g. one stored in a file or database, with a
+      different :mod:`cachetools` version than the one it was pickled
+      with.
 
 .. autoclass:: FIFOCache(maxsize, getsizeof=None)
    :members: popitem
@@ -387,7 +397,7 @@ often called with the same arguments:
       get_pep.cache_clear()
 
    If `info` is set to :const:`True`, the wrapped function is
-   instrumented with a :func:`cache_info()` function that returns a
+   instrumented with a :meth:`cache_info()` function that returns a
    :class:`CacheInfo` instance, a named tuple with fields `hits`,
    `misses`, `maxsize` and `currsize`, to help measure the
    effectiveness of the cache.
@@ -526,7 +536,7 @@ often called with the same arguments:
 
    .. versionchanged:: 8.0
 
-      Passing :const:`None` as `cache` parameter is no longer
+      Passing :const:`None` as the `cache` parameter is no longer
       supported, and now raises a :exc:`TypeError`.
 
 
@@ -611,6 +621,17 @@ often called with the same arguments:
    e.g. :func:`cachetools.keys.hashkey`, if you need `self` to be part
    of the cache key.
 
+   Accessing a decorated method through its class, e.g.
+   ``Cls.method``, yields a callable that takes the instance as its
+   first positional argument, or as a keyword argument named after the
+   wrapped method's first parameter.  Unlike the method of an
+   instance, this callable does not provide the :attr:`cache`,
+   :attr:`cache_lock`, etc. attributes or the :meth:`cache_clear()`
+   and :meth:`cache_info()` functions, so this usage pattern is not
+   encouraged.  Note also that pickling or deep-copying an instance
+   restores its methods with fresh :meth:`cache_info()` statistics,
+   i.e. with the hit and miss counts reset to zero.
+
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when
    function arguments are the same, just as with the :func:`cached`
@@ -654,7 +675,8 @@ often called with the same arguments:
 
    Note how keyword arguments are used with :func:`functools.partial`
    to create distinct cache keys, to avoid issues with
-   :func:`~cachetools.keys.methodkey` skipping its initial `self` argument.
+   :func:`~cachetools.keys.methodkey` skipping its initial `self`
+   argument.
 
    .. versionchanged:: 7.0
 
@@ -668,19 +690,38 @@ often called with the same arguments:
       Require :attr:`__dict__` to be a mutable mapping to support
       per-instance :meth:`cache_info()`.
 
-      Returning :const:`None` from `cache(self)` is no longer supported.
+      Returning :const:`None` from `cache(self)` is no longer
+      supported.
 
    .. versionchanged:: 8.0
 
       Using :func:`cachedmethod` with :func:`classmethod` is no longer
-      supported, and now raises a :exc:`TypeError`.  This is mostly due to
-      the fact that chaining descriptors, i.e. using descriptors with
-      :func:`classmethod`, was deprecated in Python 3.11 and removed in
-      Python 3.13.
+      supported, and now raises a :exc:`TypeError`.  This is mostly
+      due to the fact that chaining descriptors, i.e. using
+      descriptors with :func:`classmethod`, was deprecated in Python
+      3.11 and removed in Python 3.13.
 
       Using :func:`cachedmethod` with an instance that does not
       provide a mutable :attr:`__dict__` attribute is no longer
       supported, and now raises a :exc:`TypeError`.
+
+.. autoclass:: CacheInfo
+
+   A named tuple with the fields `hits`, `misses`, `maxsize` and
+   `currsize`, as returned by the :meth:`cache_info()` function of the
+   :func:`cached` and :func:`cachedmethod` decorators.  If the
+   decorator's `cache` is a :class:`Cache` instance, `maxsize` and
+   `currsize` report its :attr:`~Cache.maxsize` and
+   :attr:`~Cache.currsize` properties.  For any other mutable mapping,
+   `maxsize` is :const:`None` and `currsize` is `len(cache)`, so
+   custom cache classes used with `info=True` must support
+   :func:`len`.
+
+   .. versionchanged:: 8.0
+
+      :class:`CacheInfo` is now part of the public API.  Cache objects
+      that are not :class:`Cache` instances must support :func:`len`
+      when used with `info=True`.
 
 
 *****************************************************************
@@ -829,4 +870,5 @@ all the decorators in this module are thread-safe.
 .. _context manager: https://docs.python.org/3/glossary.html#term-context-manager
 .. _mapping: https://docs.python.org/3/glossary.html#term-mapping
 .. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+.. _pickled: https://docs.python.org/3/library/pickle.html
 .. _thread-safe: https://en.wikipedia.org/wiki/Thread_safety
