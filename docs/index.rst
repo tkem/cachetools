@@ -77,6 +77,16 @@ inserted into the cache.
    additionally need to override :meth:`__getitem__`,
    :meth:`__setitem__` and :meth:`__delitem__`.
 
+   .. note::
+
+      Even though :class:`Cache` and the subclasses provided by this
+      module can generally be `pickled`_, the byte stream format is an
+      implementation detail that *any* release may change, even a
+      bugfix release.  Therefore, do not rely on being able to
+      unpickle a cache, e.g. one stored in a file or database, with a
+      different :mod:`cachetools` version than the one it was pickled
+      with.
+
 .. autoclass:: FIFOCache(maxsize, getsizeof=None)
    :members: popitem
 
@@ -845,4 +855,5 @@ all the decorators in this module are thread-safe by default.
 .. _context manager: https://docs.python.org/3/glossary.html#term-context-manager
 .. _mapping: https://docs.python.org/3/glossary.html#term-mapping
 .. _mutable: https://docs.python.org/3/glossary.html#term-mutable
+.. _pickled: https://docs.python.org/3/library/pickle.html
 .. _thread-safe: https://en.wikipedia.org/wiki/Thread_safety
