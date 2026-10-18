@@ -24,7 +24,7 @@ from ._decorator import (
 
 
 class _WrapperBase:
-    """Wrapper base class providing default implementations for properties."""
+    """Wrapper base class providing the public cache attributes."""
 
     def __init__(self, func, cache, key, lock=None, cond=None):
         # update first, so func.__dict__ cannot override wrapper state,
