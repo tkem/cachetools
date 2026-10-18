@@ -24,7 +24,7 @@ from ._descriptor import _MethodDescriptor
 
 
 class _WrapperBase:
-    """Wrapper base class providing default implementations for properties."""
+    """Wrapper base class providing the public cache attributes as properties."""
 
     def __init__(self, obj, descriptor, method, cache, key, lock=None, cond=None):
         functools.update_wrapper(self, method)
