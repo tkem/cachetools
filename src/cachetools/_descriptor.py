@@ -103,7 +103,12 @@ class _MethodDescriptor:
             def unbound(self, *args, **kwargs):
                 return descriptor.__get__(self)(*args, **kwargs)
 
-            self.__unbound = unbound  # type: ignore
+            # Keep autospec's generic callable handling, as in 7.2.1. A plain
+            # function from a custom descriptor retains an extra self argument.
+            self.__unbound = functools.update_wrapper(
+                functools.partial(unbound),
+                self.__wrapped__,  # type: ignore
+            )
         return self.__unbound
 
 
