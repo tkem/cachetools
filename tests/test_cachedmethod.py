@@ -776,6 +776,10 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 0)
         self.assertEqual(cached.count, 1)
 
+    def test_class_call_without_instance(self):
+        with self.assertRaises(TypeError):
+            Cached.get()  # type: ignore
+
     def test_class_access_identity(self):
         self.assertIs(Cached.get, Cached.get)
         self.assertIs(Cached.get_info, Cached.get_info)
