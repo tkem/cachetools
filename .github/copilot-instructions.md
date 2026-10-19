@@ -34,14 +34,15 @@ and `getsizeof`; `maxsize=0` and `math.inf` are valid, negative values raise
 binding parent methods via default parameters (`cache_setitem=Cache.__setitem__`).
 `FIFOCache`/`LRUCache` use `OrderedDict`, `LFUCache` a linked list of frequency
 buckets, `RRCache` a key list plus index dict. `_TimedCache` (`TTLCache`, `TLRUCache`)
-wraps the timer in a re-entrant `_Timer` that freezes time per operation; `__setitem__`,
-`popitem()`, `__len__`, `__repr__` and `currsize` call `expire()` first, while
-`__delitem__`, `__getitem__`, `__contains__`, `__iter__` and `clear()` do not. Since
-`list()`/`set()` ask for a length hint, only a bare `for` loop sees expired items that
-have not been removed yet. `TLRUCache` uses a min-heap with lazy deletion and iterates
-in heap order. `CacheInfo` is a public namedtuple; the private `CacheInfo._make_info()`
-uses `maxsize`/`currsize` for `Cache` instances and `len()` otherwise, so custom caches
-need `__len__` with `info=True`.
+wraps the timer in a re-entrant `_Timer` that freezes time per operation; `__setitem__`
+and `popitem()` call `expire()` first, while `__delitem__`, `__getitem__`,
+`__contains__`, `__iter__` and `clear()` do not. Each subclass' `__len__` and `currsize`
+subtract the count and size of expired items (each link/item records its size) from
+the `Cache` values, and `_TimedCache.__repr__` lists the items `__iter__` yields, so
+none of them removes expired items. `TLRUCache` uses a min-heap with lazy deletion and
+iterates in heap order. `CacheInfo` is a public namedtuple; the private
+`CacheInfo._make_info()` uses `maxsize`/`currsize` for `Cache` instances and `len()`
+otherwise, so custom caches need `__len__` with `info=True`.
 
 **Decorator mixins** (`_decorator.py`): `_BasicMixin`, `_LockedMixin`,
 `_ConditionMixin` and their `*InfoMixin` counterparts implement `__call__`,
@@ -112,8 +113,8 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
 - `test_threading.py`: join with `TIMEOUT` and assert threads finished. Lock tests force
   overlap with a `Barrier`; condition tests cannot, so they do not prove the stampede
   guard engaged.
-- `list()`, `set()` and `len()` run `expire()`; use a `for` loop to observe expired
-  items.
+- `list()`, `set()`, `len()`, `repr()` and `currsize` skip expired items without
+  removing them; only `__setitem__`, `popitem()` or an explicit `expire()` remove them.
 
 ## Code Review
 

@@ -14,10 +14,8 @@ all of `src/`, `tests/`, `docs/`, stubs, packaging and CI; 18 files differ from
 
 **Coverage:** 100% line coverage across the CI matrix (merged by Codecov); a single
 local run on 3.13+ shows 99% because the pre-3.13 `@classmethod` check
-(`_descriptor.py:32`) is only reached on 3.11/3.12.  `tox` measures branches via
-`--cov-branch`; the one never-taken branch, `__init__.py:526->528`
-(`TTLCache.__iter__` skipping an expired item that `expire()` has not removed yet), is
-listed under *Tests — Gaps* below.
+(`_descriptor.py:32`) is only reached on 3.11/3.12.  `tox -e py -- --cov-branch`
+reports 100% branch coverage as well.
 
 ## Code — Potential Issues
 
@@ -40,7 +38,7 @@ none blocks the release.
 | 12 | Info | `_cachedmethod.py` `_WrapperBase` | Each per-instance wrapper references `obj`, and `obj.__dict__` references the wrapper, so instances with active wrappers are freed only by the cyclic GC, not by reference counting (verified with `gc.disable()` and a weakref). Expected for this design; worth knowing for large or short-lived instances. |
 | 13 | Info | `_decorator.py` condition mixins | Same-thread recursive re-entry on the same key deadlocks (`wait_for` on its own pending marker). |
 | 14 | Info | `_MethodDescriptor.__get_unbound` / `__call__` | Lazy creation of the cached `unbound` function is unsynchronized; concurrent first class accesses may briefly see distinct (equivalent) functions. Benign. Two error messages are misleading at the margins: `Cls.method(None, 1)` reports "No `__dict__` attribute on 'int' instance" (the `None` receiver makes `__get__` return `unbound`, which then binds `1`), and calling the raw descriptor from `Cls.__dict__` reports "Decorating class methods is not supported". |
-| 15 | Info | `TTLCache.__delitem__` / `TLRUCache.__delitem__` | Deleting a key that is present but expired removes it and then raises `KeyError`. Consistent with `key in cache` being `False`; intentional. Neither `__delitem__` calls `expire()` (verified), unlike `__setitem__`, `__len__`, `__repr__`, `currsize` and `popitem`; see Docs #2. |
+| 15 | Info | `TTLCache.__delitem__` / `TLRUCache.__delitem__` | Deleting a key that is present but expired removes it and then raises `KeyError`. Consistent with `key in cache` being `False`; intentional. Neither `__delitem__` calls `expire()` (verified), unlike `__setitem__` and `popitem()`; see Docs #2. |
 | 16 | Info | `Cache.__setitem__` | With `maxsize=math.inf` and a `getsizeof` returning `math.inf`, the value is accepted (`inf > inf` is false), `currsize` becomes `inf`, and deleting the item leaves `currsize = nan`. Only non-negative sizes are validated. Pathological input; not worth a check on the hot path. |
 | 17 | Info | `TLRUCache.__iter__` | Iterates the expiry heap, so `list(cache)` is in heap order (verified: inserting 1, 2, 3 with ttu 30/10/20 yields `[2, 1, 3]`), while `TTLCache` iterates in expiry (= insertion) order and `popitem()` uses LRU order. No ordering is documented; fine, but surprising next to `TTLCache`. |
 
@@ -59,14 +57,13 @@ none blocks the release.
 
 | # | Priority | Finding |
 |---|----------|---------|
-| 1 | Low | `TTLCache.__iter__` (`526->528`): iteration over an expired-but-not-yet-removed item is never exercised, because `list(cache)` and `set(cache)` call `__len__` for a length hint first, which runs `expire()`. Only a bare `for key in cache` or `list(iter(cache))` reaches the branch (verified: the for-loop yields nothing and leaves the raw item in place; `list()` removes it). Worth one explicit test, also to pin that iteration never mutates. |
-| 2 | Low | No test checks that `copy.copy(obj)` gets its own wrapper, or pins the current sharing behavior (Code #1). |
-| 3 | Low | `UnboundMethodTest` does not assert that class access exposes no `cache_clear`/`cache_info` (verified: both `hasattr` checks are `False`), and does not exercise class access for the lock/condition variants. |
-| 4 | Low | The pickle tests use the default protocol only. Protocols 0–5 were verified by hand; a `subTest` loop over `range(pickle.HIGHEST_PROTOCOL + 1)` would pin this, as `tests/__init__.py` does for caches. |
-| 5 | Info | `test_threading.py` `run_cond_test` asserts `misses == 1`, but nothing forces the threads to overlap (the lock tests use a `Barrier` inside the function; a condition-guarded function cannot, since only one thread enters). `misses == 1` would also hold if the threads happened to run sequentially, so the test demonstrates correctness but cannot detect a broken stampede guard. Hard to fix deterministically; note only. |
-| 6 | Info | `CacheTestMixin` deliberately checks key existence rather than the specific eviction victim; policy-specific checks live in the per-cache test files. No action needed. |
-| 7 | Info | `test_func.py` calls decorators through `Callable[..., Any]`; one concrete test (`FIFODecoratorTest.test_method_typed`) covers the shared `_cachetools_cache_wrapper` stub. Enough. |
-| 8 | Info | The `CountedCondition` comment in `tests/__init__.py` ("wait() and notify() are also required according to the docs...") reads as an open question. The stub (`d008c95`) now settles it: the full `threading.Condition` interface is required, with `wait()`/`notify()` reserved for future use. Align the comment with that wording. |
+| 1 | Low | No test checks that `copy.copy(obj)` gets its own wrapper, or pins the current sharing behavior (Code #1). |
+| 2 | Low | `UnboundMethodTest` does not assert that class access exposes no `cache_clear`/`cache_info` (verified: both `hasattr` checks are `False`), and does not exercise class access for the lock/condition variants. |
+| 3 | Low | The pickle tests use the default protocol only. Protocols 0–5 were verified by hand; a `subTest` loop over `range(pickle.HIGHEST_PROTOCOL + 1)` would pin this, as `tests/__init__.py` does for caches. |
+| 4 | Info | `test_threading.py` `run_cond_test` asserts `misses == 1`, but nothing forces the threads to overlap (the lock tests use a `Barrier` inside the function; a condition-guarded function cannot, since only one thread enters). `misses == 1` would also hold if the threads happened to run sequentially, so the test demonstrates correctness but cannot detect a broken stampede guard. Hard to fix deterministically; note only. |
+| 5 | Info | `CacheTestMixin` deliberately checks key existence rather than the specific eviction victim; policy-specific checks live in the per-cache test files. No action needed. |
+| 6 | Info | `test_func.py` calls decorators through `Callable[..., Any]`; one concrete test (`FIFODecoratorTest.test_method_typed`) covers the shared `_cachetools_cache_wrapper` stub. Enough. |
+| 7 | Info | The `CountedCondition` comment in `tests/__init__.py` ("wait() and notify() are also required according to the docs...") reads as an open question. The stub (`d008c95`) now settles it: the full `threading.Condition` interface is required, with `wait()`/`notify()` reserved for future use. Align the comment with that wording. |
 
 ## Docs — `docs/index.rst`
 
@@ -77,7 +74,7 @@ none blocks the release.
 | # | Priority | Finding |
 |---|----------|---------|
 | 1 | Low | The `@cachedmethod` docs do not mention that class access (`Cls.method`) yields a plain function without `cache_clear()`/`cache_info()`, that `copy.copy()` of an instance shares its wrappers (Code #1), that pickling an instance resets its `cache_info()` counters, or that `inspect.signature()` of a bound wrapper still shows `self` (Code #7). |
-| 2 | Low | Both `expire()` entries (lines 157–159, 210–212) and the "Extending cache classes" section (lines 245–247) say expired items are removed "only at the next mutating operation, e.g. `__setitem__` or `__delitem__`". Verified: `__delitem__` does *not* call `expire()` in either timed cache, whereas the read-only `len()`, `repr()` and `currsize` do, and so does `list(cache)` via the length hint. Suggest "e.g. `__setitem__`, `popitem()`, `len()` or `currsize`" and dropping `__delitem__`. |
+| 2 | Low | Both `expire()` entries (lines 157–159, 210–212) and the "Extending cache classes" section (lines 245–247) say expired items are removed "only at the next mutating operation, e.g. `__setitem__` or `__delitem__`". Verified: `__delitem__` does *not* call `expire()` in either timed cache (since 1.1.6, #67); only `__setitem__` and `popitem()` do, while the read-only `len()`, `repr()`, `currsize` and iteration skip expired items without removing them. Suggest "e.g. `__setitem__` or `popitem()`" and dropping `__delitem__`. |
 | 3 | Low | The pickling note on `Cache` (lines 80–88) says the cache classes "can generally be pickled" without saying what the exception is. Verified with a probe: pickling fails with `PicklingError` for a `getsizeof`, `timer` or `ttu` callable that is itself unpicklable, e.g. a lambda; the defaults and module-level functions such as `len` work. Suggest "can be pickled, provided that any `getsizeof`, `timer` or `ttu` callable is picklable". |
 | 4 | Info | Neither the `@cached` nor the `cachetools.func.*_cache` docs mention that they may decorate methods. Worth a one-line caveat that the cache and counters are then shared across all instances, unlike `@cachedmethod` (verified: two instances share one `CacheInfo`). |
 | 5 | Info | The `ExpCache` doctest (line 264) calls `time.sleep(1.5)`, which accounts for most of the `doctest` environment's runtime. A `Timer` object as in `tests/test_ttl.py` would make the example deterministic and instant, at the cost of a few more lines. |

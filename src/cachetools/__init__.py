@@ -405,21 +405,15 @@ class _TimedCache(Cache):
         Cache.__init__(self, maxsize, getsizeof)
         self.__timer = _TimedCache._Timer(timer)
 
-    def __repr__(self, cache_repr=Cache.__repr__):
-        with self.__timer as time:
-            self.expire(time)
-            return cache_repr(self)
-
-    def __len__(self, cache_len=Cache.__len__):
-        with self.__timer as time:
-            self.expire(time)
-            return cache_len(self)
-
-    @property
-    def currsize(self):
-        with self.__timer as time:
-            self.expire(time)
-            return super().currsize
+    def __repr__(self, cache_getitem=Cache.__getitem__):
+        with self.__timer:
+            # call cache_getitem() to prevent item reordering/expiration
+            return "%s(%r, maxsize=%r, currsize=%r)" % (
+                type(self).__name__,
+                {key: cache_getitem(self, key) for key in self},
+                self.maxsize,
+                self.currsize,
+            )
 
     @property
     def timer(self):
@@ -444,22 +438,20 @@ class _TimedCache(Cache):
         # be O(1) regardless of cache contents.
         Cache.clear(self)
 
-    def expire(self, time=None):  # pragma: no cover
-        raise NotImplementedError
-
 
 class TTLCache(_TimedCache):
     """LRU Cache implementation with per-item time-to-live (TTL) value."""
 
     class _Link:
-        __slots__ = ("expires", "key", "next", "prev")
+        __slots__ = ("expires", "key", "next", "prev", "size")
 
-        def __init__(self, key=None, expires=None):
+        def __init__(self, key=None, expires=None, size=None):
             self.key = key
             self.expires = expires
+            self.size = size
 
         def __reduce__(self):
-            return TTLCache._Link, (self.key, self.expires)
+            return TTLCache._Link, (self.key, self.expires, self.size)
 
         def unlink(self):
             next = self.next
@@ -506,6 +498,7 @@ class TTLCache(_TimedCache):
         else:
             link.unlink()
         link.expires = expires
+        link.size = self.getsizeof(value)
         link.next = root = self.__root
         link.prev = prev = root.prev
         prev.next = root.prev = link
@@ -521,11 +514,18 @@ class TTLCache(_TimedCache):
         root = self.__root
         curr = root.next
         while curr is not root:
-            # "freeze" time for iterator access
+            # "freeze" time for iterator access only
             with self.timer as time:
                 if time < curr.expires:
                     yield curr.key
             curr = curr.next
+
+    def __len__(self, cache_len=Cache.__len__):
+        return cache_len(self) - sum(1 for _ in self.__expired(self.timer()))
+
+    @property
+    def currsize(self):
+        return super().currsize - sum(link.size for link in self.__expired(self.timer()))
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -589,6 +589,14 @@ class TTLCache(_TimedCache):
         self.__links.move_to_end(key)
         return value
 
+    def __expired(self, time):
+        # expired items form a prefix of the expiry-ordered link list
+        root = self.__root
+        curr = root.next
+        while curr is not root and not (time < curr.expires):
+            yield curr
+            curr = curr.next
+
 
 class TLRUCache(_TimedCache):
     """Time aware Least Recently Used (TLRU) cache implementation."""
@@ -597,11 +605,12 @@ class TLRUCache(_TimedCache):
 
     @functools.total_ordering
     class _Item:
-        __slots__ = ("expires", "key", "removed")
+        __slots__ = ("expires", "key", "removed", "size")
 
-        def __init__(self, key=None, expires=None):
+        def __init__(self, key=None, expires=None, size=None):
             self.key = key
             self.expires = expires
+            self.size = size
             self.removed = False
 
         def __lt__(self, other):
@@ -648,7 +657,7 @@ class TLRUCache(_TimedCache):
             self.__getitem(key).removed = True
         except KeyError:
             pass
-        self.__items[key] = item = TLRUCache._Item(key, expires)
+        self.__items[key] = item = TLRUCache._Item(key, expires, self.getsizeof(value))
         heapq.heappush(self.__order, item)
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
@@ -662,10 +671,17 @@ class TLRUCache(_TimedCache):
 
     def __iter__(self):
         for curr in self.__order:
-            # "freeze" time for iterator access
+            # "freeze" time for iterator access only
             with self.timer as time:
                 if time < curr.expires and not curr.removed:
                     yield curr.key
+
+    def __len__(self, cache_len=Cache.__len__):
+        return cache_len(self) - sum(1 for _ in self.__expired(self.timer()))
+
+    @property
+    def currsize(self):
+        return super().currsize - sum(item.size for item in self.__expired(self.timer()))
 
     @property
     def ttu(self):
@@ -719,6 +735,22 @@ class TLRUCache(_TimedCache):
         value = self.__items[key]
         self.__items.move_to_end(key)
         return value
+
+    def __expired(self, time):
+        # expired items form a subtree at the top of the min-heap, so
+        # only the children of expired items need to be visited
+        order = self.__order
+        n = len(order)
+        stack = [0] if n else []
+        while stack:
+            index = stack.pop()
+            item = order[index]
+            if time < item.expires:
+                continue
+            if not item.removed:
+                yield item
+            left = 2 * index + 1
+            stack.extend(range(left, min(left + 2, n)))
 
     def __delitem(self, key, cache_delitem=Cache.__delitem__):
         try:
