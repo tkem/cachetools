@@ -776,6 +776,10 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 0)
         self.assertEqual(cached.count, 1)
 
+    def test_class_call_without_instance(self):
+        with self.assertRaises(TypeError):
+            Cached.get()  # type: ignore
+
     def test_class_access_identity(self):
         self.assertIs(Cached.get, Cached.get)
         self.assertIs(Cached.get_info, Cached.get_info)
@@ -798,3 +802,13 @@ class UnboundMethodTest(unittest.TestCase):
             warnings.simplefilter("always")
             unittest.mock.create_autospec(Cached, instance=True)
         self.assertEqual(len(w), 0)
+
+    def test_autospec_call(self):
+        import unittest.mock
+
+        mock = unittest.mock.create_autospec(Cached, instance=True)
+        mock.get.return_value = 42
+        self.assertEqual(mock.get(1), 42)
+        mock.get.assert_called_with(1)
+        self.assertEqual(mock.get(value=1), 42)
+        mock.get.assert_called_with(value=1)
