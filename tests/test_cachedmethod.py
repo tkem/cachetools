@@ -620,6 +620,17 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
 
                 bar = foo
 
+    def test_decorator_same_name(self):
+        # assigning to a second owner under the same name is accepted
+        class Other(Cached):
+            get = Cached.__dict__["get"]
+
+        other = Other(self.cache(2))
+
+        self.assertEqual(other.get(0), 0)
+        self.assertEqual(other.get(0), 0)
+        self.assertEqual(other.get(1), 1)
+
     def test_decorator_no_set_name(self):
         class Cached:
             def foo(_self):

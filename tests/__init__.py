@@ -356,6 +356,13 @@ class CacheTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(3, cache[3])
         self.assertEqual(7, cache[4])
 
+        # growing an existing entry may have to evict other entries
+        cache[4] = 9
+        self.assertEqual(1, len(cache))
+        self.assertEqual(9, cache.currsize)
+        self.assertNotIn(3, cache)
+        self.assertEqual(9, cache[4])
+
     def test_getsizeof_replace_same_size(self):
         cache = self.Cache(maxsize=10, getsizeof=lambda x: x)
 
