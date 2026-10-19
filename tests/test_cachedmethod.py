@@ -747,6 +747,40 @@ class NoneMethodTest(unittest.TestCase):
 
 
 class UnboundMethodTest(unittest.TestCase):
+    def test_autospec_calls(self):
+        import unittest.mock
+
+        for instance in (False, True):
+            spec = unittest.mock.create_autospec(Cached, instance=instance)
+            cached = spec if instance else spec.return_value
+            for name in (
+                "get",
+                "get_typed",
+                "get_info",
+                "get_lock",
+                "get_lock_info",
+                "get_cond",
+                "get_cond_info",
+                "get_lock_cond",
+                "get_lock_cond_info",
+            ):
+                with self.subTest(instance=instance, method=name):
+                    method = getattr(cached, name)
+                    method(1)
+                    method.assert_called_once_with(1)
+                    method.reset_mock()
+                    method(value=1)
+                    method.assert_called_once_with(value=1)
+
+    def test_class_access_signature(self):
+        import inspect
+
+        for method in (Cached.get, Cached.get_info):
+            with self.subTest(method=method.__name__):
+                self.assertEqual(
+                    inspect.signature(method), inspect.signature(method.__wrapped__)
+                )
+
     def test_class_call(self):
         cached = Cached(Cache(2))
         self.assertEqual(Cached.get(cached, 1), 0)
