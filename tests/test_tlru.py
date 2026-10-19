@@ -217,6 +217,19 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
+    def test_ttu_iter_expired(self):
+        cache = TLRUCache[int, int, int](
+            maxsize=2, ttu=lambda _k, _v, t: t + 2, timer=Timer()
+        )
+        cache[1] = 1
+        cache.timer.tick()
+        cache[2] = 2
+        cache.timer.tick()
+        # a bare for loop skips expired items without removing them
+        self.assertEqual([2], [key for key in cache])
+        self.assertEqual({(1, 1)}, set(cache.expire()))
+        self.assertEqual([2], [key for key in cache])
+
     def test_ttu_expired(self):
         cache = TLRUCache[int, None, int](
             maxsize=1, ttu=lambda k, _, t: t + k, timer=Timer()

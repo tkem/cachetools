@@ -177,6 +177,17 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(2, cache)
         self.assertNotIn(3, cache)
 
+    def test_ttl_iter_expired(self):
+        cache = TTLCache[int, int, int](maxsize=2, ttl=2, timer=Timer())
+        cache[1] = 1
+        cache.timer.tick()
+        cache[2] = 2
+        cache.timer.tick()
+        # a bare for loop skips expired items without removing them
+        self.assertEqual([2], [key for key in cache])
+        self.assertEqual({(1, 1)}, set(cache.expire()))
+        self.assertEqual([2], [key for key in cache])
+
     def test_ttl_atomic(self):
         cache = TTLCache[int, int, int](maxsize=1, ttl=2, timer=Timer(auto=True))
         cache[1] = 1
