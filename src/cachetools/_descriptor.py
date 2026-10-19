@@ -96,15 +96,30 @@ class _MethodDescriptor:
         # Created once and shared by all class accesses; objtype is not
         # used for instance lookups, so it need not be bound here.
         if self.__unbound is None:
-            descriptor = self
-
-            # As in the previous function wrapper, the receiver is named self.
-            @functools.wraps(self.__wrapped__)  # type: ignore
-            def unbound(self, *args, **kwargs):
-                return descriptor.__get__(self)(*args, **kwargs)
-
-            self.__unbound = unbound  # type: ignore
+            self.__unbound = _Unbound(self)
         return self.__unbound
+
+
+class _Unbound:
+    """Callable returned on class access.
+
+    Deliberately not a function: unittest.mock.create_autospec() only strips
+    the receiver from plain functions found in the class dict, so a function
+    here would leave the receiver in an autospec'd instance's signature.
+    """
+
+    def __init__(self, descriptor):
+        functools.update_wrapper(self, descriptor.__wrapped__)
+        self.__descriptor = descriptor
+
+    # Receiver is taken from *args so autospec'd instances accept any call,
+    # as they did before class access returned a callable.
+    def __call__(self, /, *args, **kwargs):
+        if not args:
+            msg = "Cannot call @cachedmethod through the class without an instance"
+            raise TypeError(msg)
+        obj, *args = args
+        return self.__descriptor.__get__(obj)(*args, **kwargs)
 
 
 class _ClassMethodDescriptor(_MethodDescriptor):
