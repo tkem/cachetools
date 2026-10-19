@@ -96,7 +96,6 @@ mypy is not a target.
 ```bash
 tox -p auto                                # all environments
 tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
-tox -e py -- --cov-branch                  # branch coverage; CI measures lines only
 ```
 
 - CI covers CPython 3.11–3.15, free-threaded builds and PyPy; 100% line coverage is

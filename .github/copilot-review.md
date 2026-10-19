@@ -12,17 +12,12 @@ all of `src/`, `tests/`, `docs/`, stubs, packaging and CI; 18 files differ from
 8 subtests), `docs`, `doctest`, `pyright` (0 errors), `ruff`, `ruff-format`. Only
 3.14 is installed locally; 3.11–3.13, the free-threaded builds and PyPy were not run.
 
-**Coverage:** 100% *line* coverage across the CI matrix (merged by Codecov); a single
+**Coverage:** 100% line coverage across the CI matrix (merged by Codecov); a single
 local run on 3.13+ shows 99% because the pre-3.13 `@classmethod` check
-(`_descriptor.py:32`) is only reached on 3.11/3.12. `tox` measures line coverage
-only. `tox -e py -- --cov-branch` reports three never-taken branches, all listed
-under *Tests — Gaps* below:
-
-| Location | Branch | Meaning |
-|----------|--------|---------|
-| `__init__.py:93->91` | `Cache.__setitem__` | growing an existing entry evicts *other* keys and loops again |
-| `__init__.py:526->528` | `TTLCache.__iter__` | iteration skips an expired item that `expire()` has not removed yet |
-| `_descriptor.py:21->exit` | `__set_name__` | a second owner re-registers the descriptor under the *same* name |
+(`_descriptor.py:32`) is only reached on 3.11/3.12.  `tox` measures branches via
+`--cov-branch`; the one never-taken branch, `__init__.py:526->528`
+(`TTLCache.__iter__` skipping an expired item that `expire()` has not removed yet), is
+listed under *Tests — Gaps* below.
 
 ## Code — Potential Issues
 
@@ -64,17 +59,14 @@ none blocks the release.
 
 | # | Priority | Finding |
 |---|----------|---------|
-| 1 | Low | `tox.ini` measures line coverage only. Adding `--cov-branch` to the `py` command would make the three untaken branches below visible in CI and on Codecov; the current 100% figure hides them. |
-| 2 | Low | `Cache.__setitem__` (`93->91`): no test grows an existing entry when the eviction has to remove *other* keys. Every existing test either has room (`test_getsizeof_replace_grow`) or evicts the key being updated (`_test_getsizeof`, where the updated key is also the LRU/FIFO victim). A shared test in `CacheTestMixin` such as `maxsize=3, getsizeof=lambda v: v; c[1]=1; c[2]=2; c[2]=3` → `{2: 3}`, `currsize == 3` covers it for all cache types (verified by hand for `Cache`, `FIFOCache`, `LFUCache`, `LRUCache`, `RRCache(choice=min)` and `TTLCache`). |
-| 3 | Low | `TTLCache.__iter__` (`526->528`): iteration over an expired-but-not-yet-removed item is never exercised, because `list(cache)` and `set(cache)` call `__len__` for a length hint first, which runs `expire()`. Only a bare `for key in cache` or `list(iter(cache))` reaches the branch (verified: the for-loop yields nothing and leaves the raw item in place; `list()` removes it). Worth one explicit test, also to pin that iteration never mutates. |
-| 4 | Low | `_MethodDescriptor.__set_name__` (`21->exit`): the "second owner, same name is accepted silently" path (Code #11) is untested. A two-line test assigning `Base.__dict__["get"]` to another class under the name `get` pins the behavior. |
-| 5 | Low | No test checks that `copy.copy(obj)` gets its own wrapper, or pins the current sharing behavior (Code #1). |
-| 6 | Low | `UnboundMethodTest` does not assert that class access exposes no `cache_clear`/`cache_info` (verified: both `hasattr` checks are `False`), and does not exercise class access for the lock/condition variants. |
-| 7 | Low | The pickle tests use the default protocol only. Protocols 0–5 were verified by hand; a `subTest` loop over `range(pickle.HIGHEST_PROTOCOL + 1)` would pin this, as `tests/__init__.py` does for caches. |
-| 8 | Info | `test_threading.py` `run_cond_test` asserts `misses == 1`, but nothing forces the threads to overlap (the lock tests use a `Barrier` inside the function; a condition-guarded function cannot, since only one thread enters). `misses == 1` would also hold if the threads happened to run sequentially, so the test demonstrates correctness but cannot detect a broken stampede guard. Hard to fix deterministically; note only. |
-| 9 | Info | `CacheTestMixin` deliberately checks key existence rather than the specific eviction victim; policy-specific checks live in the per-cache test files. No action needed. |
-| 10 | Info | `test_func.py` calls decorators through `Callable[..., Any]`; one concrete test (`FIFODecoratorTest.test_method_typed`) covers the shared `_cachetools_cache_wrapper` stub. Enough. |
-| 11 | Info | The `CountedCondition` comment in `tests/__init__.py` ("wait() and notify() are also required according to the docs...") reads as an open question. The stub (`d008c95`) now settles it: the full `threading.Condition` interface is required, with `wait()`/`notify()` reserved for future use. Align the comment with that wording. |
+| 1 | Low | `TTLCache.__iter__` (`526->528`): iteration over an expired-but-not-yet-removed item is never exercised, because `list(cache)` and `set(cache)` call `__len__` for a length hint first, which runs `expire()`. Only a bare `for key in cache` or `list(iter(cache))` reaches the branch (verified: the for-loop yields nothing and leaves the raw item in place; `list()` removes it). Worth one explicit test, also to pin that iteration never mutates. |
+| 2 | Low | No test checks that `copy.copy(obj)` gets its own wrapper, or pins the current sharing behavior (Code #1). |
+| 3 | Low | `UnboundMethodTest` does not assert that class access exposes no `cache_clear`/`cache_info` (verified: both `hasattr` checks are `False`), and does not exercise class access for the lock/condition variants. |
+| 4 | Low | The pickle tests use the default protocol only. Protocols 0–5 were verified by hand; a `subTest` loop over `range(pickle.HIGHEST_PROTOCOL + 1)` would pin this, as `tests/__init__.py` does for caches. |
+| 5 | Info | `test_threading.py` `run_cond_test` asserts `misses == 1`, but nothing forces the threads to overlap (the lock tests use a `Barrier` inside the function; a condition-guarded function cannot, since only one thread enters). `misses == 1` would also hold if the threads happened to run sequentially, so the test demonstrates correctness but cannot detect a broken stampede guard. Hard to fix deterministically; note only. |
+| 6 | Info | `CacheTestMixin` deliberately checks key existence rather than the specific eviction victim; policy-specific checks live in the per-cache test files. No action needed. |
+| 7 | Info | `test_func.py` calls decorators through `Callable[..., Any]`; one concrete test (`FIFODecoratorTest.test_method_typed`) covers the shared `_cachetools_cache_wrapper` stub. Enough. |
+| 8 | Info | The `CountedCondition` comment in `tests/__init__.py` ("wait() and notify() are also required according to the docs...") reads as an open question. The stub (`d008c95`) now settles it: the full `threading.Condition` interface is required, with `wait()`/`notify()` reserved for future use. Align the comment with that wording. |
 
 ## Docs — `docs/index.rst`
 
