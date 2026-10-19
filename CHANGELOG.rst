@@ -1,3 +1,13 @@
+v7.2.4 (2026-10-19)
+===================
+
+- Restore autospec calls to ``@cachedmethod`` decorated methods.
+
+- Improve branch coverage of unit tests.
+
+- Minor type stub improvements.
+
+
 v7.2.3 (2026-10-17)
 ===================
 
