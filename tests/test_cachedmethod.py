@@ -798,3 +798,13 @@ class UnboundMethodTest(unittest.TestCase):
             warnings.simplefilter("always")
             unittest.mock.create_autospec(Cached, instance=True)
         self.assertEqual(len(w), 0)
+
+    def test_autospec_call(self):
+        import unittest.mock
+
+        mock = unittest.mock.create_autospec(Cached, instance=True)
+        mock.get.return_value = 42
+        self.assertEqual(mock.get(1), 42)
+        mock.get.assert_called_with(1)
+        self.assertEqual(mock.get(value=1), 42)
+        mock.get.assert_called_with(value=1)
