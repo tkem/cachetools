@@ -3,7 +3,12 @@
 __all__ = ()
 
 import functools
+import inspect
+import sys
 import warnings
+
+if sys.version_info >= (3, 14):
+    from annotationlib import Format
 
 
 def _warn_classmethod(stacklevel):
@@ -112,9 +117,26 @@ class _Unbound:
         functools.update_wrapper(self, descriptor.__wrapped__)
         self.__descriptor = descriptor
 
-    # Receiver is taken from *args so autospec'd instances accept any call,
-    # as they did before class access returned a callable.
+    # Keep *args so autospec'd instances accept any call, as they did before
+    # class access returned a callable.
     def __call__(self, /, *args, **kwargs):
+        if not args and kwargs:
+            try:
+                method = self.__descriptor.__wrapped__
+                signature = (
+                    inspect.signature(method, annotation_format=Format.STRING)
+                    if sys.version_info >= (3, 14)
+                    else inspect.signature(method)
+                )
+                receiver = next(iter(signature.parameters.values()))
+            except (TypeError, ValueError, StopIteration):
+                pass
+            else:
+                if (
+                    receiver.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+                    and receiver.name in kwargs
+                ):
+                    args = (kwargs.pop(receiver.name),)
         if not args:
             msg = "Cannot call @cachedmethod through the class without an instance"
             raise TypeError(msg)
