@@ -248,7 +248,7 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(1, len(cache))
 
     def test_ttu_atomic(self):
-        cache = TLRUCache[int, int, int](
+        cache = TLRUCache[int, int | None, int](
             maxsize=1, ttu=lambda k, v, t: t + 2, timer=Timer(auto=True)
         )
         cache[1] = 1
@@ -258,7 +258,7 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = 1
         self.assertEqual(1, cache.pop(1))
         cache[1] = 1
-        self.assertEqual(1, cache.setdefault(1))
+        self.assertEqual(1, cache.setdefault(1))  # implicit default=None
         cache[1] = 1
         cache.clear()
         self.assertEqual(0, len(cache))
