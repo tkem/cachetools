@@ -1,11 +1,43 @@
+v8.0.0 (UNRELEASED)
+===================
+
+- Require Python 3.11 or later (breaking change).
+
+- Drop support for decorating class methods with ``@cachedmethod``
+  (breaking change).
+
+- Drop support for using ``@cachedmethod`` with instances that do not
+  provide a mutable ``__dict__`` attribute (breaking change).
+
+- Drop support for passing ``cache=None`` to the ``@cached``
+  decorator, which makes it more consistent with ``@cachedmethod``
+  (breaking change).
+
+- Require custom cache classes to support ``__len__`` when used with
+  ``@cached`` or ``@cachedmethod`` and ``info=True`` (potentially
+  breaking change).
+
+- Remove the previously undocumented ``cache_info`` attribute, which
+  ``@cached`` set to ``None`` when ``info=False``, for consistency
+  with the type stubs and ``@cachedmethod`` (potentially breaking
+  change).
+
+- Rename ``_CacheInfo`` to ``CacheInfo``, previously documented only
+  as an unnamed named tuple, thus making it public (potentially
+  breaking change).
+
+- Fix pickling and deep-copying of instances using ``@cachedmethod``
+  (broken since v7.0.0).
+
+- Various documentation improvements.
+
+
 v7.2.4 (2026-10-19)
 ===================
 
 - Restore autospec calls to ``@cachedmethod`` decorated methods.
 
 - Improve branch coverage of unit tests.
-
-- Minor type stub improvements.
 
 
 v7.2.3 (2026-10-17)
@@ -162,7 +194,7 @@ v7.0.3 (2026-03-05)
 v7.0.2 (2026-03-02)
 ===================
 
-- Provide more efficient ``clear()`` implementation for all support
+- Provide more efficient ``clear()`` implementation for all supported
   Cache classes (courtesy Josep Pon Farreny).
 
 
@@ -226,7 +258,7 @@ v6.2.5 (2026-01-25)
 v6.2.4 (2025-12-15)
 ===================
 
-- Fix license information displayed on PyPI be using an updated
+- Fix license information displayed on PyPI by using an updated
   version of ``twine`` for uploading.
 
 
@@ -299,7 +331,7 @@ v6.0.0 (2025-05-23)
 - Convert the ``cachetools.func`` decorators to use a
   ``threading.Condition`` instance to deal with `cache stampede
   <https://en.wikipedia.org/wiki/Cache_stampede>`_ issues.  Note that
-  this *may* result in a noticable performance degradation, depending
+  this *may* result in a noticeable performance degradation, depending
   on your actual use case.
 
 - Deprecate support for ``cache(self)`` returning ``None`` to suppress
@@ -424,7 +456,7 @@ v5.0.0 (2021-12-21)
 
   ``from cachetools.ttl import TTLCache``
 
-  will no longer work. Use
+  will no longer work.  Use
 
   ``from cachetools import TTLCache``
 
@@ -541,7 +573,7 @@ v3.1.1 (2019-05-23)
 
 - Document how to use shared caches with ``@cachedmethod``.
 
-- Fix pickling/unpickling of cache keys
+- Fix pickling/unpickling of cache keys.
 
 
 v3.1.0 (2019-01-29)
@@ -670,17 +702,17 @@ v1.1.0 (2015-08-28)
 
 - Add ``hashkey`` and ``typedkey`` functions.
 
-- Add `key` and `lock` arguments to ``@cachedmethod``.
+- Add ``key`` and ``lock`` arguments to ``@cachedmethod``.
 
 - Set ``__wrapped__`` attributes for Python versions < 3.2.
 
 - Move ``functools`` compatible decorators to ``cachetools.func``.
 
-- Deprecate ``@cachedmethod`` `typed` argument.
+- Deprecate ``@cachedmethod`` ``typed`` argument.
 
-- Deprecate `cache` attribute for ``@cachedmethod`` wrappers.
+- Deprecate ``cache`` attribute for ``@cachedmethod`` wrappers.
 
-- Deprecate `getsizeof` and `lock` arguments for `cachetools.func`
+- Deprecate ``getsizeof`` and ``lock`` arguments for ``cachetools.func``
   decorator.
 
 
@@ -739,13 +771,13 @@ v0.8.0 (2014-12-03)
 
 - Add ``Cache.__missing__()``.
 
-- Feature freeze for `v1.0`.
+- Feature freeze for ``v1.0``.
 
 
 v0.7.1 (2014-11-22)
 ===================
 
-- Fix `MANIFEST.in`.
+- Fix ``MANIFEST.in``.
 
 
 v0.7.0 (2014-11-12)
@@ -753,7 +785,7 @@ v0.7.0 (2014-11-12)
 
 - Deprecate ``TTLCache.ExpiredError``.
 
-- Add `choice` argument to ``RRCache`` constructor.
+- Add ``choice`` argument to ``RRCache`` constructor.
 
 - Refactor ``LFUCache``, ``LRUCache`` and ``TTLCache``.
 
@@ -768,7 +800,7 @@ v0.6.0 (2014-10-13)
 
 - Support unsynchronized function decorators.
 
-- Allow ``@cachedmethod.cache()`` to return None
+- Allow ``@cachedmethod.cache()`` to return ``None``.
 
 
 v0.5.1 (2014-09-25)
@@ -796,7 +828,7 @@ v0.4.0 (2014-06-16)
 
 - Add ``Cache`` base class.
 
-- Remove ``@cachedmethod`` `lock` parameter.
+- Remove ``@cachedmethod`` ``lock`` parameter.
 
 
 v0.3.1 (2014-05-07)
@@ -804,7 +836,7 @@ v0.3.1 (2014-05-07)
 
 - Add proper locking for ``cache_clear()`` and ``cache_info()``.
 
-- Report `size` in ``cache_info()``.
+- Report ``size`` in ``cache_info()``.
 
 
 v0.3.0 (2014-05-06)
