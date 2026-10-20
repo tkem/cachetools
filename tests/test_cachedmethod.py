@@ -1,9 +1,15 @@
+import sys
 import unittest
 import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 from cachetools import Cache, cachedmethod, keys
 
 from . import CountedCondition, CountedLock, SimplifiedTestCaseProtocol
+
+if TYPE_CHECKING:
+    NotYetDefined = object
 
 
 class Cached:
@@ -758,6 +764,121 @@ class NoneMethodTest(unittest.TestCase):
 
 
 class UnboundMethodTest(unittest.TestCase):
+    def test_class_call_keyword_instance(self):
+        for name in (
+            "get",
+            "get_typed",
+            "get_info",
+            "get_lock",
+            "get_lock_info",
+            "get_cond",
+            "get_cond_info",
+            "get_lock_cond",
+            "get_lock_cond_info",
+        ):
+            with self.subTest(method=name):
+                cached = Cached(Cache(2))
+                method = getattr(Cached, name)
+                self.assertEqual(method(self=cached, value=1), 0)
+                self.assertEqual(getattr(cached, name)(value=1), 0)
+                self.assertEqual(method(self=cached, value=2), 1)
+                self.assertEqual(cached.count, 2)
+
+    def test_class_call_renamed_keyword_instance(self):
+        class Other:
+            def __init__(self):
+                self.cache = Cache(2)
+                self.count = 0
+
+            @cachedmethod(lambda obj: obj.cache, info=True)
+            def get(receiver, value):
+                receiver.count += 1
+                return value
+
+        other = Other()
+        method = cast(Callable[..., Any], Other.get)
+        self.assertEqual(method(receiver=other, value=1), 1)
+        self.assertEqual(other.get(value=1), 1)
+        self.assertEqual(other.count, 1)
+        self.assertEqual(other.get.cache_info(), (1, 1, 2, 1))
+
+    def test_class_call_wrapped_keyword_instance(self):
+        import functools
+
+        def decorator(function):
+            @functools.wraps(function)
+            def wrapper(*args, **kwargs):
+                return function(*args, **kwargs)
+
+            return wrapper
+
+        class Other:
+            def __init__(self):
+                self.cache = Cache(2)
+
+            @cachedmethod(lambda obj: obj.cache)
+            @decorator
+            def get(receiver, value):
+                return value
+
+        other = Other()
+        method = cast(Callable[..., Any], Other.get)
+        self.assertEqual(method(receiver=other, value=1), 1)
+        self.assertEqual(list(other.cache.values()), [1])
+
+    def test_class_call_positional_only_instance(self):
+        class Other:
+            def __init__(self):
+                self.cache = Cache(2)
+
+            @cachedmethod(lambda obj: obj.cache)
+            def get(receiver, /, value):
+                return value
+
+        other = Other()
+        method = cast(Callable[..., Any], Other.get)
+        with self.assertRaises(TypeError):
+            method(receiver=other, value=1)
+        self.assertEqual(method(other, value=1), 1)
+
+    def test_class_call_missing_keyword_instance(self):
+        with self.assertRaises(TypeError):
+            Cached.get(value=1)
+
+    def test_class_call_without_signature(self):
+        import operator
+
+        class Other:
+            def __init__(self):
+                self.cache = Cache(2)
+                self.value = 1
+
+            get = cachedmethod(lambda obj: obj.cache)(operator.attrgetter("value"))
+
+        other = Other()
+        method = cast(Callable[..., Any], Other.get)
+        with self.assertRaises(TypeError):
+            method(self=other)
+        self.assertEqual(method(other), 1)
+
+    @unittest.skipUnless(sys.version_info >= (3, 14), "Python >= 3.14")
+    def test_class_call_deferred_annotations(self):
+        class Other:
+            def __init__(self):
+                self.cache = Cache(2)
+
+            @cachedmethod(lambda obj: obj.cache)
+            def get(
+                self,
+                value: NotYetDefined,
+            ) -> NotYetDefined:
+                return value
+
+        other = Other()
+        method = cast(Callable[..., Any], Other.get)
+        self.assertEqual(method(self=other, value=1), 1)
+        self.assertEqual(other.get(value=1), 1)
+
     def test_class_call(self):
         cached = Cached(Cache(2))
         self.assertEqual(Cached.get(cached, 1), 0)
