@@ -654,6 +654,12 @@ often called with the same arguments:
    to create distinct cache keys, to avoid issues with
    :func:`methodkey` skipping its initial `self` argument.
 
+   A decorated method can also be called through its class, as in
+   ``Cls.method(obj, arg)``. A keyword instance argument uses the
+   original method's receiver name, provided its signature allows a
+   keyword argument there. Positional-only receivers still require a
+   positional instance argument.
+
    .. versionchanged:: 7.0
 
       Added the `info` option for reporting per-instance cache
