@@ -1,3 +1,35 @@
+v8.0.0 (UNRELEASED)
+===================
+
+- Require Python 3.11 or later (breaking change).
+
+- Drop support for decorating class methods with ``@cachedmethod``
+  (breaking change).
+
+- Drop support for using ``@cachedmethod`` with instances that do not
+  provide a mutable ``__dict__`` attribute (breaking change).
+
+- Drop support for passing ``cache=None`` to the ``@cached``
+  decorator, which makes it more consistent with ``@cachedmethod``
+  (breaking change).
+
+- Require custom cache classes to support ``__len__`` when used with
+  ``@cached`` or ``@cachedmethod`` and ``info=True`` (potentially
+  breaking change).
+
+- Remove the previously undocumented ``cache_info`` attribute, which
+  ``@cached`` set to ``None`` when ``info=False``, for consistency
+  with the type stubs and ``@cachedmethod`` (potentially breaking
+  change).
+
+- Rename ``_CacheInfo`` to ``CacheInfo``, previously documented only
+  as an unnamed named tuple, thus making it public (potentially
+  breaking change).
+
+- Fix pickling and deep-copying of instances using ``@cachedmethod``
+  (broken since v7.0.0).
+
+
 v7.2.5 (UNRELEASED)
 ===================
 
@@ -16,8 +48,6 @@ v7.2.4 (2026-10-19)
 - Restore autospec calls to ``@cachedmethod`` decorated methods.
 
 - Improve branch coverage of unit tests.
-
-- Minor type stub improvements.
 
 
 v7.2.3 (2026-10-17)
