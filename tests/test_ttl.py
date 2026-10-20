@@ -189,7 +189,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual([2], [key for key in cache])
 
     def test_ttl_atomic(self):
-        cache = TTLCache[int, int, int](maxsize=1, ttl=2, timer=Timer(auto=True))
+        cache = TTLCache[int, int | None, int](maxsize=1, ttl=2, timer=Timer(auto=True))
         cache[1] = 1
         self.assertEqual(1, cache[1])
         cache[1] = 1
@@ -197,7 +197,7 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = 1
         self.assertEqual(1, cache.pop(1))
         cache[1] = 1
-        self.assertEqual(1, cache.setdefault(1))
+        self.assertEqual(1, cache.setdefault(1))  # implicit default=None
         cache[1] = 1
         cache.clear()
         self.assertEqual(0, len(cache))
