@@ -25,7 +25,9 @@ class _MethodDescriptor:
             )
 
     def __get__(self, obj, objtype=None):
-        if self.__attrname is None:
+        attrname = self.__attrname
+
+        if attrname is None:
             if isinstance(obj, type):
                 # before Python 3.13, @classmethod calls __get__(cls, type(cls))
                 # without forwarding __set_name__
@@ -37,39 +39,50 @@ class _MethodDescriptor:
             # objtype is not used for instance lookups, so it need not be bound
             return self.__get_unbound()
 
-        # replace descriptor instance with wrapper in instance dict
-        wrapper = self.__wrapper(obj, self)
         try:
-            descriptor = next(
-                (
-                    cls.__dict__[self.__attrname]
-                    for cls in type(obj).__mro__
-                    if self.__attrname in cls.__dict__
-                ),
-                None,
-            )
-            if descriptor is self:
-                # In case of a race condition where another thread already replaced
-                # the descriptor, prefer the initial wrapper.
-                wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
-            else:
-                # A super() lookup must neither reuse the override's wrapper
-                # nor replace it, so preserve state separately for each descriptor.
-                wrappers = obj.__dict__.setdefault("__cachetools_cachedmethods", {})
-                wrapper = wrappers.setdefault(self, wrapper)
-            return wrapper
+            instdict = obj.__dict__
         except AttributeError:
             # not all objects have __dict__ (e.g. class defines slots)
             msg = (
                 f"No '__dict__' attribute on {type(obj).__name__!r} "
-                f"instance to cache {self.__attrname!r}"
+                f"instance to cache {attrname!r}"
             )
             raise TypeError(msg) from None
-        except TypeError:
+
+        # super() lookups bypass the instance dict, so __get__ is called
+        # on every access; return an existing wrapper before building one
+        wrappers = instdict.get("__cachetools_cachedmethods")
+        if wrappers is not None and self in wrappers:
+            return wrappers[self]
+        descriptor = next(
+            (
+                cls.__dict__[attrname]
+                for cls in type(obj).__mro__
+                if attrname in cls.__dict__
+            ),
+            None,
+        )
+        if descriptor is self and attrname in instdict:
+            return instdict[attrname]
+
+        # replace descriptor instance with wrapper in instance dict
+        wrapper = self.__wrapper(obj, self)
+        try:
+            if descriptor is self:
+                # In case of a race condition where another thread already replaced
+                # the descriptor, prefer the initial wrapper.
+                return instdict.setdefault(attrname, wrapper)
+            else:
+                # A super() lookup must neither reuse the override's wrapper
+                # nor replace it, so preserve state separately for each descriptor.
+                if wrappers is None:
+                    wrappers = instdict.setdefault("__cachetools_cachedmethods", {})
+                return wrappers.setdefault(self, wrapper)
+        except (AttributeError, TypeError):
             msg = (
                 f"The '__dict__' attribute on {type(obj).__name__!r} "
                 f"instance does not support item assignment for "
-                f"caching {self.__attrname!r}"
+                f"caching {attrname!r}"
             )
             raise TypeError(msg) from None
 
