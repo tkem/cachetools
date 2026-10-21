@@ -948,6 +948,26 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertIs(cached.alias, cached.get)
         self.assertEqual(len(cached.cache), 1)
 
+    def test_class_access_alias_unrelated(self):
+        class Source:
+            @cachedmethod(lambda self: self.cache)
+            def get(self, value):
+                return value
+
+        class Unrelated:
+            def __init__(self, cache):
+                self.cache = cache
+
+            alias = Source.get
+
+        self.assertIs(Unrelated.alias, Source.get)
+        cached = Unrelated(Cache(2))
+        self.assertEqual(cached.alias(1), 1)
+        self.assertEqual(cached.alias(1), 1)
+        self.assertIs(cached.alias, cached.alias)
+        self.assertNotIn("alias", vars(cached))
+        self.assertEqual(len(cached.cache), 1)
+
     def test_autospec(self):
         import unittest.mock
 
