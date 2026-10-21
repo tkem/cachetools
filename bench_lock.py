@@ -7,6 +7,14 @@ from cachetools import cached
 print(f"cachetools {cachetools.__version__}")
 
 
+class DummyLock:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        pass
+
+
 def make(**kwargs):
     @cached(cache={}, **kwargs)
     def fib(n):
@@ -21,7 +29,13 @@ for label, kwargs in [
     ("no lock", {}),
     ("Lock", {"lock": threading.Lock()}),
     ("RLock", {"lock": threading.RLock()}),
+    ("DummyLock", {"lock": DummyLock()}),
     ("Condition", {"condition": threading.Condition()}),
+    ("info", {"info": True}),
+    ("Lock + info", {"lock": threading.Lock(), "info": True}),
+    ("RLock + info", {"lock": threading.RLock(), "info": True}),
+    ("DummyLock + info", {"lock": DummyLock(), "info": True}),
+    ("Condition + info", {"condition": threading.Condition(), "info": True}),
 ]:
     fib = make(**kwargs)
 
