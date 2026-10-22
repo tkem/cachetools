@@ -266,7 +266,7 @@ class LFUCache(Cache):
         self.__links.clear()
 
     def __touch(self, key):
-        """Increment use count"""
+        """Increment use count."""
         link = self.__links[key]
         curr = link.next
         if curr.count != link.count + 1:
@@ -319,7 +319,7 @@ class LRUCache(Cache):
         self.__order.clear()
 
     def __touch(self, key):
-        """Mark as recently used"""
+        """Mark as recently used."""
         try:
             self.__order.move_to_end(key)
         except KeyError:
@@ -370,7 +370,7 @@ class RRCache(Cache):
 
 
 class _TimedCache(Cache):
-    """Base class for time aware cache implementations."""
+    """Base class for time-aware cache implementations."""
 
     class _Timer:
         def __init__(self, timer):
@@ -590,7 +590,7 @@ class TTLCache(_TimedCache):
 
 
 class TLRUCache(_TimedCache):
-    """Time aware Least Recently Used (TLRU) cache implementation."""
+    """Time-aware Least Recently Used (TLRU) cache implementation."""
 
     __HEAP_CLEANUP_FACTOR = 2  # clean up the heap if size > N * len(items)
 
@@ -668,7 +668,7 @@ class TLRUCache(_TimedCache):
 
     @property
     def ttu(self):
-        """The local time-to-use function used by the cache."""
+        """The time-to-use function used by the cache."""
         return self.__ttu
 
     def expire(self, time=None):
