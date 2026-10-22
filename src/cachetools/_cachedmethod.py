@@ -181,7 +181,7 @@ def _condition(method, cache, key, lock, cond):
     # backward-compatible weakref dictionary for Python >= 3.13
     pending = weakref.WeakKeyDictionary()
 
-    def wrapper(self, pending, *args, **kwargs):
+    def wrapper(self, pending, /, *args, **kwargs):
         c = cache(self)
         k = key(self, *args, **kwargs)
         with lock(self):

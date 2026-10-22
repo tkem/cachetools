@@ -527,6 +527,30 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
 
 
 class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
+    def test_decorator_pending_keyword(self):
+        for info in (False, True):
+            for separate_lock in (False, True):
+                with self.subTest(info=info, separate_lock=separate_lock):
+
+                    class Pending(Cached):
+                        @cachedmethod(
+                            lambda obj: obj.cache,
+                            lock=(lambda obj: obj.lock) if separate_lock else None,
+                            condition=lambda obj: obj.cond,
+                            info=info,
+                        )
+                        def get_pending(self, pending):
+                            self.count += 1
+                            return pending
+
+                    cached = Pending(self.cache(2))
+                    self.assertEqual(cached.get_pending(pending=1), 1)
+                    self.assertEqual(cached.get_pending(pending=1), 1)
+                    self.assertEqual(cached.count, 1)
+                    cached.get_pending.cache_clear()
+                    self.assertEqual(cached.get_pending(pending=1), 1)
+                    self.assertEqual(cached.count, 2)
+
     def cache(self, minsize, **kwargs):
         return Cache(maxsize=minsize, **kwargs)
 
