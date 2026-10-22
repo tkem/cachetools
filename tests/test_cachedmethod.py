@@ -706,6 +706,28 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
         self.assertEqual(super(GrandChild, cached).get_typed(0), 1)
         self.assertEqual(super(Child, cached).get_typed(0.0), 0)
 
+    def test_cond_pending_keyword(self):
+        # Up until cachetools v7.2.4, @cachedmethod with condition and
+        # info=False raised a TypeError when the wrapped method
+        # received a valid "pending" keyword argument.
+        for info in (False, True):
+            with self.subTest(info=info):
+
+                class Pending(Cached):
+                    @cachedmethod(
+                        lambda obj: obj.cache,
+                        condition=lambda obj: obj.cond,
+                        info=info,
+                    )
+                    def get_pending(self, pending):
+                        return self.get(pending)
+
+                cached = Pending(self.cache(2))
+                self.assertEqual(cached.get_pending(pending=0), 0)
+                self.assertEqual(cached.get_pending(pending=0), 0)
+                cached.get_pending.cache_clear()
+                self.assertEqual(cached.get_pending(pending=0), 1)
+
 
 class DictMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
     def cache(self, minsize, **_kwargs):
