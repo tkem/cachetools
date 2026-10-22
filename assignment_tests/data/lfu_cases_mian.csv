@@ -1,0 +1,11 @@
+id,description,maxsize,operations,expected_keys,expected_currsize,expected_error
+M01,Read raises the use count so the unread key is evicted,2,set:a;set:b;get:a;set:c,a|c,2,
+M02,Overwrite counts as a use,2,set:a;set:b;set:a;set:c,a|c,2,
+M03,maxsize 1 keeps only the latest key,1,set:a;set:b,b,1,
+M04,High-count key survives eviction,2,set:a;get:a;get:a;set:b;set:c,a|c,2,
+M05,Delete frees capacity so nothing is evicted,2,set:a;set:b;del:a;set:c,b|c,2,
+M06,Reading a missing key raises KeyError,2,set:a;get:zzz,a,1,KeyError
+M07,maxsize 0 rejects any item,0,set:a,,0,ValueError
+M08,popitem removes the only key with the lowest count,3,set:a;set:b;set:c;get:a;get:a;get:b;pop,a|b,2,
+M09,popitem on an empty cache raises KeyError,2,pop,,0,KeyError
+M10,Deleting a missing key raises KeyError,2,set:a;del:zzz,a,1,KeyError
