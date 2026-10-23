@@ -10,11 +10,18 @@ release branch.
 - **Run everything through `tox`**, never bare `pytest`.
 - **Do not edit `CHANGELOG.rst` or bump `__version__`** — both are release-only.
 - **Pickling caches is unsupported.** It happens to work (`test_pickle*`), but the
-  format format is an implementation detail that any release may change. Do not document, advertise, or build features on it.
+  format is an implementation detail that any release may change. Do not document,
+  advertise, or build features on it.
 - PRs must reference an open issue (except trivial fixes). Prefer separate commits:
   `Fix #123: ...`, `Tests for #123: ...`, `Docs for #123: ...`.
 - New behavior needs tests under `tests/`; user-visible features need docs in
-  `docs/index.rst` (doctested).
+  `docs/index.rst` (doctested). Keep `README.rst` examples in sync with it.
+- Docs style: two spaces after a sentence; single backticks for parameters and
+  `:meth:`/`:func:`/`:exc:` roles in `docs/index.rst`, ``double backticks`` in
+  `CHANGELOG.rst`. CHANGELOG entries are imperative one-liners without issue numbers,
+  tagged "(breaking change)", "(potentially breaking change)" or "(broken since
+  vX.Y.Z)"; docs-only work is one "Various documentation improvements." line;
+  releases are separated by two blank lines.
 - Prefer clarity and performance over DRY: the decorator modules duplicate one
   wrapper per lock/condition/info combination. Apply changes to **all** variants.
 
@@ -55,13 +62,18 @@ release branch.
 - Each variant defines a `Descriptor` with a nested per-instance `Wrapper`.
   `_MethodDescriptor.__get__` stores the wrapper in `obj.__dict__` via `setdefault`;
   for `super()` calls it stores it under `"__cachetools_cachedmethods"` keyed by
-  descriptor. Class access returns a plain, lazily created `unbound` function that
-  dispatches through `__get__`.
+  descriptor. Class access returns a lazily created `_Unbound` callable object,
+  deliberately not a function so `create_autospec()` strips the receiver (#443); it
+  takes the receiver from `*args`, or by the wrapped method's first parameter name
+  when passed as a keyword (`Cls.method(self=obj, ...)`), and dispatches through
+  `__get__`.
 - `__set_name__` on two names, or instances without a writable `__dict__`, raise
   `TypeError`.
 - `@cachedmethod` + `@classmethod` (`_ClassMethodDescriptor`, `info=False` only) and
   instances without `__dict__` are **deprecated** and warn instead of raising.
-- Stampede prevention uses a pending set per instance.
+- Stampede prevention uses a pending set per instance. `_condition`'s inner
+  `wrapper(self, pending, /, ...)` takes `pending` positional-only, so a method
+  parameter of that name can still be passed by keyword.
 
 ### Shared behavior
 - `CacheInfo` matches the stdlib namedtuple. Wrappers swallow `ValueError` on store;
@@ -111,11 +123,24 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
 - `test_threading.py`: guard against hangs with `thread.join(timeout=TIMEOUT)` and
   `assertFalse(t.is_alive())`.
 
+## Code Review
+- Reviews **amend `.github/copilot-review.md` in place** (header: date, commit, CI
+  status, coverage); never new files or dated sections.
+- Findings are tables ordered High, Medium, Low, Info with columns
+  `# | Priority | Location | Finding` (`Location` optional); renumber after changes;
+  cross-reference as "Code #3", "Docs #2". **Resolved issues are removed**, never
+  marked resolved; git history is the record.
+- Keep accepted trade-offs as Info rows; record settled matters under *Maintainer
+  Decisions*. State what was verified and how. A review changes nothing; fix only
+  when asked.
+
 ## Maintainer Decisions (do not re-raise)
 - Pickling caches stays undocumented and unsupported.
 - `copy.copy()` of an instance with an active `@cachedmethod` wrapper shares the
   wrapper; accepted.
 - Stacking `@cachedmethod` decorators is unsupported and untested.
+- A `condition` must provide the full `threading.Condition` interface; `wait()` and
+  `notify()` are reserved for future use. Do not propose relaxing the protocol.
 
 ## Key Files
 - `src/cachetools/__init__.py` / `__init__.pyi` — caches, decorator entry points
