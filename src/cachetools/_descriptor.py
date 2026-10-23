@@ -111,15 +111,35 @@ class _Unbound:
     def __init__(self, descriptor):
         functools.update_wrapper(self, descriptor.__wrapped__)
         self.__descriptor = descriptor
+        self.__receiver = None  # name of the wrapped method's first parameter
 
     # Receiver is taken from *args so autospec'd instances accept any call,
     # as they did before class access returned a callable.
     def __call__(self, /, *args, **kwargs):
-        if not args:
-            msg = "Cannot call @cachedmethod through the class without an instance"
-            raise TypeError(msg)
-        obj, *args = args
+        if args:
+            obj, *args = args
+        else:
+            obj = self.__pop_receiver(kwargs)
         return self.__descriptor.__get__(obj)(*args, **kwargs)
+
+    def __pop_receiver(self, kwargs):
+        # the receiver may also be passed by keyword, as for a plain function
+        if self.__receiver is None:
+            import inspect
+
+            self.__receiver = ""
+            try:
+                param = next(iter(inspect.signature(self).parameters.values()))
+            except (ValueError, StopIteration):
+                pass  # no signature, or no parameters at all
+            else:
+                if param.kind is param.POSITIONAL_OR_KEYWORD:
+                    self.__receiver = param.name
+        try:
+            return kwargs.pop(self.__receiver)
+        except KeyError:
+            msg = "Cannot call @cachedmethod through the class without an instance"
+            raise TypeError(msg) from None
 
 
 class _ClassMethodDescriptor(_MethodDescriptor):
