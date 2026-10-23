@@ -813,6 +813,41 @@ class UnboundMethodTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             Cached.get()  # type: ignore
 
+    def test_class_call_keyword_receiver(self):
+        cached = Cached(Cache(2))
+        self.assertEqual(Cached.get(self=cached, value=1), 0)  # type: ignore
+        self.assertEqual(Cached.get(cached, value=1), 0)
+        self.assertEqual(Cached.get(self=cached, value=2), 1)  # type: ignore
+        self.assertEqual(cached.count, 2)
+        with self.assertRaises(TypeError):
+            Cached.get(value=1)
+
+        class Named:
+            def __init__(self, cache):
+                self.cache = cache
+
+            @cachedmethod(lambda this: this.cache)
+            def get(this, value):
+                return value
+
+            @cachedmethod(lambda self: self.cache)
+            def get_posonly(self, /, value):
+                return value
+
+            @cachedmethod(lambda self: self.cache)  # type: ignore
+            def get_noargs():
+                return 42
+
+        named = Named(Cache(2))
+        self.assertEqual(Named.get(this=named, value=1), 1)  # type: ignore
+        self.assertEqual(Named.get(named, value=1), 1)
+        with self.assertRaises(TypeError):
+            Named.get(self=named, value=1)  # type: ignore
+        with self.assertRaises(TypeError):
+            Named.get_posonly(self=named, value=1)  # type: ignore
+        with self.assertRaises(TypeError):
+            Named.get_noargs()
+
     def test_class_access_identity(self):
         self.assertIs(Cached.get, Cached.get)
         self.assertIs(Cached.get_info, Cached.get_info)
