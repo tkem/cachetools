@@ -1,3 +1,15 @@
+v7.2.5 (UNRELEASED)
+===================
+
+- Fix ``@cachedmethod`` with ``condition`` for methods taking a
+  ``pending`` keyword argument (broken since v7.0.0).
+
+- Fix calling ``@cachedmethod`` decorated methods through the class
+  with the receiver as a keyword argument (broken since v7.2.4).
+
+- Various documentation improvements.
+
+
 v7.2.4 (2026-10-19)
 ===================
 
