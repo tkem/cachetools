@@ -17,15 +17,23 @@ def _none(_):
 class _WrapperBase:
     """Wrapper base class providing default implementations for properties."""
 
-    def __init__(self, obj, method, cache, key, lock=None, cond=None):
+    def __init__(self, obj, descriptor, method, cache, key, lock=None, cond=None):
         if isinstance(obj, type):
             _warn_classmethod(stacklevel=5)
         functools.update_wrapper(self, method)
         self._obj = obj  # protected
+        self.__descriptor = descriptor
         self.__cache = cache
         self.__key = functools.partial(key, obj)
         self.__lock = lock if lock is not None else _none
         self.__cond = cond if cond is not None else _none
+
+    def __reduce__(self):
+        # rebuild via the descriptor instead of pickling unpicklable
+        # internals, e.g. __wrapped__, lock/cond closures; note that
+        # this will also reset hits and misses counts for *Info*
+        # wrappers
+        return (self.__descriptor.__get__, (self._obj,))
 
     def __call__(self, *args, **kwargs):
         raise NotImplementedError()  # pragma: no cover
@@ -59,8 +67,8 @@ class _WrapperBase:
 def _condition_info(method, cache, key, lock, cond, info):
     class Descriptor(_MethodDescriptor):
         class Wrapper(_WrapperBase):
-            def __init__(self, obj):
-                super().__init__(obj, method, cache, key, lock, cond)
+            def __init__(self, obj, descriptor):
+                super().__init__(obj, descriptor, method, cache, key, lock, cond)
                 self.__hits = self.__misses = 0
                 self.__pending = set()
 
@@ -107,8 +115,8 @@ def _condition_info(method, cache, key, lock, cond, info):
 def _locked_info(method, cache, key, lock, info):
     class Descriptor(_MethodDescriptor):
         class Wrapper(_WrapperBase):
-            def __init__(self, obj):
-                super().__init__(obj, method, cache, key, lock)
+            def __init__(self, obj, descriptor):
+                super().__init__(obj, descriptor, method, cache, key, lock)
                 self.__hits = self.__misses = 0
 
             def __call__(self, *args, **kwargs):
@@ -147,8 +155,8 @@ def _locked_info(method, cache, key, lock, info):
 def _unlocked_info(method, cache, key, info):
     class Descriptor(_MethodDescriptor):
         class Wrapper(_WrapperBase):
-            def __init__(self, obj):
-                super().__init__(obj, method, cache, key)
+            def __init__(self, obj, descriptor):
+                super().__init__(obj, descriptor, method, cache, key)
                 self.__hits = self.__misses = 0
 
             def __call__(self, *args, **kwargs):
@@ -214,8 +222,8 @@ def _condition(method, cache, key, lock, cond):
 
     class Descriptor(_ClassMethodDescriptor):
         class Wrapper(_WrapperBase):
-            def __init__(self, obj):
-                super().__init__(obj, method, cache, key, lock, cond)
+            def __init__(self, obj, descriptor):
+                super().__init__(obj, descriptor, method, cache, key, lock, cond)
                 self.__pending = set()
 
             def __call__(self, *args, **kwargs):
@@ -254,8 +262,8 @@ def _locked(method, cache, key, lock):
 
     class Descriptor(_ClassMethodDescriptor):
         class Wrapper(_WrapperBase):
-            def __init__(self, obj):
-                super().__init__(obj, method, cache, key, lock)
+            def __init__(self, obj, descriptor):
+                super().__init__(obj, descriptor, method, cache, key, lock)
 
             def __call__(self, *args, **kwargs):
                 return wrapper(self._obj, *args, **kwargs)
@@ -288,8 +296,8 @@ def _unlocked(method, cache, key):
 
     class Descriptor(_ClassMethodDescriptor):
         class Wrapper(_WrapperBase):
-            def __init__(self, obj):
-                super().__init__(obj, method, cache, key)
+            def __init__(self, obj, descriptor):
+                super().__init__(obj, descriptor, method, cache, key)
 
             def __call__(self, *args, **kwargs):
                 return wrapper(self._obj, *args, **kwargs)

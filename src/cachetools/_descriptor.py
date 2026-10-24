@@ -26,12 +26,14 @@ class _MethodDescriptor:
     """Descriptor class implementing the basic descriptor protocol."""
 
     def __init__(self, deprecated=False):
+        self.__owner = None
         self.__attrname = None
         self.__deprecated = deprecated
         self.__unbound = None
 
     def __set_name__(self, owner, name):
         if self.__attrname is None:
+            self.__owner = owner
             self.__attrname = name
         elif name != self.__attrname:
             raise TypeError(
@@ -45,7 +47,7 @@ class _MethodDescriptor:
             return self.__get_unbound()
         elif self.__attrname is not None:
             # replace descriptor instance with wrapper in instance dict
-            wrapper = self.Wrapper(obj)  # type: ignore
+            wrapper = self.Wrapper(obj, self)  # type: ignore
             try:
                 descriptor = next(
                     (
@@ -86,11 +88,20 @@ class _MethodDescriptor:
                     raise TypeError(msg) from None
         elif self.__deprecated:
             # deprecated @classmethod, warning already raised elsewhere
-            wrapper = self.Wrapper(obj)  # type: ignore
+            wrapper = self.Wrapper(obj, self)  # type: ignore
         else:
             msg = "Cannot use @cachedmethod instance without calling __set_name__ on it"
             raise TypeError(msg) from None
         return wrapper
+
+    def __reduce__(self):
+        # pickle and copy by reference, so wrappers and their keys in
+        # "__cachetools_cachedmethods" can be pickled and deep-copied
+        return (self._lookup, (self.__owner, self.__attrname))
+
+    @staticmethod
+    def _lookup(owner, name):
+        return owner.__dict__[name]
 
     def __get_unbound(self):
         # Created once and shared by all class accesses; objtype is not
@@ -112,6 +123,16 @@ class _Unbound:
         functools.update_wrapper(self, descriptor.__wrapped__)
         self.__descriptor = descriptor
         self.__receiver = None  # name of the wrapped method's first parameter
+
+    def __reduce__(self):
+        # pickle and copy by reference, as functions are
+        return (self.__descriptor.__get__, (None,))
+
+    # bind like a method when aliased in another class body
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return self.__descriptor.__get__(obj)
 
     # Receiver is taken from *args so autospec'd instances accept any call,
     # as they did before class access returned a callable.
