@@ -1,3 +1,19 @@
+v7.2.5 (2026-10-25)
+===================
+
+- Fix ``@cachedmethod`` with ``condition`` for decorated methods
+  taking a ``pending`` keyword argument (broken since v7.0.0).
+
+- Fix pickling and deep-copying of instances using ``@cachedmethod``
+  (broken since v7.0.0).
+
+- Fix calling ``@cachedmethod`` decorated methods through the class
+  with the receiver (``self``) passed as a keyword argument (broken
+  since v7.2.4).
+
+- Various documentation improvements.
+
+
 v7.2.4 (2026-10-19)
 ===================
 
