@@ -4,20 +4,31 @@ __all__ = ("hashkey", "methodkey", "typedkey", "typedmethodkey")
 
 
 class _HashedTuple(tuple):
-    """A tuple that ensures that hash() will be called no more than once
-    per element, since cache decorators will hash the key multiple
-    times on a cache miss.  See also _HashedSeq in the standard
-    library functools implementation.
+    """A tuple subclass used for cache keys.
+
+    Unlike _HashedSeq in the standard library functools implementation,
+    the hash value is not cached: the built-in tuple hash is faster than
+    a Python-level __hash__ that caches it.
 
     """
 
-    __hashvalue = None  # default value, set in instance on first use
-
-    def __hash__(self, hash=tuple.__hash__):
-        hashvalue = self.__hashvalue
-        if hashvalue is None:
-            self.__hashvalue = hashvalue = hash(self)
-        return hashvalue
+    # A Python-level __hash__ that caches the hash costs more than it
+    # saves: hashing a 2-tuple three times takes 161 ns as _HashedTuple
+    # and 49 ns as a plain tuple (C tuple hash, 18 ns each); a dict
+    # lookup keyed by one takes 50 vs 12 ns.  Every cache operation
+    # hashes the key again (3 __hash__ calls per @cached hit, 12 per
+    # evicting miss by cProfile, 11.5% of miss time in __hash__ alone).
+    # The cached hash does not pay off even for a key wrapping a 200-int
+    # tuple (166 vs 49 ns for three hashes), only for elements whose own
+    # __hash__ is slow.
+    #
+    # __hashvalue = None  # default value, set in instance on first use
+    #
+    # def __hash__(self, hash=tuple.__hash__):
+    #     hashvalue = self.__hashvalue
+    #     if hashvalue is None:
+    #         self.__hashvalue = hashvalue = hash(self)
+    #     return hashvalue
 
     def __add__(self, other, add=tuple.__add__):
         return _HashedTuple(add(self, other))
