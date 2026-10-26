@@ -224,7 +224,7 @@ class LFUCache(Cache):
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
-        if key in self:  # __missing__ may not store item
+        if key in self.__links:  # __missing__ may not store item
             self.__touch(key)
         return value
 
@@ -293,8 +293,10 @@ class LRUCache(Cache):
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
-        if key in self:  # __missing__ may not store item
-            self.__touch(key)
+        try:
+            self.__order.move_to_end(key)
+        except KeyError:  # __missing__ may not store item
+            pass
         return value
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
@@ -482,16 +484,16 @@ class TTLCache(_TimedCache):
             return self.timer() < link.expires
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
+        links = self.__links
         try:
-            link = self.__getlink(key)
+            link = links[key]
         except KeyError:
-            expired = False
-        else:
-            expired = not (self.timer() < link.expires)
-        if expired:
-            return self.__missing__(key)
-        else:
             return cache_getitem(self, key)
+        links.move_to_end(key)
+        if self.timer() < link.expires:
+            return cache_getitem(self, key)
+        else:
+            return self.__missing__(key)
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         with self.timer as time:
@@ -621,16 +623,16 @@ class TLRUCache(_TimedCache):
             return self.timer() < item.expires
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
+        items = self.__items
         try:
-            item = self.__getitem(key)
+            item = items[key]
         except KeyError:
-            expired = False
-        else:
-            expired = not (self.timer() < item.expires)
-        if expired:
-            return self.__missing__(key)
-        else:
             return cache_getitem(self, key)
+        items.move_to_end(key)
+        if self.timer() < item.expires:
+            return cache_getitem(self, key)
+        else:
+            return self.__missing__(key)
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         with self.timer as time:
