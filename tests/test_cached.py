@@ -98,15 +98,15 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(lock.count, 3)
-        self.assertEqual(cond.wait_count, 1)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 1)
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(lock.count, 6)
-        self.assertEqual(cond.wait_count, 2)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(lock.count, 7)
-        self.assertEqual(cond.wait_count, 3)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
 
     def test_decorator_lock_cond(self):
@@ -118,15 +118,15 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(len(cache), 0)
         self.assertEqual(wrapper(0), 0)
         self.assertEqual(lock.count, 3)
-        self.assertEqual(cond.wait_count, 1)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 1)
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(lock.count, 6)
-        self.assertEqual(cond.wait_count, 2)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
         self.assertEqual(wrapper(1), 1)
         self.assertEqual(lock.count, 7)
-        self.assertEqual(cond.wait_count, 3)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
 
     def test_decorator_cond_error(self):
@@ -138,7 +138,7 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
             wrapper(0)
         self.assertEqual(len(cache), 0)
         self.assertEqual(lock.count, 2)
-        self.assertEqual(cond.wait_count, 1)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 1)
 
         # verify pending set is cleaned up, otherwise this might deadlock
@@ -146,7 +146,7 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
             wrapper(0)
         self.assertEqual(len(cache), 0)
         self.assertEqual(lock.count, 4)
-        self.assertEqual(cond.wait_count, 2)
+        self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
 
     def test_decorator_wrapped(self):

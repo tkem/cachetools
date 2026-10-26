@@ -79,7 +79,9 @@ def _condition_info(method, cache, key, lock, cond, info):
                 key = self.cache_key(*args, **kwargs)
 
                 with lock:
-                    cond.wait_for(lambda: key not in self.__pending)
+                    # apparently significantly faster than cond.wait_for(...)
+                    while key in self.__pending:
+                        cond.wait()
                     try:
                         result = cache[key]
                         self.__hits += 1
@@ -193,7 +195,9 @@ def _condition(method, cache, key, lock, cond):
         c = cache(self)
         k = key(self, *args, **kwargs)
         with lock(self):
-            cond(self).wait_for(lambda: k not in pending)
+            # apparently significantly faster than cond.wait_for(...)
+            while k in pending:
+                cond(self).wait()
             try:
                 return c[k]
             except KeyError:

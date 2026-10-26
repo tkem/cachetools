@@ -25,7 +25,9 @@ def _condition_info(func, cache, key, lock, cond, info):
         nonlocal hits, misses
         k = key(*args, **kwargs)
         with lock:
-            cond.wait_for(lambda: k not in pending)
+            # apparently significantly faster than cond.wait_for(...)
+            while k in pending:
+                cond.wait()
             try:
                 result = cache[k]
                 hits += 1
@@ -158,7 +160,9 @@ def _condition(func, cache, key, lock, cond):
     def wrapper(*args, **kwargs):
         k = key(*args, **kwargs)
         with lock:
-            cond.wait_for(lambda: k not in pending)
+            # apparently significantly faster than cond.wait_for(...)
+            while k in pending:
+                cond.wait()
             try:
                 result = cache[k]
                 return result
