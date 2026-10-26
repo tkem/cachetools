@@ -20,8 +20,9 @@
   `:meth:`/`:func:`/`:exc:` roles in `docs/index.rst`, ``double backticks`` in
   `CHANGELOG.rst`. CHANGELOG entries are imperative one-liners without issue numbers,
   tagged "(breaking change)", "(potentially breaking change)" or "(broken since
-  vX.Y.Z)"; docs-only work is one "Various documentation improvements." line;
-  releases are separated by two blank lines.
+  vX.Y.Z)"; docs-only work is one "Various documentation improvements." line,
+  internal speed-ups without behavior change one "Various performance
+  improvements." line; releases are separated by two blank lines.
 - Prefer clarity and performance over DRY: the decorator modules duplicate one
   wrapper per lock/condition/info combination. Apply changes to **all** variants.
 
@@ -32,7 +33,10 @@ and `getsizeof`; `maxsize=0` and `math.inf` are valid, negative values raise
 `ValueError`, and a value's size must not change after insertion. Subclasses override
 `__setitem__`, `__delitem__`, `popitem()`, `clear()` and optionally `__getitem__`,
 binding parent methods via default parameters (`cache_setitem=Cache.__setitem__`); after
-the parent `__getitem__`, check `key in self` to handle `__missing__`. `_TimedCache`
+the parent `__getitem__`, check the subclass's own bookkeeping (not `key in self`) to
+handle a `__missing__` that does not store the item. `popitem()` reads via
+`Cache.__getitem__` and evicts via `del self[key]`, so subclass `__delitem__` overrides
+see evictions. `_TimedCache`
 (`TTLCache`, `TLRUCache`) wraps the timer in a re-entrant `_Timer` that freezes time
 per operation; expiry is lazy: `__len__`, `__repr__` and `currsize` call `expire()`
 first, `clear()` does not, and deleting a present-but-expired key removes it and
@@ -66,12 +70,14 @@ so a method parameter of that name can be passed by keyword.
 
 **Shared**: wrappers swallow `ValueError` on store; locked variants release the lock
 while computing and store via `setdefault()`; the condition tier adds pending keys with
-`wait_for`/`notify_all` (same-key recursion deadlocks there).
+`while k in pending: cond.wait()` and `notify_all()`, so uncontended calls never wait
+(same-key recursion deadlocks there).
 
 **`func.py`, `keys.py`**: `*_cache` decorators use `cached(..., condition=Condition(),
 info=True)` plus `cache_parameters()`; `maxsize=None` uses a `dict` (`ttl_cache`:
-`_UnboundTTLCache`). `hashkey` returns a `_HashedTuple` with a cached hash, `methodkey`
-drops `self`, `typed*` variants append argument types.
+`_UnboundTTLCache`). `hashkey` returns a `_HashedTuple` using the C tuple hash (a
+Python-level hash cache was slower; kept commented out with its rationale),
+`methodkey` drops `self`, `typed*` variants append argument types.
 
 ## Type Stubs (`*.pyi`)
 
@@ -99,7 +105,12 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
   Objects pickled by name must be module-level (`Cached`, `CachedChild`), not locals.
 - `test_func.py` calls decorators via `Callable[..., Any]`; stub checks need concrete
   annotated tests (`test_decorator_method*`) without `# type: ignore`.
-- `test_threading.py`: join with `TIMEOUT` and assert threads finished.
+- `test_threading.py`: join with `TIMEOUT` and assert threads finished; the condition
+  tests force a contended `wait()`, since `CountedCondition.wait_count` stays 0 for
+  single-threaded calls.
+- Performance work: measure with `timeit` (best of 7) against a git worktree of the
+  previous release, before and after; keep hot paths free of avoidable Python-level
+  calls, and do not trade documented subclass hooks or semantics for speed.
 
 ## Code Review
 
@@ -120,5 +131,10 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
 - `copy.copy()` of an instance with an active `@cachedmethod` wrapper shares the
   wrapper; accepted.
 - Stacking `@cachedmethod` decorators is unsupported and untested.
-- A `condition` must provide the full `threading.Condition` interface; `wait()` and
-  `notify()` are reserved for future use. Do not propose relaxing the protocol.
+- `super()` and class access to `@cachedmethod` build and discard a `Wrapper` per call;
+  accepted (looking up the stored wrapper first was prototyped and declined).
+- A `condition` must provide the full `threading.Condition` interface; `notify()` is
+  reserved for future use. Do not propose relaxing the protocol.
+- `TTLCache`/`TLRUCache` read the timer through the `timer` property, not a cached
+  private attribute (~28 ns per hit); evicting-insert overhead in the timed caches is
+  accepted as inherent.
