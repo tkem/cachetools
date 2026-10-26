@@ -193,7 +193,9 @@ class FIFOCache(Cache):
         except StopIteration:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
-            return (key, self.pop(key))
+            value = Cache.__getitem__(self, key)
+            del self[key]
+            return (key, value)
 
     def clear(self):
         Cache.clear(self)
@@ -257,7 +259,9 @@ class LFUCache(Cache):
         if curr is root:
             raise KeyError("%s is empty" % type(self).__name__) from None
         key = next(iter(curr.keys))  # remove an arbitrary element
-        return (key, self.pop(key))
+        value = Cache.__getitem__(self, key)
+        del self[key]
+        return (key, value)
 
     def clear(self):
         Cache.clear(self)
@@ -314,7 +318,9 @@ class LRUCache(Cache):
         except StopIteration:
             raise KeyError("%s is empty" % type(self).__name__) from None
         else:
-            return (key, self.pop(key))
+            value = Cache.__getitem__(self, key)
+            del self[key]
+            return (key, value)
 
     def clear(self):
         Cache.clear(self)
@@ -363,7 +369,9 @@ class RRCache(Cache):
         if not keys:
             raise KeyError("%s is empty" % type(self).__name__) from None
         key = self.__choice(keys)
-        return (key, self.pop(key))
+        value = Cache.__getitem__(self, key)
+        del self[key]
+        return (key, value)
 
     def clear(self):
         Cache.clear(self)
@@ -577,7 +585,9 @@ class TTLCache(_TimedCache):
             except StopIteration:
                 raise KeyError("%s is empty" % type(self).__name__) from None
             else:
-                return (key, self.pop(key))
+                value = Cache.__getitem__(self, key)
+                del self[key]
+                return (key, value)
 
     def clear(self):
         _TimedCache.clear(self)
@@ -709,7 +719,9 @@ class TLRUCache(_TimedCache):
             except StopIteration:
                 raise KeyError("%s is empty" % type(self).__name__) from None
             else:
-                return (key, self.pop(key))
+                value = Cache.__getitem__(self, key)
+                del self[key]
+                return (key, value)
 
     def clear(self):
         _TimedCache.clear(self)
