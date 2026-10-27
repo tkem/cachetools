@@ -46,6 +46,21 @@ class _MethodDescriptor:
             # objtype is not used for instance lookups, so it need not be bound here
             return self.__get_unbound()
         elif self.__attrname is not None:
+            # super() and class access bypass the instance dict, so look for
+            # a wrapper stored by an earlier access before building a new one;
+            # each descriptor has its own Wrapper class, which identifies it
+            try:
+                instance_dict = obj.__dict__
+                wrapper = instance_dict.get(self.__attrname)
+                if type(wrapper) is self.Wrapper:  # type: ignore
+                    return wrapper
+                wrappers = instance_dict.get("__cachetools_cachedmethods")
+                if wrappers is not None:
+                    wrapper = wrappers.get(self)
+                    if wrapper is not None:
+                        return wrapper
+            except AttributeError:
+                pass  # no __dict__, reported below
             # replace descriptor instance with wrapper in instance dict
             wrapper = self.Wrapper(obj, self)  # type: ignore
             try:
