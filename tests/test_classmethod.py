@@ -36,6 +36,12 @@ class Cached:
         cls.count += 1
         return cls.count
 
+    @classmethod
+    @cachedmethod(lambda cls: cls.cache, info=True)
+    def get_info(cls, value):
+        cls.count += 1
+        return cls.count
+
 
 class CachedClassMethodTest(unittest.TestCase):
     def test(self):
@@ -113,6 +119,43 @@ class CachedClassMethodTest(unittest.TestCase):
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
         self.assertIs(w[1].category, DeprecationWarning)
+
+    def test_info(self):
+        # info=True requires an instance method, so calls fail on all
+        # supported Python versions
+        Cached.cache = LRUCache(2)
+        cached = Cached()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            with self.assertRaises(TypeError):
+                cached.get_info(0)
+            with self.assertRaises(TypeError):
+                Cached.get_info(0)
+            self.assertEqual(len(Cached.cache), 0)
+
+    def test_shared_cache(self):
+        class Child(Cached):
+            pass
+
+        # cache is a class attribute, so it is shared with subclasses
+        Cached.cache = LRUCache(2)
+        Cached.count = 0
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.assertIs(Child.cache, Cached.cache)
+            self.assertEqual(Cached.get(0), 1)
+            self.assertEqual(Child.get(0), 1)
+            self.assertEqual(Child().get(0), 1)
+            self.assertEqual(len(Cached.cache), 1)
+            self.assertEqual(Child.get(1), 2)
+            self.assertEqual(Cached.get(1), 2)
+            self.assertEqual(len(Cached.cache), 2)
+
+            Child.get.cache_clear(Child)  # type: ignore
+            self.assertEqual(len(Cached.cache), 0)
+            self.assertEqual(Cached.get(0), 2)
 
     def test_clear(self):
         Cached.cache = LRUCache(2)
