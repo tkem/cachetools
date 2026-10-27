@@ -46,46 +46,34 @@ class _MethodDescriptor:
             # objtype is not used for instance lookups, so it need not be bound here
             return self.__get_unbound()
         elif self.__attrname is not None:
-            # replace descriptor instance with wrapper in instance dict
-            wrapper = self.Wrapper(obj, self)  # type: ignore
-            try:
-                descriptor = next(
-                    (
-                        cls.__dict__[self.__attrname]
-                        for cls in type(obj).__mro__
-                        if self.__attrname in cls.__dict__
-                    ),
-                    None,
-                )
-                if descriptor is self:
-                    # In case of a race condition where another thread already replaced
-                    # the descriptor, prefer the initial wrapper.
+            descriptor = next(
+                (
+                    cls.__dict__[self.__attrname]
+                    for cls in type(obj).__mro__
+                    if self.__attrname in cls.__dict__
+                ),
+                None,
+            )
+            if descriptor is self:
+                # In case of a race condition where another thread already replaced
+                # the descriptor, prefer the initial wrapper.
+                wrapper = self.Wrapper(obj, self)  # type: ignore
+                try:
                     wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
-                else:
-                    # A super() lookup must neither reuse the override's wrapper
-                    # nor replace it, so preserve state separately for each descriptor.
+                except (AttributeError, TypeError) as e:
+                    self.__instance_dict_error(obj, e)
+            else:
+                # A super() lookup must neither reuse the override's wrapper
+                # nor replace it, so preserve state separately for each descriptor.
+                try:
                     wrappers = obj.__dict__.setdefault("__cachetools_cachedmethods", {})
+                except (AttributeError, TypeError) as e:
+                    self.__instance_dict_error(obj, e)
+                    wrappers = {}  # deprecated fallback: throwaway wrapper
+                wrapper = wrappers.get(self)
+                if wrapper is None:
+                    wrapper = self.Wrapper(obj, self)  # type: ignore
                     wrapper = wrappers.setdefault(self, wrapper)
-            except AttributeError:
-                # not all objects have __dict__ (e.g. class defines slots)
-                msg = (
-                    f"No '__dict__' attribute on {type(obj).__name__!r} "
-                    f"instance to cache {self.__attrname!r} property."
-                )
-                if self.__deprecated:
-                    _warn_instance_dict(msg, 3)
-                else:
-                    raise TypeError(msg) from None
-            except TypeError:
-                msg = (
-                    f"The '__dict__' attribute on {type(obj).__name__!r} "
-                    f"instance does not support item assignment for "
-                    f"caching {self.__attrname!r} property."
-                )
-                if self.__deprecated:
-                    _warn_instance_dict(msg, 3)
-                else:
-                    raise TypeError(msg) from None
         elif self.__deprecated:
             # deprecated @classmethod, warning already raised elsewhere
             wrapper = self.Wrapper(obj, self)  # type: ignore
@@ -109,6 +97,24 @@ class _MethodDescriptor:
         if self.__unbound is None:
             self.__unbound = _Unbound(self)
         return self.__unbound
+
+    def __instance_dict_error(self, obj, error):
+        if isinstance(error, AttributeError):
+            # not all objects have __dict__ (e.g. class defines slots)
+            msg = (
+                f"No '__dict__' attribute on {type(obj).__name__!r} "
+                f"instance to cache {self.__attrname!r}"
+            )
+        else:
+            # some objects may have an immutable __dict__
+            msg = (
+                f"The '__dict__' attribute on {type(obj).__name__!r} "
+                f"instance does not support item assignment for "
+                f"caching {self.__attrname!r}"
+            )
+        if not self.__deprecated:
+            raise TypeError(msg) from None
+        _warn_instance_dict(msg, 4)
 
 
 class _Unbound:

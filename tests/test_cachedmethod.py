@@ -565,6 +565,15 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
             def get_info(self, value):
                 return value
 
+        class SlotsChild(Slots):
+            __slots__ = ()
+
+            def get(self, value):  # type: ignore
+                return super().get(value)
+
+            def get_info(self, value):  # type: ignore
+                return super().get_info(value)
+
         cache = self.cache(2)
         cached = Slots(cache)
 
@@ -579,6 +588,21 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
         self.assertIs(w[1].category, DeprecationWarning)
+        self.assertEqual(w[0].filename, __file__)
+
+        child = SlotsChild(cache)
+
+        with self.assertRaisesRegex(TypeError, "No '__dict__' attribute"):
+            child.get_info(42)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.assertEqual(child.get(0), 0)
+            self.assertEqual(child.get(0), 0)
+        self.assertEqual(len(w), 2)
+        self.assertIs(w[0].category, DeprecationWarning)
+        self.assertIs(w[1].category, DeprecationWarning)
+        self.assertEqual(w[0].filename, __file__)
 
     def test_decorator_immutable_dict(self):
 
@@ -602,6 +626,13 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
             def get_info(self, value):
                 return value
 
+        class ImmutableChild(Immutable):
+            def get(self, value):  # type: ignore
+                return super().get(value)
+
+            def get_info(self, value):  # type: ignore
+                return super().get_info(value)
+
         cache = self.cache(2)
         cached = Immutable(cache)
 
@@ -616,6 +647,48 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(len(w), 2)
         self.assertIs(w[0].category, DeprecationWarning)
         self.assertIs(w[1].category, DeprecationWarning)
+        self.assertEqual(w[0].filename, __file__)
+
+        child = ImmutableChild(cache)
+
+        with self.assertRaisesRegex(TypeError, "does not support item assignment"):
+            child.get_info(42)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.assertEqual(child.get(0), 0)
+            self.assertEqual(child.get(0), 0)
+        self.assertEqual(len(w), 2)
+        self.assertIs(w[0].category, DeprecationWarning)
+        self.assertIs(w[1].category, DeprecationWarning)
+        self.assertEqual(w[0].filename, __file__)
+
+    def test_decorator_wrapper_error(self):
+        # a non-callable key makes Wrapper.__init__ raise TypeError
+        class Cached:
+            def __init__(self, cache):
+                self.cache = cache
+
+            @cachedmethod(lambda self: self.cache, key=None)  # type: ignore
+            def get(self, value):
+                return value
+
+            @cachedmethod(lambda self: self.cache, key=None, info=True)  # type: ignore
+            def get_info(self, value):
+                return value
+
+        class CachedChild(Cached):
+            def get(self, value):  # type: ignore
+                return super().get(value)
+
+            def get_info(self, value):
+                return super().get_info(value)
+
+        cached = CachedChild(self.cache(2))
+        with self.assertRaisesRegex(TypeError, "must be callable"):
+            cached.get(0)
+        with self.assertRaisesRegex(TypeError, "must be callable"):
+            cached.get_info(0)
 
     def test_decorator_different_names(self):
         # RuntimeError for Python < 3.12, TypeError otherwise
