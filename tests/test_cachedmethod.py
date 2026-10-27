@@ -815,6 +815,35 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
         self.assertEqual(cached.get_info.cache_info(), (0, 1, 2, 1))
         self.assertEqual(super(Child, cached).get_info.cache_info(), (0, 0, 2, 0))
 
+    def test_wrapper_reuse(self):
+        class Child(Cached):
+            def __init__(self, base_cache, child_cache):
+                super().__init__(base_cache)
+                self.child_cache = child_cache
+
+            @cachedmethod(lambda self: self.child_cache, info=True)
+            def get_info(self, value):
+                return super().get_info(value) + 1
+
+        cached = Child(self.cache(2), self.cache(2))
+        # class access and super() return the wrapper stored on first access
+        wrapper = cached.get
+        self.assertIs(Cached.__dict__["get"].__get__(cached), wrapper)
+        self.assertIs(Cached.get.__get__(cached), wrapper)
+        self.assertIs(super(Child, cached).get, wrapper)
+        base = super(Child, cached).get_info
+        self.assertIs(super(Child, cached).get_info, base)
+        self.assertIs(Cached.__dict__["get_info"].__get__(cached), base)
+        self.assertIsNot(cached.get_info, base)
+        self.assertIs(Child.__dict__["get_info"].__get__(cached), cached.get_info)
+        # state lives on the stored wrappers
+        self.assertEqual(cached.get_info(0), 1)
+        self.assertEqual(base.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(super(Child, cached).get_info.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(cached.get_info.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(Cached.get_info(cached, 0), 0)
+        self.assertEqual(base.cache_info(), (1, 1, 2, 1))
+
     def test_multilevel_override(self):
         class Child(Cached):
             @cachedmethod(lambda self: self.cache, key=keys.typedmethodkey)
