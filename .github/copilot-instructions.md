@@ -61,10 +61,11 @@ when aliased in another class body, and pickles/copies by reference. Pickle/deep
 `_MethodDescriptor.__reduce__` returns `(_lookup, (owner, attrname))`, so wrappers are
 rebuilt through their descriptor, counters reset, and lock, condition, `__wrapped__`
 and the nested `Wrapper` class are never serialized; `_lookup` must stay importable and
-reads the owner's *current* class dict. `__set_name__` on two names, or instances
-without a writable `__dict__`, raise `TypeError`; `@classmethod` use
-(`_ClassMethodDescriptor`, `info=False` only) and instances without `__dict__` are
-**deprecated** and warn instead. Stampede prevention uses a pending set per instance;
+reads the owner's *current* class dict. `__set_name__` on two names raises `TypeError`.
+Instances without a writable `__dict__` raise `TypeError` from `info=True` descriptors;
+the `info=False` descriptors (`_ClassMethodDescriptor`, `deprecated=True`) only warn and
+run a throwaway `Wrapper` instead, as does their **deprecated** `@classmethod` use.
+Stampede prevention uses a pending set per instance;
 `_condition`'s inner `wrapper(self, pending, /, ...)` takes `pending` positional-only
 so a method parameter of that name can be passed by keyword.
 
@@ -103,11 +104,13 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
   `TestCase` per cache type; TTL tests use a manual `Timer`.
 - `test_cached.py`/`test_cachedmethod.py` cover all lock/condition/info combinations.
   Objects pickled by name must be module-level (`Cached`, `CachedChild`), not locals.
-- `test_func.py` calls decorators via `Callable[..., Any]`; stub checks need concrete
-  annotated tests (`test_decorator_method*`) without `# type: ignore`.
-- `test_threading.py`: join with `TIMEOUT` and assert threads finished; the condition
-  tests force a contended `wait()`, since `CountedCondition.wait_count` stays 0 for
-  single-threaded calls.
+- `test_func.py` calls decorators via `Callable[..., Any]`, so stub checks need concrete
+  annotated tests without `# type: ignore`: `CacheWrapperTest.test_decorator_method` in
+  `test_cached.py` and `FIFODecoratorTest.test_method_typed` in `test_func.py`.
+- `test_threading.py`: join with `TIMEOUT` and assert threads finished; its
+  `WaitCondition` forces a contended `wait()`, since the single-threaded
+  `CountedCondition.wait_count` assertions in `test_cached.py` and
+  `test_cachedmethod.py` stay 0.
 - Performance work: measure with `timeit` (best of 7) against a git worktree of the
   previous release, before and after; keep hot paths free of avoidable Python-level
   calls, and do not trade documented subclass hooks or semantics for speed.

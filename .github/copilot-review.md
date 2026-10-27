@@ -1,8 +1,9 @@
 # Code Review — cachetools 7.2.6
 
 **Date:** 2026-10-26
-**Reviewed:** `dev/v7.2.6` at `9f2bc19` ("Release v7.2.6", `__version__` 7.2.6,
-changelog dated 2026-10-26), four performance commits after v7.2.5 (`a2d411e`). Changes
+**Reviewed:** `9f2bc19` on `master` ("Release v7.2.6", `__version__` 7.2.6, changelog
+dated 2026-10-26; reviewed as `dev/v7.2.6`), four performance commits after v7.2.5
+(`a2d411e`). Changes
 since the v7.2.5 performance review, with no API change: `_HashedTuple` drops its
 Python-level hash cache in favor of the C tuple hash;
 `LRUCache`/`LFUCache`/`TTLCache`/`TLRUCache.__getitem__` inline the `__missing__` guard
@@ -11,15 +12,19 @@ and link lookup; every `popitem()` reads through `Cache.__getitem__` and deletes
 `@cached`/`@cachedmethod` replace `cond.wait_for(lambda: ...)` with `while k in pending:
 cond.wait()`, so uncontended calls never wait (the `wait_count` assertions now read 0,
 and the threading tests force a contended `wait()`). The *Performance* section was
-measured on 2026-10-26 at `80907bd` against v7.2.5 with the same harness; the code is
-identical to `9f2bc19`, which only adds the changelog entry and bumps `__version__`.
-Perf #1 was additionally measured on `dev/v7.2.6` with the `wip/default-size` change
-(`65c3cd6`) applied; it is not part of v7.2.6. Prototypes for Code #1 (wrapper reuse on
+measured on 2026-10-26 at `80907bd` against v7.2.5 with the same harness; `80907bd` is a
+local pre-release commit not in the published history, whose code is identical to
+`9f2bc19` without the changelog entry and `__version__` bump. Perf #1 was additionally
+measured with the `wip/default-size` change (`65c3cd6`, a local branch, not published)
+applied; it is not part of v7.2.6. Prototypes for Code #1 (wrapper reuse on
 `super()`/class access) and Perf #2 (timed-cache eviction) were measured and not
 adopted.
 
 **CI status:** All `tox` environments pass locally on Python 3.14 at `9f2bc19`: `py`
-(381 passed), `docs`, `doctest`, `pyright` (0 errors), `ruff`, `ruff-format`.
+(381 passed), `docs`, `doctest`, `pyright` (0 errors), `ruff`, `ruff-format`. The GitHub
+Actions matrix (CPython 3.10–3.15, 3.13t–3.15t, PyPy 3.10/3.11) is green at `e7104dd`,
+which has the same code (ruff 0.17.3, pyright 1.1.414). Note that ruff 0.16.x flags
+`datetime.max` in `test_ttl.py` as DTZ901; 0.17.x does not.
 
 **Coverage:** 100% except two lines that only run on Python **< 3.13**, where
 `@classmethod` over `@cachedmethod` calls `__get__` with the class as `obj` (on 3.13+
@@ -39,7 +44,7 @@ The CI matrix covers both.
 | 3 | Low | `_cachedmethod.py` `_condition_info` / `_condition` | Stampede prevention uses per-instance pending sets, so two instances sharing one cache and condition do not coordinate pending keys. |
 | 4 | Info | `_cachedmethod.py` / `_cached.py` condition variants | Same-thread recursive re-entry on the same key deadlocks (`wait()` on its own pending marker). |
 | 5 | Info | `_MethodDescriptor.__get_unbound` | Lazy creation of the cached `_Unbound` object is unsynchronized. Concurrent first class accesses may briefly see distinct (equivalent) objects; only `Cls.method is Cls.method` identity is affected during that window. Benign. |
-| 6 | Info | `_descriptor.py` `_Unbound.__call__` | By design (see its docstring), autospec'd instances accept any arguments: `inspect.signature(mock.method)` is `(*args, **kwargs)`, so autospec no longer checks call arity for `@cachedmethod` methods. Calling a real method through the class with a wrong receiver, e.g. `Cls.method(None, 1)` or `Cls.method(1)`, reports "No `__dict__` attribute on 'int' instance" (verified), since the first argument is taken as the receiver. |
+| 6 | Info | `_descriptor.py` `_Unbound.__call__` | By design (see its docstring), autospec'd instances accept any arguments: `inspect.signature(mock.method)` is `(*args, **kwargs)`, so autospec no longer checks call arity for `@cachedmethod` methods. Calling a real method through the class with a wrong receiver, e.g. `Cls.method(1)`, takes the first argument as the receiver: with `info=True` this raises `TypeError` "No `__dict__` attribute on 'int' instance"; with `info=False` the deprecated descriptor only emits that text as a `DeprecationWarning` (hidden by default filters) and the call then fails inside `cache(self)`, e.g. `AttributeError: 'int' object has no attribute 'cache'` (both verified). |
 | 7 | Info | `TTLCache.__delitem__` / `TLRUCache.__delitem__` | Deleting a key that is present but expired removes it and then raises `KeyError`. This is consistent with `key in cache` being `False`, but `cache.pop(key, default)` and `del` behave differently around the expiry instant. Intentional; listed for awareness. |
 | 8 | Info | `__init__.py` `cachedmethod` `make_info` | A `cache(self)` that is not a mapping is only reported, as `TypeError`, when `cache_info()` is called. Calls and `cache_clear()` work as long as the object supports the operations used. Acceptable, since `cache(self)` is resolved per call anyway. |
 | 9 | Info | `_cachedmethod.py` `Wrapper.__call__` / `wrapper(self, ...)` | Stacked `@cachedmethod` is broken: the outer wrapper calls `method(obj, ...)` on the inner *descriptor*. With `info=True` this raises `TypeError: 'Descriptor' object is not callable`. With `info=False` it works only through the deprecated `_ClassMethodDescriptor.__call__` shim, which emits a misleading `@classmethod` `DeprecationWarning` and bypasses the per-instance `Wrapper`. A proper fix would bind via `method.__get__(obj, type(obj))` and pass `__set_name__` on to the inner descriptor. Unsupported by maintainer decision. |
@@ -83,7 +88,7 @@ per-instance wrappers (Code #1, Perf #3).
 
 | # | Priority | Location | Finding |
 |---|----------|----------|---------|
-| 1 | Low | `Cache.__setitem__` / `_DefaultSize` | With the default `getsizeof`, the `_DefaultSize` stand-in dict is read and written through Python-level `__getitem__`/`__setitem__` on every store, so a `Cache` update costs 167 ns with the default but 138 ns with `getsizeof=len` and a real size dict. Treating the default as `None` and skipping the size bookkeeping (`wip/default-size`, `65c3cd6`; applied to `dev/v7.2.6`, all `tox` environments pass, 100% coverage of `__init__.py`) makes updates 167 → 106 ns for `Cache`, 222 → 154 for `LRUCache`, 290 → 215 for `LFUCache`, 538 → 465 for `TTLCache`, and evicting inserts 7–15% faster (`LRUCache` 646 → 552, `FIFOCache` 493 → 433); `getsizeof=len` updates also drop 138 → 125. Caches pickled by v7.2.5 still load (verified). |
+| 1 | Low | `Cache.__setitem__` / `_DefaultSize` | With the default `getsizeof`, the `_DefaultSize` stand-in dict is read and written through Python-level `__getitem__`/`__setitem__` on every store, so a `Cache` update costs 167 ns with the default but 138 ns with `getsizeof=len` and a real size dict. Treating the default as `None` and skipping the size bookkeeping (local branch `wip/default-size`, `65c3cd6`, not published; applied to `dev/v7.2.6`, all `tox` environments pass, 100% coverage of `__init__.py`) makes updates 167 → 106 ns for `Cache`, 222 → 154 for `LRUCache`, 290 → 215 for `LFUCache`, 538 → 465 for `TTLCache`, and evicting inserts 7–15% faster (`LRUCache` 646 → 552, `FIFOCache` 493 → 433); `getsizeof=len` updates also drop 138 → 125. Caches pickled by v7.2.5 still load (verified). |
 | 2 | Info | `TTLCache.__setitem__` / `TTLCache.popitem` (and `TLRUCache`) | An evicting insert costs 1551 ns against 643 for `LRUCache` (TLRU 2021), although the timer is frozen. By cProfile per insert: `expire()` runs twice (once in `__setitem__`, again inside `popitem`), the `_Timer` is entered twice and the `timer` property read three times, and `del self[key]` in `popitem` re-checks expiry in `__delitem__`. Prototyped: inlining the link lookup in `__setitem__` saves ~20 ns (noise); skipping `popitem`'s own `expire()` ~40 ns, but a direct `popitem()` could then return an expired item; deleting via `Cache.__delitem__` plus own bookkeeping ~120 ns, but a subclass `__delitem__` would no longer see evictions; both together 1474 → 1285 ns (−13%). The remaining gap is the re-entrant timer, the linked list and the second links dict. Accepted as inherent (*Maintainer Decisions*). |
 | 3 | Info | `_cachedmethod.py` `Wrapper.__call__` | A `@cachedmethod` hit costs 566 ns against 264 for `@cached`: `__call__` dispatch on the wrapper object, the module-level `wrapper(self._obj, ...)` hop, the `cache(self)` lambda and the `partial(methodkey, obj)` → `hashkey` chain. First access per instance builds the `Wrapper` and runs `update_wrapper` (4174 ns including object creation, was 4687); `super()` 2747 → 2328 ns and class calls 3032 → 2612 (Code #1). Inherent to the per-instance design. |
 | 4 | Info | `_TimedCache._Timer` / `timer` property | `timer()` through the re-entrant wrapper costs 66 ns against 30 for `time.monotonic()`, and `with timer as t` 117 ns; this is most of the gap between `TTLCache` and `LRUCache` reads (187 vs 69) and `contains` (137 vs 38). Reading the wrapper from a plain attribute instead of the `timer` property would save ~28 ns per `TTLCache`/`TLRUCache` hit; prototyped and declined (*Maintainer Decisions*). Inherent to freezing time per operation. |
@@ -112,7 +117,7 @@ The `__get__` overloads bind `self` correctly for instance and class calls on
 | 1 | Low | `test_classmethod.py` covers only deprecation warnings and basic behavior: no error-path or shared-cache tests. (`info=True` never supported `@classmethod`.) |
 | 2 | Low | `UnboundMethodTest` does not assert that class access exposes no `cache_clear`/`cache_info`, and does not exercise class access for the lock/condition variants. |
 | 3 | Info | `CacheTestMixin` deliberately checks key existence rather than the specific eviction victim, since it is shared across all cache types. Policy-specific checks live in the per-cache test files. No action needed. |
-| 4 | Info | The `test_func.py` `DecoratorTestMixin` calls decorators through `Callable[..., Any]`, so pyright does not check the `func.pyi` stubs there. One concrete test (`FIFODecoratorTest.test_decorator_method_typed`) covers them; that is enough, since all five decorators share `_cachetools_cache_wrapper`. |
+| 4 | Info | The `test_func.py` `DecoratorTestMixin` calls decorators through `Callable[..., Any]`, so pyright does not check the `func.pyi` stubs there. One concrete test (`FIFODecoratorTest.test_method_typed`) covers them; that is enough, since all five decorators share `_cachetools_cache_wrapper`. |
 
 ## Docs (`docs/index.rst`)
 
