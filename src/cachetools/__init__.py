@@ -510,11 +510,12 @@ class TTLCache(_TimedCache):
             expires = time + self.__ttl
             self.expire(time)
             cache_setitem(self, key, value)
-        try:
-            link = self.__getlink(key)
-        except KeyError:
-            self.__links[key] = link = TTLCache._Link(key)
+        links = self.__links
+        link = links.get(key)
+        if link is None:
+            links[key] = link = TTLCache._Link(key)
         else:
+            links.move_to_end(key)
             link.unlink()
         link.expires = expires
         link.next = root = self.__root
@@ -562,6 +563,8 @@ class TTLCache(_TimedCache):
             time = self.timer()
         root = self.__root
         curr = root.next
+        if curr is root or time < curr.expires:
+            return []  # fast path: nothing has expired
         links = self.__links
         expired = []
         cache_delitem = Cache.__delitem__
@@ -596,11 +599,6 @@ class TTLCache(_TimedCache):
         root = self.__root
         root.prev = root.next = root
         self.__links.clear()
-
-    def __getlink(self, key):
-        value = self.__links[key]
-        self.__links.move_to_end(key)
-        return value
 
 
 class TLRUCache(_TimedCache):
@@ -657,11 +655,12 @@ class TLRUCache(_TimedCache):
             cache_setitem(self, key, value)
         # removing an existing item would break the heap structure, so
         # only mark it as removed for now
-        try:
-            self.__getitem(key).removed = True
-        except KeyError:
-            pass
-        self.__items[key] = item = TLRUCache._Item(key, expires)
+        items = self.__items
+        item = items.get(key)
+        if item is not None:
+            item.removed = True
+            items.move_to_end(key)
+        items[key] = item = TLRUCache._Item(key, expires)
         heapq.heappush(self.__order, item)
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
@@ -698,6 +697,8 @@ class TLRUCache(_TimedCache):
         if len(order) > len(items) * self.__HEAP_CLEANUP_FACTOR:
             self.__order = order = [item for item in order if not item.removed]
             heapq.heapify(order)
+        if not order or (not order[0].removed and time < order[0].expires):
+            return []  # fast path: nothing has expired
         expired = []
         cache_delitem = Cache.__delitem__
         cache_getitem = Cache.__getitem__
@@ -729,11 +730,6 @@ class TLRUCache(_TimedCache):
         _TimedCache.clear(self)
         self.__items.clear()
         del self.__order[:]
-
-    def __getitem(self, key):
-        value = self.__items[key]
-        self.__items.move_to_end(key)
-        return value
 
     def __delitem(self, key, cache_delitem=Cache.__delitem__):
         try:
