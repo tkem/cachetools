@@ -1,3 +1,11 @@
+v7.2.7 (2026-10-28)
+===================
+
+- Various performance improvements.
+
+- Minor unit test improvements.
+
+
 v7.2.6 (2026-10-26)
 ===================
 
