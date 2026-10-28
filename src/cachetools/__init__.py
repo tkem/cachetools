@@ -24,30 +24,12 @@ import time
 from . import keys
 
 
-class _DefaultSize:
-    """A minimal "fake" dict that returns a constant size 1 for any key."""
-
-    __slots__ = ()
-
-    def __getitem__(self, _key):
-        return 1
-
-    def __setitem__(self, _key, _value):
-        pass
-
-    def pop(self, _key):
-        return 1
-
-    def clear(self):
-        pass
-
-
 class Cache(collections.abc.MutableMapping):
     """Mutable mapping to serve as a simple cache or cache base class."""
 
     __marker = object()
 
-    __size = _DefaultSize()
+    __size = None
 
     def __init__(self, maxsize, getsizeof=None):
         if maxsize < 0:
@@ -75,30 +57,48 @@ class Cache(collections.abc.MutableMapping):
             return self.__missing__(key)
 
     def __setitem__(self, key, value):
+        data = self.__data
+        size = self.__size
         maxsize = self.__maxsize
-        size = self.getsizeof(value)
-        if size < 0:
-            raise ValueError("value size must be non-negative")
-        if size > maxsize:
-            raise ValueError("value too large")
-        if key not in self.__data:
-            diffsize = size
-            while self.__currsize + diffsize > maxsize:
-                self.popitem()
+        if size is None:
+            if maxsize < 1:
+                raise ValueError("value too large")
+            elif key in data:
+                data[key] = value
+            else:
+                while self.__currsize + 1 > maxsize:
+                    self.popitem()
+                data[key] = value
+                self.__currsize += 1
         else:
-            diffsize = size - self.__size[key]
-            while self.__currsize + diffsize > maxsize:
-                self.popitem()
-                if key not in self.__data:
-                    diffsize = size
-        self.__data[key] = value
-        self.__size[key] = size
-        self.__currsize += diffsize
+            itemsize = self.getsizeof(value)
+            if itemsize > maxsize:
+                raise ValueError("value too large")
+            if itemsize < 0:
+                raise ValueError("value size must be non-negative")
+            if key not in data:
+                diffsize = itemsize
+                while self.__currsize + diffsize > maxsize:
+                    self.popitem()
+            else:
+                diffsize = itemsize - size[key]
+                while self.__currsize + diffsize > maxsize:
+                    self.popitem()
+                    if key not in data:
+                        diffsize = itemsize
+            data[key] = value
+            size[key] = itemsize
+            self.__currsize += diffsize
 
     def __delitem__(self, key):
-        size = self.__size.pop(key)
-        del self.__data[key]
-        self.__currsize -= size
+        size = self.__size
+        if size is None:
+            del self.__data[key]
+            self.__currsize -= 1
+        else:
+            itemsize = size.pop(key)
+            del self.__data[key]
+            self.__currsize -= itemsize
 
     def __contains__(self, key):
         return key in self.__data
@@ -148,8 +148,10 @@ class Cache(collections.abc.MutableMapping):
     # optimized version for each Cache subclass.
 
     def clear(self):
+        size = self.__size
+        if size is not None:
+            size.clear()
         self.__data.clear()
-        self.__size.clear()
         self.__currsize = 0
 
     @property
