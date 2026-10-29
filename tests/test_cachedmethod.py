@@ -972,6 +972,10 @@ class NoneMethodTest(unittest.TestCase):
 
 class UnboundMethodTest(unittest.TestCase):
     def test_class_call(self):
+        for attr in ("cache", "cache_key", "cache_lock", "cache_condition"):
+            self.assertFalse(hasattr(Cached.get, attr))
+        for attr in ("cache_clear", "cache_info"):
+            self.assertFalse(hasattr(Cached.get, attr))
         cached = Cached(Cache(2))
         self.assertEqual(Cached.get(cached, 1), 0)
         self.assertEqual(cached.get(1), 0)
@@ -983,6 +987,10 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertEqual(cached.get(1), 0)
 
     def test_class_call_info(self):
+        for attr in ("cache", "cache_key", "cache_lock", "cache_condition"):
+            self.assertFalse(hasattr(Cached.get_info, attr))
+        for attr in ("cache_clear", "cache_info"):
+            self.assertFalse(hasattr(Cached.get_info, attr))
         cached = Cached(Cache(2))
         self.assertEqual(Cached.get_info(cached, 1), 0)
         self.assertEqual(cached.get_info(1), 0)
