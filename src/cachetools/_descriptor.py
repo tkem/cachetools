@@ -27,7 +27,9 @@ class _MethodDescriptor:
             )
 
     def __get__(self, obj, objtype=None):
-        if self.__attrname is None:
+        attrname = self.__attrname
+
+        if attrname is None:
             if isinstance(obj, type):
                 # before Python 3.13, @classmethod calls __get__(cls, type(cls))
                 # without forwarding __set_name__
@@ -39,21 +41,19 @@ class _MethodDescriptor:
             # objtype is not used for instance lookups, so it need not be bound
             return self.__get_unbound()
 
-        descriptor = next(
-            (
-                cls.__dict__[self.__attrname]
-                for cls in type(obj).__mro__
-                if self.__attrname in cls.__dict__
-            ),
-            None,
-        )
+        for cls in type(obj).__mro__:
+            if attrname in cls.__dict__:
+                descriptor = cls.__dict__[attrname]
+                break
+        else:
+            descriptor = None  # removed from the class after __set_name__
         if descriptor is self:
             # replace descriptor instance with wrapper in instance dict; in case
             # of a race condition where another thread already replaced the
             # descriptor, prefer the initial wrapper.
             wrapper = self.__wrapper(obj, self)
             try:
-                wrapper = obj.__dict__.setdefault(self.__attrname, wrapper)
+                wrapper = obj.__dict__.setdefault(attrname, wrapper)
             except (AttributeError, TypeError) as e:
                 self.__instance_dict_error(obj, e)
         else:
