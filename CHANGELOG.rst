@@ -1,3 +1,26 @@
+v8.0.0 (UNRELEASED)
+===================
+
+- Drop Python 3.10 support (breaking change).
+
+- Drop support for deprecated ``@cachedmethod`` features (breaking
+  change).
+
+- Drop support for ``@cached(cache=None)`` (breaking change).
+
+- Require custom cache classes to support ``__len__`` (breaking
+  change).
+
+- Refactor ``_CacheInfo`` and make it public as ``CacheInfo``
+  (potentially breaking change).
+
+- Various documentation improvements.
+
+- Various unit test improvements.
+
+- Minor type stub improvements.
+
+
 v7.2.7 (2026-10-28)
 ===================
 
