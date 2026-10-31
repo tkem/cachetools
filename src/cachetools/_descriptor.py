@@ -178,7 +178,7 @@ class _ClassMethodDescriptor(_MethodDescriptor):
         self.__cache_clear = cache_clear
 
     # called for @classmethod with Python >= 3.13
-    def __call__(self, *args, **kwargs):
+    def __call__(self, /, *args, **kwargs):
         _warn_classmethod(stacklevel=3)
         return self.__wrapper(*args, **kwargs)
 
