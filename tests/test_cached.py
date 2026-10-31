@@ -148,6 +148,30 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
 
+    def test_decorator_cond_error_info(self):
+        cache = self.cache(2)
+        lock = cond = CountedCondition()
+        wrapper = cachetools.cached(cache, condition=cond, info=True)(self.error_func)
+
+        maxsize = cache.maxsize if isinstance(cache, cachetools.Cache) else None
+
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 2)
+        self.assertEqual(cond.wait_count, 0)
+        self.assertEqual(cond.notify_count, 1)
+        self.assertEqual(wrapper.cache_info(), (0, 1, maxsize, 0))  # takes the lock
+
+        # verify pending set is cleaned up, otherwise this might deadlock
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 5)
+        self.assertEqual(cond.wait_count, 0)
+        self.assertEqual(cond.notify_count, 2)
+        self.assertEqual(wrapper.cache_info(), (0, 2, maxsize, 0))
+
     def test_decorator_wrapped(self):
         cache = self.cache(2)
         wrapper = cachetools.cached(cache)(self.func)
