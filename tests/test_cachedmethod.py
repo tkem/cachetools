@@ -69,6 +69,10 @@ class Cached:
     def get_cond_error(self, _value):
         raise ValueError("test error")
 
+    @cachedmethod(lambda self: self.cache, condition=lambda self: self.cond, info=True)
+    def get_cond_error_info(self, _value):
+        raise ValueError("test error")
+
     get_aliased = cachedmethod(lambda self: self.cache)(__get)
 
 
@@ -360,6 +364,28 @@ class MethodDecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(cached.cond.count, 4)
         self.assertEqual(cached.cond.wait_count, 0)
         self.assertEqual(cached.cond.notify_count, 2)
+
+    def test_decorator_cond_error_info(self):
+        cache = self.cache(2)
+        cached = Cached(cache)
+        wrapper = cached.get_cond_error_info
+
+        maxsize = cache.maxsize if isinstance(cache, Cache) else None
+
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(cached.cond.count, 2)
+        self.assertEqual(cached.cond.wait_count, 0)
+        self.assertEqual(cached.cond.notify_count, 1)
+        self.assertEqual(wrapper.cache_info(), (0, 1, maxsize, 0))  # takes the lock
+
+        # verify pending set is cleaned up, otherwise this might deadlock
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(cached.cond.count, 5)
+        self.assertEqual(cached.cond.wait_count, 0)
+        self.assertEqual(cached.cond.notify_count, 2)
+        self.assertEqual(wrapper.cache_info(), (0, 2, maxsize, 0))
 
     def test_decorator_wrapped(self):
         cache = self.cache(2)
@@ -921,6 +947,20 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
                 self.assertEqual(cached.get_pending(pending=0), 0)
                 cached.get_pending.cache_clear()
                 self.assertEqual(cached.get_pending(pending=0), 1)
+
+    def test_self_keyword(self):
+        # https://github.com/tkem/cachetools/issues/451
+        class Keyword(Cached):
+            @cachedmethod(lambda obj: obj.cache)
+            def get_self(this, *, self):
+                return self
+
+        cached = Keyword(self.cache(2))
+        self.assertEqual(cached.get_self(self=1), 1)
+        self.assertEqual(cached.get_self(self=1), 1)
+        self.assertEqual(Keyword.get_self(cached, self=2), 2)
+        self.assertIn(keys.methodkey(cached, self=1), cached.cache)
+        self.assertEqual(len(cached.cache), 2)
 
 
 class DictMethodTest(unittest.TestCase, MethodDecoratorTestMixin):

@@ -148,6 +148,30 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(cond.wait_count, 0)
         self.assertEqual(cond.notify_count, 2)
 
+    def test_decorator_cond_error_info(self):
+        cache = self.cache(2)
+        lock = cond = CountedCondition()
+        wrapper = cachetools.cached(cache, condition=cond, info=True)(self.error_func)
+
+        maxsize = cache.maxsize if isinstance(cache, cachetools.Cache) else None
+
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 2)
+        self.assertEqual(cond.wait_count, 0)
+        self.assertEqual(cond.notify_count, 1)
+        self.assertEqual(wrapper.cache_info(), (0, 1, maxsize, 0))  # takes the lock
+
+        # verify pending set is cleaned up, otherwise this might deadlock
+        with self.assertRaises(ValueError):
+            wrapper(0)
+        self.assertEqual(len(cache), 0)
+        self.assertEqual(lock.count, 5)
+        self.assertEqual(cond.wait_count, 0)
+        self.assertEqual(cond.notify_count, 2)
+        self.assertEqual(wrapper.cache_info(), (0, 2, maxsize, 0))
+
     def test_decorator_wrapped(self):
         cache = self.cache(2)
         wrapper = cachetools.cached(cache)(self.func)
@@ -460,6 +484,18 @@ class CacheWrapperTest(unittest.TestCase, DecoratorTestMixin):
         self.assertEqual(mock.get(value=1), 42)
         mock.get.assert_called_with(value=1)
 
+    def test_self_keyword(self):
+        # https://github.com/tkem/cachetools/issues/451
+        def func(**kwargs):
+            return kwargs
+
+        cache = self.cache(2)
+        wrapper = cachetools.cached(cache)(func)
+        self.assertEqual(wrapper(self=1), {"self": 1})
+        self.assertEqual(wrapper(self=1), {"self": 1})
+        self.assertIn(cachetools.keys.hashkey(self=1), cache)
+        self.assertEqual(len(cache), 1)
+
 
 class DictTest(unittest.TestCase, DecoratorTestMixin):
     def cache(self, minsize):
@@ -536,6 +572,31 @@ class InvalidCacheTest(unittest.TestCase):
         # passing cache=None is no longer supported since v8.0.0
         with self.assertRaisesRegex(TypeError, "None"):
             cachetools.cached(None, info=True)  # type: ignore
+
+    def test_decorator_info_no_len(self):
+        # caches that are not Cache instances must support len() with info=True
+        class NoLenCache:
+            def __init__(self):
+                self.data = {}
+
+            def __getitem__(self, key):
+                return self.data[key]
+
+            def __setitem__(self, key, value):
+                self.data[key] = value
+
+            def clear(self):
+                self.data.clear()
+
+        cache = NoLenCache()
+        wrapper = cachetools.cached(cache, info=True)(self.func)  # type: ignore
+        self.assertEqual(wrapper(0), (0,))
+        self.assertEqual(wrapper(0), (0,))
+        self.assertEqual(cache.data, {(0,): (0,)})
+        with self.assertRaisesRegex(TypeError, "len"):
+            wrapper.cache_info()
+        wrapper.cache_clear()
+        self.assertEqual(cache.data, {})
 
 
 class PickleTest(unittest.TestCase):
