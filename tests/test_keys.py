@@ -78,6 +78,16 @@ class CacheKeysTest(unittest.TestCase):
         self.assertIsInstance(key(1, 2, 3) + (4, 5, 6), type(key()))
         self.assertIsInstance((1, 2, 3) + key(4, 5, 6), type(key()))
 
+    def test_methodkey_self_keyword(self):
+        for key, function_key in (
+            (cachetools.keys.methodkey, cachetools.keys.hashkey),
+            (cachetools.keys.typedmethodkey, cachetools.keys.typedkey),
+        ):
+            with self.subTest(key=key):
+                self.assertEqual(key(object(), self=1), function_key(self=1))
+                self.assertEqual(key(object(), self=1), key(object(), self=1))
+                self.assertNotEqual(key(object(), self=1), key(object(), self=2))
+
     def test_pickle(self, key=cachetools.keys.hashkey):
         import pickle
 

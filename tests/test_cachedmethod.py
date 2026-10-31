@@ -929,6 +929,41 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
                 cached.get_pending.cache_clear()
                 self.assertEqual(cached.get_pending(pending=0), 1)
 
+    def test_self_keyword(self):
+        for info in (False, True):
+            for key in (keys.methodkey, keys.typedmethodkey):
+                for lock, condition in (
+                    (None, None),
+                    (lambda obj: obj.lock, None),
+                    (None, lambda obj: obj.cond),
+                    (lambda obj: obj.lock, lambda obj: obj.cond),
+                ):
+                    with self.subTest(
+                        info=info, key=key, lock=lock, condition=condition
+                    ):
+
+                        class SelfKeyword(Cached):
+                            @cachedmethod(
+                                lambda obj: obj.cache,
+                                key=key,
+                                lock=lock,
+                                condition=condition,
+                                info=info,
+                            )
+                            def get_self(obj, *, self):
+                                obj.count += 1
+                                return self
+
+                        cached = SelfKeyword(self.cache(2))
+                        self.assertEqual(cached.get_self(self=1), 1)
+                        self.assertEqual(cached.get_self(self=1), 1)
+                        self.assertEqual(SelfKeyword.get_self(cached, self=2), 2)
+                        self.assertEqual(cached.get_self(self=2), 2)
+                        self.assertEqual(cached.count, 2)
+                        cached.get_self.cache_clear()
+                        self.assertEqual(cached.get_self(self=1), 1)
+                        self.assertEqual(cached.count, 3)
+
 
 class DictMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
     def cache(self, minsize, **_kwargs):
