@@ -35,7 +35,7 @@ class _WrapperBase:
         # wrappers
         return (self.__descriptor.__get__, (self._obj,))
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, /, *args, **kwargs):
         raise NotImplementedError()  # pragma: no cover
 
     def cache_clear(self):
@@ -72,7 +72,7 @@ def _condition_info(method, cache, key, lock, cond, info):
                 self.__hits = self.__misses = 0
                 self.__pending = set()
 
-            def __call__(self, *args, **kwargs):
+            def __call__(self, /, *args, **kwargs):
                 cache = self.cache
                 lock = self.cache_lock
                 cond = self.cache_condition
@@ -121,7 +121,7 @@ def _locked_info(method, cache, key, lock, info):
                 super().__init__(obj, descriptor, method, cache, key, lock)
                 self.__hits = self.__misses = 0
 
-            def __call__(self, *args, **kwargs):
+            def __call__(self, /, *args, **kwargs):
                 cache = self.cache
                 lock = self.cache_lock
                 key = self.cache_key(*args, **kwargs)
@@ -161,7 +161,7 @@ def _unlocked_info(method, cache, key, info):
                 super().__init__(obj, descriptor, method, cache, key)
                 self.__hits = self.__misses = 0
 
-            def __call__(self, *args, **kwargs):
+            def __call__(self, /, *args, **kwargs):
                 cache = self.cache
                 key = self.cache_key(*args, **kwargs)
                 try:
@@ -220,7 +220,7 @@ def _condition(method, cache, key, lock, cond):
         with lock(self):
             c.clear()
 
-    def classmethod_wrapper(self, *args, **kwargs):
+    def classmethod_wrapper(self, /, *args, **kwargs):
         p = pending.setdefault(self, set())
         return wrapper(self, p, *args, **kwargs)
 
@@ -230,7 +230,7 @@ def _condition(method, cache, key, lock, cond):
                 super().__init__(obj, descriptor, method, cache, key, lock, cond)
                 self.__pending = set()
 
-            def __call__(self, *args, **kwargs):
+            def __call__(self, /, *args, **kwargs):
                 return wrapper(self._obj, self.__pending, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
@@ -241,7 +241,7 @@ def _condition(method, cache, key, lock, cond):
 
 
 def _locked(method, cache, key, lock):
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, /, *args, **kwargs):
         c = cache(self)
         k = key(self, *args, **kwargs)
         with lock(self):
@@ -269,7 +269,7 @@ def _locked(method, cache, key, lock):
             def __init__(self, obj, descriptor):
                 super().__init__(obj, descriptor, method, cache, key, lock)
 
-            def __call__(self, *args, **kwargs):
+            def __call__(self, /, *args, **kwargs):
                 return wrapper(self._obj, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
@@ -280,7 +280,7 @@ def _locked(method, cache, key, lock):
 
 
 def _unlocked(method, cache, key):
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self, /, *args, **kwargs):
         c = cache(self)
         k = key(self, *args, **kwargs)
         try:
@@ -303,7 +303,7 @@ def _unlocked(method, cache, key):
             def __init__(self, obj, descriptor):
                 super().__init__(obj, descriptor, method, cache, key)
 
-            def __call__(self, *args, **kwargs):
+            def __call__(self, /, *args, **kwargs):
                 return wrapper(self._obj, *args, **kwargs)
 
             # objtype: backward-compatible @classmethod handling with Python < 3.13
