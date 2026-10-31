@@ -44,6 +44,37 @@ class Cached:
 
 
 class CachedClassMethodTest(unittest.TestCase):
+    def test_self_keyword(self):
+        for key in (keys.methodkey, keys.typedmethodkey):
+            for lock, condition in (
+                (None, None),
+                (lambda cls: cls.lock, None),
+                (None, lambda cls: cls.cond),
+            ):
+                with self.subTest(key=key, lock=lock, condition=condition):
+
+                    class SelfKeyword(Cached):
+                        cache = LRUCache(2)
+                        count = 0
+
+                        @classmethod
+                        @cachedmethod(
+                            lambda cls: cls.cache,
+                            key=key,
+                            lock=lock,
+                            condition=condition,
+                        )
+                        def get_self(cls, self):
+                            cls.count += 1
+                            return self
+
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", DeprecationWarning)
+                        self.assertEqual(SelfKeyword.get_self(self=1), 1)
+                        self.assertEqual(SelfKeyword.get_self(self=1), 1)
+                        self.assertEqual(SelfKeyword.get_self(self=2), 2)
+                        self.assertEqual(SelfKeyword.count, 2)
+
     def test(self):
         Cached.cache = LRUCache(2)
         Cached.count = 0
