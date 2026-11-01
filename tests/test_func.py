@@ -192,9 +192,74 @@ class LRUDecoratorTest(unittest.TestCase, DecoratorTestMixin):
 class RRDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.rr_cache)
 
+    def test_rr_choice(self):
+        cached = cachetools.func.rr_cache(maxsize=2, choice=min)(lambda n: n)
+        self.assertEqual(cached.cache_parameters(), {"maxsize": 2, "typed": False})
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached(2), 2)
+        self.assertEqual(cached.cache_info(), (0, 2, 2, 2))
+        # the smallest key, (1,), is evicted
+        self.assertEqual(cached(3), 3)
+        self.assertEqual(cached.cache_info(), (0, 3, 2, 2))
+        self.assertEqual(cached(2), 2)
+        self.assertEqual(cached(3), 3)
+        self.assertEqual(cached.cache_info(), (2, 3, 2, 2))
+        # now (2,) is the smallest key
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (2, 4, 2, 2))
+        self.assertEqual(cached(3), 3)
+        self.assertEqual(cached.cache_info(), (3, 4, 2, 2))
+        self.assertEqual(cached(2), 2)
+        self.assertEqual(cached.cache_info(), (3, 5, 2, 2))
+
 
 class TTLDecoratorTest(unittest.TestCase, DecoratorTestMixin):
     DECORATOR = staticmethod(cachetools.func.ttl_cache)
+
+    class Timer:
+        def __init__(self):
+            self.time = 0
+
+        def __call__(self):
+            return self.time
+
+        def tick(self):
+            self.time += 1
+
+    def test_ttl_expire(self):
+        timer = self.Timer()
+        cached = cachetools.func.ttl_cache(maxsize=2, ttl=1, timer=timer)(lambda n: n)
+        self.assertEqual(cached.cache_parameters(), {"maxsize": 2, "typed": False})
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (0, 1, 2, 1))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 1, 2, 1))
+        timer.tick()
+        self.assertEqual(cached.cache_info(), (1, 1, 2, 0))
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 2, 2, 1))
+        self.assertEqual(cached(2), 2)
+        self.assertEqual(cached.cache_info(), (1, 3, 2, 2))
+        timer.tick()
+        self.assertEqual(cached(1), 1)
+        self.assertEqual(cached.cache_info(), (1, 4, 2, 1))
+
+    def test_ttl_expire_unbound(self):
+        timer = self.Timer()
+        cached = cachetools.func.ttl_cache(maxsize=None, ttl=1, timer=timer)(
+            lambda n: n
+        )
+        self.assertEqual(cached.cache_parameters(), {"maxsize": None, "typed": False})
+        self.assertEqual(cached.cache_info(), (0, 0, None, 0))
+        for n in range(256):
+            self.assertEqual(cached(n), n)
+        self.assertEqual(cached.cache_info(), (0, 256, None, 256))
+        self.assertEqual(cached(0), 0)
+        self.assertEqual(cached.cache_info(), (1, 256, None, 256))
+        timer.tick()
+        self.assertEqual(cached.cache_info(), (1, 256, None, 0))
+        self.assertEqual(cached(0), 0)
+        self.assertEqual(cached.cache_info(), (1, 257, None, 1))
 
     def test_ttl_datetime(self):
         from datetime import datetime, timedelta
