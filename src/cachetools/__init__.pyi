@@ -244,6 +244,17 @@ class _cachedmethod_unbound(Generic[_P, _R]):
     def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _R: ...
 
 @type_check_only
+class _cachedmethod_unbound_info(_cachedmethod_unbound[_P, _R]):
+    @overload
+    def __get__(
+        self, obj: None, objtype: type | None = None
+    ) -> _cachedmethod_unbound_info[_P, _R]: ...
+    @overload
+    def __get__(
+        self, obj: Any, objtype: type | None = None
+    ) -> _cachedmethod_wrapper_info[_P, _R]: ...
+
+@type_check_only
 class _cachedmethod_wrapper(Generic[_P, _R]):
     __wrapped__: Callable[Concatenate[Any, _P], _R]
     __name__: str
@@ -270,7 +281,7 @@ class _cachedmethod_wrapper_info(_cachedmethod_wrapper[_P, _R]):
     @overload
     def __get__(
         self, obj: None, objtype: type | None = None
-    ) -> _cachedmethod_unbound[_P, _R]: ...
+    ) -> _cachedmethod_unbound_info[_P, _R]: ...
     @overload
     def __get__(
         self, obj: Any, objtype: type | None = None
