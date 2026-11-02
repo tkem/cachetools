@@ -1088,6 +1088,28 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertIs(cached.alias, cached.get)
         self.assertEqual(len(cached.cache), 1)
 
+    def test_class_access_alias_info(self):
+        class Alias(Cached):
+            alias = Cached.get_info
+
+        self.assertIs(Alias.alias, Cached.get_info)
+        cached = Alias(Cache(2))
+        self.assertEqual(cached.alias(1), 0)
+        self.assertEqual(cached.alias(1), 0)
+        self.assertEqual(cached.alias.cache_info(), (1, 1, 2, 1))
+        self.assertIs(cached.alias, cached.get_info)
+
+        rebound = Cached.get_info.__get__(cached)
+        self.assertIs(rebound, cached.get_info)
+        self.assertEqual(rebound.cache_info(), (1, 1, 2, 1))
+
+    def test_class_access_info_unavailable(self):
+        with self.assertRaises(AttributeError):
+            Cached.get_info.cache_info()  # pyright: ignore[reportAttributeAccessIssue]
+        cached = Cached(Cache(2))
+        with self.assertRaises(AttributeError):
+            cached.get.cache_info()  # pyright: ignore[reportAttributeAccessIssue]
+
     def test_autospec_no_warnings(self):
         import unittest.mock
 
