@@ -258,7 +258,7 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         cache[1] = 1
         self.assertEqual(1, cache.pop(1))
         cache[1] = 1
-        self.assertEqual(1, cache.setdefault(1))
+        self.assertEqual(1, cache.setdefault(1, 2))
         cache[1] = 1
         cache.clear()
         self.assertEqual(0, len(cache))
