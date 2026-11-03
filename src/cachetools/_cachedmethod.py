@@ -48,6 +48,12 @@ class _WrapperBase:
         return f"<cachedmethod {wrapped!r} of {object.__repr__(self.__obj)}>"
 
     @property
+    def __signature__(self):
+        import inspect
+
+        return inspect.signature(types.MethodType(self.__wrapped__, self.__obj))
+
+    @property
     def cache(self):
         return self.__cache(self.__obj)
 
