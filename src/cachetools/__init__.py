@@ -19,9 +19,14 @@ import collections.abc
 import functools
 import heapq
 import random
+import sys
 import time
 
 from . import keys
+
+# CPython's set.pop() resumes its scan where the last one stopped, which
+# picks an arbitrary key; PyPy's sets keep insertion order and pop the newest
+_SET_POP_IS_ARBITRARY = sys.implementation.name == "cpython"
 
 
 class Cache(collections.abc.MutableMapping):
@@ -260,7 +265,15 @@ class LFUCache(Cache):
         curr = root.next
         if curr is root:
             raise KeyError("%s is empty" % type(self).__name__) from None
-        key = next(iter(curr.keys))  # remove an arbitrary element
+        if _SET_POP_IS_ARBITRARY:
+            # set.pop() is amortized O(1), while next(iter(set)) rescans
+            # every slot freed by earlier evictions; del self[key] does the rest
+            key = curr.keys.pop()
+            curr.keys.add(key)
+        else:
+            # sets keep insertion order (PyPy), so this is cheap and takes
+            # the oldest key, where pop() would take the newest
+            key = next(iter(curr.keys))
         value = Cache.__getitem__(self, key)
         del self[key]
         return (key, value)
