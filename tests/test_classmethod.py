@@ -50,18 +50,6 @@ class Cached:
 
 
 class CachedClassMethodTest(unittest.TestCase):
-    def test_self_keyword(self):
-        # https://github.com/tkem/cachetools/issues/451
-        Cached.cache = LRUCache(2)
-        Cached.count = 0
-        cached = Cached()
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            self.assertEqual(Cached.get_self(self=0), 1)
-            self.assertEqual(cached.get_self(self=0), 1)
-            self.assertEqual(Cached.get_self(self=1), 2)
-
     def test(self):
         Cached.cache = LRUCache(2)
         Cached.count = 0
@@ -210,3 +198,15 @@ class CachedClassMethodTest(unittest.TestCase):
             self.assertEqual(len(Cached.cache), 1)
             Cached.get_condition.cache_clear(cached)  # type: ignore
             self.assertEqual(len(Cached.cache), 0)
+
+    def test_self_keyword(self):
+        # https://github.com/tkem/cachetools/issues/451
+        Cached.cache = LRUCache(2)
+        Cached.count = 0
+        cached = Cached()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self.assertEqual(Cached.get_self(self=0), 1)
+            self.assertEqual(cached.get_self(self=0), 1)
+            self.assertEqual(Cached.get_self(self=1), 2)
