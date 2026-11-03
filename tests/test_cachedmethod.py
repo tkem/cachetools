@@ -750,6 +750,17 @@ class CacheMethodTest(unittest.TestCase, MethodDecoratorTestMixin):
     def cache(self, minsize, **kwargs):
         return Cache(maxsize=minsize, **kwargs)
 
+    def test_decorator_signature(self):
+        import inspect
+
+        cached = Cached(self.cache(1))
+        self.assertEqual(cached.get(0), 0)
+        signature = inspect.signature(cached.get)
+        self.assertEqual(str(signature), "(value)")
+        bound = signature.bind(value=0)
+        self.assertEqual(cached.get(*bound.args, **bound.kwargs), 0)
+        self.assertEqual(str(inspect.signature(Cached.get)), "(self, value)")
+
     def test_nospace(self):
         cached = Cached(self.cache(0))
 
