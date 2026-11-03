@@ -1,5 +1,8 @@
+import random
 import unittest
+import unittest.mock
 
+import cachetools
 from cachetools import LFUCache
 
 from . import CacheTestMixin
@@ -109,3 +112,61 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertIn(3, cache)
         self.assertIn(5, cache)
         self.assertNotIn(4, cache)
+
+    def test_lfu_popitem_least_used(self):
+        # cover both ways of picking among tied keys on any implementation
+        for set_pop in (True, False):
+            with (
+                self.subTest(set_pop=set_pop),
+                # create=True lets this test run against older releases too
+                unittest.mock.patch.object(
+                    cachetools, "_SET_POP_IS_ARBITRARY", set_pop, create=True
+                ),
+            ):
+                self._check_popitem_least_used()
+
+    def _check_popitem_least_used(self):
+        evicted = []
+
+        class Cache(LFUCache[int, int]):
+            def __delitem__(self, key):
+                evicted.append(key)
+                super().__delitem__(key)
+
+        cache = Cache(maxsize=100)
+        counts = {}
+        rnd = random.Random(0)
+
+        # many ties: 300 keys competing for 100 slots
+        for _ in range(20000):
+            key = rnd.randrange(300)
+            if key in cache:
+                self.assertEqual(cache[key], -key)
+                counts[key] += 1
+            else:
+                least = min(counts.values(), default=0)
+                full = len(cache) == cache.maxsize
+                cache[key] = -key
+                if full:
+                    # evicted through __delitem__, with a least-used key
+                    self.assertEqual(least, counts.pop(evicted[-1]))
+                counts[key] = 1
+            self.assertEqual(set(counts), set(cache))
+
+        # draining yields keys in order of use count
+        drained = []
+        while cache:
+            key, value = cache.popitem()
+            self.assertEqual(value, -key)
+            self.assertEqual(key, evicted[-1])
+            drained.append(counts.pop(key))
+        self.assertEqual(drained, sorted(drained))
+        self.assertEqual(0, cache.currsize)
+        with self.assertRaises(KeyError):
+            cache.popitem()
+
+        # still usable after being emptied
+        cache[1] = 1
+        cache[1]
+        cache[2] = 2
+        self.assertEqual((2, 2), cache.popitem())
