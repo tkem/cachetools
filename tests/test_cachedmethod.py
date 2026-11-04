@@ -1,3 +1,4 @@
+import inspect
 import unittest
 import warnings
 from collections.abc import Callable
@@ -981,6 +982,31 @@ class NoneMethodTest(unittest.TestCase):
 
 
 class UnboundMethodTest(unittest.TestCase):
+    def test_bound_signature(self):
+        for name in (
+            "get",
+            "get_info",
+            "get_lock",
+            "get_lock_info",
+            "get_cond",
+            "get_cond_info",
+            "get_lock_cond",
+            "get_lock_cond_info",
+        ):
+            with self.subTest(name=name):
+                cached = Cached({})
+                method = getattr(cached, name)
+                signature = inspect.signature(method)
+                self.assertEqual(str(signature), "(value)")
+                self.assertEqual(signature.bind(123).arguments, {"value": 123})
+                self.assertEqual(
+                    str(inspect.signature(getattr(Cached, name))), "(self, value)"
+                )
+                self.assertIs(method.__wrapped__, getattr(Cached, name).__wrapped__)
+                self.assertEqual(method(123), 0)
+                self.assertEqual(method(123), 0)
+                self.assertEqual(method.__wrapped__(cached, 123), 1)
+
     def test_class_call(self):
         cached = Cached(Cache(2))
         self.assertEqual(Cached.get(cached, 1), 0)
