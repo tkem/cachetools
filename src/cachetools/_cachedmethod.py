@@ -5,6 +5,8 @@
 __all__ = ()
 
 import functools
+import inspect
+import types
 import weakref
 
 from ._descriptor import _ClassMethodDescriptor, _MethodDescriptor, _warn_classmethod
@@ -27,6 +29,12 @@ class _WrapperBase:
         self.__key = functools.partial(key, obj)
         self.__lock = lock if lock is not None else _none
         self.__cond = cond if cond is not None else _none
+
+    @property
+    def __signature__(self):
+        # update_wrapper sets __wrapped__ dynamically.
+        method = self.__wrapped__  # pyright: ignore[reportAttributeAccessIssue]
+        return inspect.signature(types.MethodType(method, self._obj))
 
     def __reduce__(self):
         # rebuild via the descriptor instead of pickling unpicklable
