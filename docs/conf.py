@@ -13,6 +13,5 @@ extensions = [
     "sphinx.ext.todo",
 ]
 exclude_patterns = ["_build"]
-master_doc = "index"
 html_theme = "classic"
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
