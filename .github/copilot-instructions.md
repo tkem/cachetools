@@ -1,8 +1,8 @@
 # Copilot Instructions for cachetools
 
-**cachetools** provides memoizing collections and decorators, including variants of
-`functools.lru_cache`. Pure Python ≥ 3.10, no runtime dependencies, inline type stubs
-(`py.typed`). Single maintainer; `master` is the release branch.
+**cachetools** provides memoizing collections and decorators. Pure Python ≥ 3.10, no
+runtime dependencies, inline type stubs (`py.typed`). Single maintainer; `master` is
+the release branch.
 
 ## Ground Rules
 
@@ -19,25 +19,30 @@
   `:meth:`/`:func:`/`:exc:` roles in `docs/index.rst`, ``double backticks`` in
   `CHANGELOG.rst`, whose entries are imperative one-liners without issue numbers,
   tagged "(breaking change)", "(potentially breaking change)" or "(broken since
-  vX.Y.Z)"; docs-only work is one "Various documentation improvements." line, speed-ups
-  one "Various performance improvements." line; two blank lines between releases.
+  vX.Y.Z)"; every `Fix #123` commit gets an entry; docs-only, test-only and speed-up
+  work is one "Minor/Various ... improvements." line each; two blank lines between
+  releases.
 - Prefer clarity and performance over DRY: the decorator modules duplicate one wrapper
   per lock/condition/info combination. Apply changes to **all** variants.
 
 ## Architecture
 
 **Caches** (`__init__.py`): `Cache` is a `MutableMapping`; a value's size must not
-change after insertion. With the default `getsizeof` the private size dict is `None`,
-each item counts 1 and `getsizeof()` is never called. Subclasses override
-`__setitem__`, `__delitem__`, `popitem()`, `clear()` and optionally `__getitem__`;
-after the parent `__getitem__`, check the subclass's own bookkeeping (not
-`key in self`), since `__missing__` may not store the item. `popitem()` evicts via `del self[key]`, so subclass `__delitem__` overrides
-see evictions. `_TimedCache` (`TTLCache`, `TLRUCache`) wraps the timer in a re-entrant
-`_Timer` that freezes time per operation. Expiry is lazy: `__len__`, `__repr__` and
-`currsize` call `expire()` first, `clear()` does not, and deleting a present-but-expired
-key removes it and raises `KeyError`. `expire()` returns early when nothing has expired
-and is a documented override hook, so every insert and `popitem()` must keep calling
-it. Look links/items up with `.get()`; raising `KeyError` per new key cost ~200 ns.
+change after insertion. With the default `getsizeof` the size dict is `None` and
+`getsizeof()` is never called. Subclasses override `__setitem__`, `__delitem__`,
+`popitem()`, `clear()` and optionally `__getitem__`; after the parent `__getitem__`,
+check the subclass's own bookkeeping (not `key in self`), since `__missing__` may not
+store the item. `popitem()` evicts via `del self[key]`, so subclass `__delitem__`
+overrides see evictions. `items()` and `values()` read through `__getitem__`, so
+iterating them counts as a use of every item; inspect state with `list(cache)`.
+`LFUCache` keeps an `OrderedDict` of keys per use count: ties discard the least
+recently used key (documented since 7.3) in O(1); a `set` made `popitem()` scan (#461).
+`_TimedCache` (`TTLCache`, `TLRUCache`) wraps the timer in a re-entrant `_Timer` that
+freezes time per operation. Expiry is lazy: `__len__`, `__repr__` and `currsize` call
+`expire()` first, `clear()` does not, and deleting a present-but-expired key removes it
+and raises `KeyError`. `expire()` is a documented override hook, so every insert and
+`popitem()` must keep calling it. Look links/items up with `.get()`; raising `KeyError`
+per new key cost ~200 ns.
 
 **`@cached`** (`_cached.py`): one closure per lock/condition/info combination;
 `condition` without `lock` serves as both. Call `functools.update_wrapper()` *before*
@@ -50,34 +55,33 @@ shared by all instances.
 `obj.__dict__` via `setdefault`; `super()` lookups use
 `obj.__dict__["__cachetools_cachedmethods"]` keyed by descriptor. A missing or
 read-only `__dict__` raises `TypeError` from `info=True` descriptors; `info=False` ones
-(`_ClassMethodDescriptor`) warn (`stacklevel=4`, at the caller) and run a throwaway
-`Wrapper`, as does their **deprecated** `@classmethod` use. Class access returns a lazy
-`_Unbound` callable object, deliberately not a function so `create_autospec()` strips
-the receiver (#443); it takes the receiver positionally or by the wrapped method's first
-parameter name. Pickle/deepcopy (#417) rebuild wrappers through their descriptor, so
+(`_ClassMethodDescriptor`) warn at the caller and run a throwaway `Wrapper`, as does
+their **deprecated** `@classmethod` use. Class access returns a lazy `_Unbound`
+callable object, deliberately not a function so `create_autospec()` strips the receiver
+(#443); it takes the receiver positionally or by the wrapped method's first parameter
+name. Pickle/deepcopy (#417) rebuild wrappers through their descriptor, so
 counters reset and nothing unpicklable is serialized; `_MethodDescriptor._lookup` must
-stay importable. Stampede prevention uses a pending set per instance, passed
-positional-only so a method parameter named `pending` still works.
+stay importable. Stampede prevention uses a pending set per instance; it and every
+receiver (`self, /`, also in the method keys) are positional-only, so methods may take
+`pending` or `self` keyword arguments (#451).
 
 **Shared**: wrappers swallow `ValueError` on store; locked variants release the lock
 while computing and store via `setdefault()`; the condition tier uses
 `while k in pending: cond.wait()` and `notify_all()`, so uncontended calls never wait
-(same-key recursion deadlocks there).
+(same-key recursion deadlocks there). A separate `condition` must be built on the
+`lock`; an unrelated `threading.Condition` raises `RuntimeError`.
 
 **`func.py`, `keys.py`**: `*_cache` decorators use `cached(..., condition=Condition(),
-info=True)`; `maxsize=None` uses a `dict` (`ttl_cache`: `_UnboundTTLCache`). `hashkey`
-returns a `_HashedTuple` using the C tuple hash (a Python-level hash cache was slower),
-`methodkey` drops `self`, `typed*` variants append argument types.
+info=True)`. `hashkey` returns a `_HashedTuple` using the C tuple hash (a Python-level
+hash cache was slower).
 
 ## Type Stubs (`*.pyi`)
 
 No annotations in `.py` files. `@overload`s split `info=False` (default, first) and
-`info=True`; wrappers use `ParamSpec`, `_cachedmethod_wrapper` uses
-`Concatenate[Any, _P]`. `@cached` wrapper stubs have three `__get__` overloads (class
-access, instance binding, `obj: object` catch-all for `@staticmethod`).
-`_cachedmethod_unbound.__call__` keeps a receiver-less overload for deprecated
-`@classmethod` use; `tests/test_classmethod.py` must stay type-clean. pyright runs in
-`standard` mode with `reportUnnecessaryTypeIgnoreComment`; prefer scoped suppressions.
+`info=True`. `_cachedmethod_unbound.__call__` keeps a receiver-less overload for
+deprecated `@classmethod` use; `tests/test_classmethod.py` must stay type-clean.
+pyright runs in `standard` mode with `reportUnnecessaryTypeIgnoreComment`; prefer
+scoped suppressions.
 
 ## Development and Tests
 
@@ -88,22 +92,22 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
 
 - CI runs CPython 3.10–3.15, free-threaded 3.13t–3.15t and PyPy. On 3.13+ two
   deprecated `@classmethod` lines show as uncovered; the matrix covers them.
-- `tests/__init__.py` has `CacheTestMixin`, `CountedLock`, `CountedCondition`; one
-  `TestCase` per cache type; TTL tests use a manual `Timer`. Objects pickled by name
-  must be module-level, not locals.
+- `tests/__init__.py` holds the shared mixin and counted lock/condition; TTL tests use
+  a manual `Timer`. Objects pickled by name must be module-level, not locals.
 - `test_func.py` calls decorators via `Callable[..., Any]`, so stub checks need concrete
-  annotated tests without `# type: ignore` (`test_decorator_method`, `test_method_typed`).
+  annotated tests without `# type: ignore` (`test_decorator_method`,
+  `test_method_typed`).
 - `test_threading.py`: join with `TIMEOUT` and assert threads finished; its
-  `WaitCondition` forces a contended `wait()`; single-threaded `wait_count` stays 0.
+  `WaitCondition` forces a contended `wait()`.
 - Performance work: `timeit`, best of 7, on a pinned core (`taskset`), never in a VM,
-  against a git worktree of the previous release; keep hot paths free of avoidable
-  Python-level calls; never trade documented subclass hooks or semantics for speed.
+  against a git worktree of the previous release; never trade documented subclass
+  hooks or semantics for speed.
 
 ## Code Review
 
 - Reviews **amend `.github/copilot-review.md` in place** (header: date, commit, CI
   status, coverage, one *Verified* paragraph); never new files, dated sections or a
-  per-commit change summary (git history is the record).
+  per-commit change summary.
 - Findings are tables ordered High, Medium, Low, Info with columns
   `# | Priority | Location | Finding`; renumber after changes; cross-reference as
   "Code #3". **Resolved issues are removed**, never marked resolved.
@@ -113,12 +117,12 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
 
 ## Maintainer Decisions (do not re-raise)
 
-- Pickling caches stays undocumented and unsupported. Pickling and deep-copying
-  objects that use `@cachedmethod` is supported (#417) and must keep working.
+- Pickling and deep-copying objects that use `@cachedmethod` is supported (#417) and
+  must keep working.
 - `copy.copy()` of an instance with an active `@cachedmethod` wrapper shares the
   wrapper; accepted.
 - Stacking `@cachedmethod` decorators is unsupported and untested.
 - Class access to `@cachedmethod` (`Cls.method(obj, ...)`) builds and discards a
   `Wrapper` per call; accepted.
-- A `condition` must provide the full `threading.Condition` interface; `notify()` is
-  reserved for future use. Do not propose relaxing the protocol.
+- A `condition` must provide the full `threading.Condition` interface, although only
+  `wait()` and `notify_all()` are called. Do not propose relaxing the protocol.
