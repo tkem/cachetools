@@ -92,10 +92,17 @@ inserted into the cache.
    :members: popitem
 
    This class counts how often an item is retrieved, and discards the
-   items used least often to make space when necessary.
+   items used least often to make space when necessary.  In case of a
+   tie, the least recently used of these items is discarded.
 
-   Updating a cache item via :meth:`LFUCache.__setitem__` also counts
-   as a use of the item, i.e. it will increment the item's use count.
+   Inserting or updating a cache item via :meth:`LFUCache.__setitem__`
+   also counts as a use of the item; an update will increment the
+   item's use count.
+
+   .. versionchanged:: 7.3
+
+      Switched to discarding the least recently used item in case of
+      a tie.  Previously, an arbitrary item was discarded.
 
 .. autoclass:: LRUCache(maxsize, getsizeof=None)
    :members: popitem

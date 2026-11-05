@@ -212,7 +212,7 @@ class LFUCache(Cache):
 
         def __init__(self, count):
             self.count = count
-            self.keys = set()
+            self.keys = collections.OrderedDict()
 
         def unlink(self):
             next = self.next
@@ -244,13 +244,13 @@ class LFUCache(Cache):
             link.next = root.next
             root.next = link.next.prev = link
             link.prev = root
-        link.keys.add(key)
+        link.keys[key] = None
         self.__links[key] = link
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
         link = self.__links.pop(key)
-        link.keys.remove(key)
+        del link.keys[key]
         if not link.keys:
             link.unlink()
 
@@ -260,7 +260,7 @@ class LFUCache(Cache):
         curr = root.next
         if curr is root:
             raise KeyError("%s is empty" % type(self).__name__) from None
-        key = next(iter(curr.keys))  # remove an arbitrary element
+        key = next(iter(curr.keys))  # remove the "oldest" element
         value = Cache.__getitem__(self, key)
         del self[key]
         return (key, value)
@@ -283,8 +283,8 @@ class LFUCache(Cache):
             curr.next = link.next
             link.next = curr.next.prev = curr
             curr.prev = link
-        curr.keys.add(key)
-        link.keys.remove(key)
+        curr.keys[key] = None
+        del link.keys[key]
         if not link.keys:
             link.unlink()
         self.__links[key] = curr

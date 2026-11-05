@@ -18,39 +18,67 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
 
         self.assertEqual(len(cache), 2)
         self.assertEqual(cache[1], 1)
-        self.assertTrue(2 in cache or 3 in cache)
-        self.assertTrue(2 not in cache or 3 not in cache)
+        self.assertNotIn(2, cache)
+        self.assertEqual(cache[3], 3)
 
+        cache[3]
         cache[4] = 4
         self.assertEqual(len(cache), 2)
-        self.assertEqual(cache[4], 4)
-        self.assertEqual(cache[1], 1)
-
-        cache[1]
-        self.assertEqual(len(cache), 2)
-        self.assertEqual(cache[1], 1)
+        self.assertNotIn(1, cache)
+        self.assertEqual(cache[3], 3)
         self.assertEqual(cache[4], 4)
 
     def test_lfu_tie(self):
         cache = LFUCache[int, int](maxsize=3)
 
         cache[1] = 1
-        cache[1]
         cache[2] = 2
         cache[3] = 3
-        cache[4] = 4
 
+        cache[3]
+        cache[2]
+        cache[1]
+
+        # do not use self.assertEqual(cache[1], 1) here, since that
+        # would mess up usage counts
         self.assertEqual(len(cache), 3)
         self.assertIn(1, cache)
-        self.assertIn(4, cache)
-        self.assertTrue(2 in cache or 3 in cache)
-        self.assertTrue(2 not in cache or 3 not in cache)
+        self.assertIn(2, cache)
+        self.assertIn(3, cache)
 
+        cache[4] = 4
+        self.assertEqual(len(cache), 3)
+        self.assertIn(1, cache)
+        self.assertIn(2, cache)
+        self.assertNotIn(3, cache)
+        self.assertIn(4, cache)
+
+        cache[4]
         cache[5] = 5
         self.assertEqual(len(cache), 3)
         self.assertIn(1, cache)
+        self.assertNotIn(2, cache)
+        self.assertNotIn(3, cache)
+        self.assertIn(4, cache)
         self.assertIn(5, cache)
-        self.assertTrue(2 in cache or 3 in cache or 4 in cache)
+
+    def test_lfu_tie_insert_only(self):
+        cache = LFUCache[int, int](maxsize=3)
+
+        cache[1] = 1
+        cache[2] = 2
+        cache[3] = 3
+
+        # items never retrieved are tied at use count 1, so they are
+        # evicted in insertion order; the set-based implementation
+        # used up to v7.2 only fails this from key 17 on
+        for key in range(4, 20):
+            cache[key] = key
+            self.assertEqual(len(cache), 3)
+            self.assertNotIn(key - 3, cache)
+            self.assertIn(key - 2, cache)
+            self.assertIn(key - 1, cache)
+            self.assertIn(key, cache)
 
     def test_lfu_getsizeof(self):
         cache = LFUCache[int, int](maxsize=3, getsizeof=lambda x: x)
