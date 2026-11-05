@@ -12,7 +12,7 @@ __all__ = (
     "cachedmethod",
 )
 
-__version__ = "7.2.8"
+__version__ = "7.3.0"
 
 import collections
 import collections.abc

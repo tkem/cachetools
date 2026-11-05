@@ -1,3 +1,15 @@
+v7.3.0 (2026-11-05)
+===================
+
+- Use ``OrderedDict`` for defined and faster ``LFUCache`` eviction.
+
+- Various unit test improvements.
+
+- Minor type stub improvements.
+
+- Minor documentation improvements.
+
+
 v7.2.8 (2026-10-31)
 ===================
 
