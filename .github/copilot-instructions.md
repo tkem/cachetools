@@ -33,8 +33,8 @@ review process.
 - Whatever could not be verified must show up: mark the finding, figure or status as
   unverified where it stands (e.g. "unmeasured", "not run on 3.13", "CI not run for
   this commit") and say why. Never state an unchecked claim as fact or leave it out.
-- This file and the review differ per branch. After rebasing `develop` onto a bugfix
-  release, make sure both are still the `develop` versions, not the release's.
+- This file and the review differ per branch. After rebasing a development branch
+  onto a release, make sure both are still that branch's versions, not the release's.
 
 ## Maintainer Decisions (do not re-raise)
 
