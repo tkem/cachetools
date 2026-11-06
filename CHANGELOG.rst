@@ -1,3 +1,36 @@
+v8.0.0 (2026-11-06)
+===================
+
+- Drop Python 3.10 support (breaking change).
+
+- Drop support for deprecated ``@cachedmethod`` features (breaking
+  change).
+
+- Drop support for ``@cached(cache=None)`` (breaking change).
+
+- Require custom cache classes to support ``__len__`` when used with
+  ``info=True`` (breaking change).
+
+- Refactor ``_CacheInfo`` and make it public as ``CacheInfo``
+  (potentially breaking change).
+
+- Return callable objects instead of functions from ``@cached`` and
+  the ``cachetools.func`` decorators (potentially breaking change).
+
+- Do not set ``cache_info`` to ``None`` on ``@cached`` wrappers if
+  ``info`` is not set (potentially breaking change).
+
+- Raise ``TypeError`` for ``@cachedmethod`` descriptors assigned
+  after class creation, i.e. without ``__set_name__`` being called
+  (potentially breaking change).
+
+- Various performance improvements.
+
+- Various documentation improvements.
+
+- Various test improvements.
+
+
 v7.3.0 (2026-11-05)
 ===================
 
