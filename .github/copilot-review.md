@@ -1,13 +1,13 @@
 # Code Review — cachetools 8.0.0
 
-**Date:** 2026-11-07
-**Reviewed:** `develop` at `71c8d6f` ("Update Copilot instructions and review."), based
-on `master` at `1ce79ef`, tagged v8.0.0; `__version__` 8.0.0, changelog dated
-2026-11-06.
+**Date:** 2026-11-10
+**Reviewed:** `develop`, i.e. `master` at `1ce79ef` ("Add AGENTS.md, update Copilot
+instructions and review.", tagged v8.0.0) plus "Exclude AGENTS.md form source
+distribution." and this review commit; `__version__` 8.0.0, changelog dated 2026-11-06.
 
 **CI status:** All `tox` environments pass locally on CPython 3.14.6 (`py`: 416 passed;
 pyright 0 errors, 0 warnings); `py` also passes on 3.11.15, 3.12.13 and PyPy 3.11.15.
-GitHub Actions is green for `71c8d6f` on the full matrix (CPython 3.11–3.15,
+GitHub Actions is green for this tree on the full matrix (CPython 3.11–3.15,
 3.13t–3.15t, PyPy 3.11). **Coverage:** 100% on Python < 3.13; on 3.13+ only
 `_descriptor.py:36`, the pre-3.13 `@classmethod` path.
 
@@ -84,3 +84,4 @@ unchanged. Caches hold 100 items (`maxsize=100` for evicting inserts, new keys f
 |---|----------|---------|
 | 1 | Low | Neither `@cached` nor `cachetools.func.*_cache` mention decorating methods, which now bind explicitly through `__get__`; a one-line caveat that cache and counters are then shared across instances would help. |
 | 2 | Low | The `cached` section still speaks of a "memoizing wrapper function" whose "wrapped function is instrumented", while the result is a callable object; and `cache_lock` is described as exposing the `lock` parameter, but with `condition` alone it is the condition object (asserted by tests). |
+| 3 | Info | The `README.rst` example is a plain `code-block`, outside the Sphinx doctest run, and its `fib` and PyOWM snippets have no doctested counterpart in `docs/index.rst`; it runs correctly on this tree with `urlopen` and `pyowm` stubbed, but only the by-hand sync rule in `AGENTS.md` guards it. |

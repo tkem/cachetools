@@ -12,9 +12,10 @@ review process.
 - Findings are tables ordered High, Medium, Low, Info with columns
   `# | Priority | Location | Finding`; renumber after changes; cross-reference as
   "Code #3". **Resolved issues are removed**, never marked resolved.
-- Name the reviewed commit by hash and subject plus its base branch; after a rebase
-  replace stale hashes instead of narrating history. List only interpreter versions
-  actually run.
+- Name the reviewed tree by its base commit (hash and subject, release tag if any)
+  plus "this review commit", never by the review commit's own hash, which changes
+  with every rebase; replace stale hashes instead of narrating history. List only
+  interpreter versions actually run.
 - Keep it brief: under 100 lines, one or two sentences per row, numbers only where
   they decide something, current snapshot only (no comparisons with earlier releases).
   Drop "no issues" sections and Info rows that only restate accepted design. Record
