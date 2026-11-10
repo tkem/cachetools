@@ -215,6 +215,11 @@ class LFUCache(Cache):
             self.count = count
             self.keys = collections.OrderedDict()
 
+        def __reduce__(self):
+            # leave out next and prev, so pickling and deep-copying do
+            # not recurse along the links; see LFUCache.__setstate__
+            return LFUCache._Link, (self.count,), (None, {"keys": self.keys})
+
         def unlink(self):
             next = self.next
             prev = self.prev
@@ -271,6 +276,16 @@ class LFUCache(Cache):
         root = self.__root
         root.prev = root.next = root
         self.__links.clear()
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        root = self.__root
+        root.prev = root.next = root
+        links = set(self.__links.values())
+        for link in sorted(links, key=lambda obj: obj.count):
+            link.next = root
+            link.prev = prev = root.prev
+            prev.next = root.prev = link
 
     def __touch(self, key):
         """Increment use count."""
