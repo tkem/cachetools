@@ -3,7 +3,7 @@
 Memoizing collections and decorators, including `functools.lru_cache` variants. Pure
 Python ≥ 3.11, no runtime dependencies, `src/` layout, inline type stubs (`*.pyi`,
 `py.typed`). Single maintainer; `master` is the release branch, `dev/vX.Y.Z` branches
-prepare bugfix releases and `develop` (the 8.0 line) is rebased onto the latest one.
+prepare releases and `develop` holds the next major version, rebased onto `master`.
 Code reviews follow `.github/copilot-instructions.md`.
 
 ## Commands
@@ -73,27 +73,27 @@ coverage is 100 %; on 3.13+ only the pre-3.13 `@classmethod` line in
 
 ## Testing
 
-- New behavior needs tests under `tests/`; user-visible features need docs in
+- New behavior needs tests under `tests/`, user-visible features docs in
   `docs/index.rst`. One `TestCase` per cache type on `CacheTestMixin`; TTL tests use a
-  manual `Timer`. Objects pickled by name must be reachable from module level.
+  manual `Timer`. Objects pickled by name must be module-level. Pickle and deep-copy
+  caches in a used state (many use counts or expiry times), not only freshly filled.
 - Stub checks need concrete annotated tests without `# type: ignore`, since
   `test_func.py` calls decorators via `Callable[..., Any]`.
 - Threading tests use real `Lock`/`Condition` objects (`WaitCondition(lock)` forces a
   contended `wait()`), join with `TIMEOUT` and assert the thread finished.
-- Performance: `timeit`, best of 7, on a pinned core (`taskset`), never in a VM,
-  against a git worktree of the previous release. Never trade documented subclass
-  hooks or semantics for speed.
+- Performance: `timeit`, best of 7, one pinned core (`taskset`), never in a VM, against
+  a git worktree of the previous release; never trade documented subclass hooks or
+  semantics for speed. Scripts and logs go in `.cache/tmp/`, not `/tmp`; delete after.
 
 ## Boundaries
 
 - Never edit `CHANGELOG.rst` or bump `__version__`; both are release-only.
-- Never promise cross-version pickle compatibility or build on the byte format; any
-  release, even a bugfix, may change it.
+- Never promise or rely on cross-version pickle compatibility; any release may break it.
 - Do not re-raise the *Maintainer Decisions* in `.github/copilot-instructions.md`.
 
 ## Git
 
 - PRs reference an open issue (except trivial fixes), in separate commits:
   `Fix #123: ...`, `Tests for #123: ...`, `Docs for #123: ...`.
-- Run `tox -p auto` before pushing. Update this file in the same PR that changes a
-  convention, and keep it under 100 lines.
+- Run `tox -p auto` before pushing. Never change this file or the `.github/copilot-*`
+  files in a code PR; they get a PR of their own. Keep this file under 100 lines.

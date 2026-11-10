@@ -12,9 +12,10 @@ review process.
 - Findings are tables ordered High, Medium, Low, Info with columns
   `# | Priority | Location | Finding`; renumber after changes; cross-reference as
   "Code #3". **Resolved issues are removed**, never marked resolved.
-- Name the reviewed commit by hash and subject plus its base branch; after a rebase
-  replace stale hashes instead of narrating history. List only interpreter versions
-  actually run.
+- Name the reviewed tree by its base commit (hash and subject, release tag if any)
+  plus "this review commit", never by the review commit's own hash, which changes
+  with every rebase; replace stale hashes instead of narrating history. List only
+  interpreter versions actually run.
 - Keep it brief: under 100 lines, one or two sentences per row, numbers only where
   they decide something, current snapshot only (no comparisons with earlier releases).
   Drop "no issues" sections and Info rows that only restate accepted design. Record
@@ -29,12 +30,17 @@ review process.
   random trace against the base release, and measure as *Testing* in `AGENTS.md`
   prescribes. Record cache state with `list(cache)`: `items()` and `values()` read
   through `__getitem__` and count as a use of every item. `LFUCache` ties discard the
-  least recently used key (documented since 7.3), so check it against a model.
+  least recently used key (documented since 7.3), so check it against a model. Pickle
+  and deep-copy caches in a used state (hundreds of distinct use counts or expiry
+  times), on the oldest supported Python too; fresh caches hide recursion limits.
+- Keep probe and benchmark scripts, logs and old trees in `.cache/tmp/` inside the
+  workspace, never in `/tmp`, and remove it when done. State the interpreters run here
+  and whether Actions ran for the reviewed code or for the review commit itself.
 - Whatever could not be verified must show up: mark the finding, figure or status as
   unverified where it stands (e.g. "unmeasured", "not run on 3.13", "CI not run for
   this commit") and say why. Never state an unchecked claim as fact or leave it out.
-- This file and the review differ per branch. After rebasing `develop` onto a bugfix
-  release, make sure both are still the `develop` versions, not the release's.
+- This file and the review differ per branch. After rebasing a development branch
+  onto a release, make sure both are still that branch's versions, not the release's.
 
 ## Maintainer Decisions (do not re-raise)
 
