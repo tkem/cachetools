@@ -95,5 +95,5 @@ coverage is 100 %; on 3.13+ only the pre-3.13 `@classmethod` line in
 
 - PRs reference an open issue (except trivial fixes), in separate commits:
   `Fix #123: ...`, `Tests for #123: ...`, `Docs for #123: ...`.
-- Run `tox -p auto` before pushing. Update this file in the same PR that changes a
-  convention, and keep it under 100 lines.
+- Run `tox -p auto` before pushing. Never change this file or the `.github/copilot-*`
+  files in a code PR; they get a PR of their own. Keep this file under 100 lines.
