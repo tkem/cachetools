@@ -3,7 +3,7 @@
 Memoizing collections and decorators, including `functools.lru_cache` variants. Pure
 Python ≥ 3.11, no runtime dependencies, `src/` layout, inline type stubs (`*.pyi`,
 `py.typed`). Single maintainer; `master` is the release branch, `dev/vX.Y.Z` branches
-prepare bugfix releases and `develop` (the 8.0 line) is rebased onto the latest one.
+prepare releases and `develop` holds the next major version, rebased onto `master`.
 Code reviews follow `.github/copilot-instructions.md`.
 
 ## Commands
