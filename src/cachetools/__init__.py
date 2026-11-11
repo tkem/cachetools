@@ -112,6 +112,12 @@ class Cache(collections.abc.MutableMapping):
     def __len__(self):
         return len(self.__data)
 
+    def __copy__(self, *shared):
+        import copy
+
+        shared = (self.getsizeof, *shared, *self.__data, *self.__data.values())
+        return copy.deepcopy(self, {id(obj): obj for obj in shared})
+
     # Note that we cannot simply inherit get(), pop() and setdefault()
     # from MutableMapping, since these rely on __getitem__ throwing a
     # KeyError on cache miss.  This is not the case if __missing__ is
@@ -345,6 +351,9 @@ class RRCache(Cache):
         self.__index = {}
         self.__keys = []
 
+    def __copy__(self, *shared):
+        return Cache.__copy__(self, self.__choice, *shared)
+
     @property
     def choice(self):
         """The `choice` function used by the cache."""
@@ -415,6 +424,10 @@ class _TimedCache(Cache):
     def __init__(self, maxsize, timer, getsizeof=None):
         Cache.__init__(self, maxsize, getsizeof)
         self.__timer = _TimedCache._Timer(timer)
+
+    def __copy__(self, *shared):
+        # share the timer function, which is all a _Timer reduces to
+        return Cache.__copy__(self, *self.__timer.__reduce__()[1], *shared)
 
     def __repr__(self, cache_repr=Cache.__repr__):
         with self.__timer as time:
@@ -678,6 +691,9 @@ class TLRUCache(_TimedCache):
             with self.timer as time:
                 if time < curr.expires and not curr.removed:
                     yield curr.key
+
+    def __copy__(self, *shared):
+        return _TimedCache.__copy__(self, self.__ttu, *shared)
 
     @property
     def ttu(self):
