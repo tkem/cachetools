@@ -631,6 +631,16 @@ often called with the same arguments:
    e.g. :func:`cachetools.keys.hashkey`, if you need `self` to be part
    of the cache key.
 
+   .. note::
+
+      Once a decorated method has been accessed on an instance, a
+      *shallow* copy of that instance, e.g. one made with
+      :func:`copy.copy`, shares the method with the original, and it
+      stays bound to the instance that accessed it first.  To avoid
+      this, make shallow copies before any decorated method is
+      accessed, use :func:`copy.deepcopy`, or define a
+      :meth:`__copy__` method that creates the copy from scratch.
+
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when
    function arguments are the same, just as with the :func:`cached`
