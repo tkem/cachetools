@@ -287,3 +287,33 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         sized["abc"] = "abc"
         self.assertEqual("abc", sized["abc"])
         self.assertEqual(3, sized.currsize)
+
+    def test_ttl_copy(self):
+        import copy
+
+        source = TTLCache[int, int, int](maxsize=3, ttl=2, timer=Timer())
+        source[1] = 1
+        source[2] = 2
+        source.timer.tick()
+        source[3] = 3
+        self.assertEqual(1, source[1])  # least recently used is now 2
+
+        cache = copy.copy(source)
+        self.assertEqual([1, 2, 3], list(cache))
+
+        # the copy evicts as its source would, on its own
+        cache[4] = 4
+        self.assertEqual([1, 3, 4], list(cache))
+        self.assertEqual([1, 2, 3], list(source))
+
+        # the timer is shared, but not the caches' use of it
+        self.assertIsNot(source.timer, cache.timer)
+        with source.timer:
+            cache.timer.tick()
+            self.assertEqual(1, source.timer())
+            self.assertEqual(2, cache.timer())
+        self.assertEqual(2, source.timer())
+
+        # items expire in the copy as in its source
+        self.assertEqual([3, 4], list(cache))
+        self.assertEqual([3], list(source))

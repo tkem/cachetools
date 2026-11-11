@@ -101,3 +101,18 @@ class RRCacheTest(unittest.TestCase, CacheTestMixin):
 
             with self.assertRaises(KeyError):
                 cache.popitem()
+
+    def test_rr_copy(self):
+        import copy
+
+        source = RRCache[int, int](maxsize=3, choice=min)
+        source.update({1: 1, 2: 2, 3: 3})
+
+        # the copy has its own keys to choose from
+        cache = copy.copy(source)
+        del cache[1]
+        self.assertEqual((2, 2), cache.popitem())
+        self.assertEqual((1, 1), source.popitem())
+        self.assertEqual((2, 2), source.popitem())
+        self.assertEqual((3, 3), source.popitem())
+        self.assertEqual((3, 3), cache.popitem())

@@ -9,6 +9,8 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = FIFOCache
 
     def test_fifo(self):
+        import copy
+
         cache = FIFOCache[int, int](maxsize=2)
 
         cache[1] = 1
@@ -21,6 +23,8 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(1, cache)
 
         cache[2]
+        # a shallow copy evicts in the same order, on its own
+        self.assertEqual((2, 2), copy.copy(cache).popitem())
         cache[4] = 4
         self.assertEqual(len(cache), 2)
         self.assertEqual(cache[3], 3)

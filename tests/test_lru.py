@@ -9,6 +9,8 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
     Cache = LRUCache
 
     def test_lru(self):
+        import copy
+
         cache = LRUCache[int, int](maxsize=2)
 
         cache[1] = 1
@@ -21,6 +23,8 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(1, cache)
 
         cache[2]
+        # a shallow copy evicts in the same order, on its own
+        self.assertEqual((3, 3), copy.copy(cache).popitem())
         cache[4] = 4
         self.assertEqual(len(cache), 2)
         self.assertEqual(cache[2], 2)
