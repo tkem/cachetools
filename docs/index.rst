@@ -651,6 +651,18 @@ often called with the same arguments:
    restores its methods with fresh :meth:`cache_info()` statistics,
    i.e. with the hit and miss counts reset to zero.
 
+   .. note::
+
+      Once a decorated method has been accessed on an instance, a
+      shallow copy of that instance, e.g. one made with
+      :func:`copy.copy`, shares the method with the original, and it
+      stays bound to the instance that accessed it first: calling it
+      on the copy passes the original as `self` and uses the
+      original's cache.  To avoid this, make shallow copies before
+      any decorated method is accessed, use :func:`copy.deepcopy`, or
+      define a :meth:`__copy__` method that creates the copy from
+      scratch.
+
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when
    function arguments are the same, just as with the :func:`cached`
