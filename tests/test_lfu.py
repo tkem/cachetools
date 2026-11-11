@@ -1,3 +1,6 @@
+import copy
+import pickle
+import sys
 import unittest
 
 from cachetools import LFUCache
@@ -137,3 +140,46 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertIn(3, cache)
         self.assertIn(5, cache)
         self.assertNotIn(4, cache)
+
+    def test_lfu_copy_use_counts(self):
+        # a used cache keeps one link per distinct use count, so copying
+        # must not recurse along the list of links (recursion limit)
+        n = sys.getrecursionlimit()
+        source = LFUCache[int, int](maxsize=n + 3)
+        for key in range(n):
+            source[key] = key
+            for _ in range(key):
+                source[key]  # key ends up with use count key + 1
+        for key in range(n, n + 3):
+            source[key] = key  # tied with key 0 at use count 1
+
+        copies = {
+            "deepcopy": copy.deepcopy(source),
+            "pickle": pickle.loads(pickle.dumps(source)),
+        }
+        for name, cache in copies.items():
+            with self.subTest(name):
+                self.assertIsNot(source, cache)
+                # compare keys only: comparing the caches, like any other
+                # use of items(), would increment every use count
+                self.assertEqual(list(source), list(cache))
+                self.assertEqual(n + 3, len(cache))
+                self.assertEqual(n + 3, cache.currsize)
+
+                # the copy is usable and evicts by use count, then by age
+                cache[n + 3] = n + 3
+                self.assertNotIn(0, cache)
+                self.assertIn(n, cache)
+                self.assertEqual((n, n), cache.popitem())
+                self.assertEqual((n + 1, n + 1), cache.popitem())
+                self.assertEqual((n + 2, n + 2), cache.popitem())
+                self.assertEqual((n + 3, n + 3), cache.popitem())
+                order = [cache.popitem()[0] for _ in range(len(cache))]
+                self.assertEqual(list(range(1, n)), order)
+                with self.assertRaises(KeyError):
+                    cache.popitem()
+
+        # the copies did not share state with their source
+        self.assertEqual(n + 3, len(source))
+        self.assertEqual((0, 0), source.popitem())
+        self.assertEqual((n, n), source.popitem())
