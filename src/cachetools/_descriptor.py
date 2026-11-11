@@ -51,9 +51,16 @@ class _MethodDescriptor:
             # replace descriptor instance with wrapper in instance dict; in case
             # of a race condition where another thread already replaced the
             # descriptor, prefer the initial wrapper.
-            wrapper = self.__wrapper(obj, self)
             try:
-                wrapper = obj.__dict__.setdefault(attrname, wrapper)
+                wrapper = obj.__dict__.get(attrname)
+                if getattr(wrapper, "__cachetools_owner__", obj) is not obj:
+                    # the instance dict was copied from another instance,
+                    # e.g. by copy.copy(), so the wrapper is stale
+                    wrapper = obj.__dict__[attrname] = self.__wrapper(obj, self)
+                elif wrapper is None:
+                    wrapper = obj.__dict__.setdefault(
+                        attrname, self.__wrapper(obj, self)
+                    )
             except (AttributeError, TypeError) as e:
                 self.__instance_dict_error(obj, e)
         else:
@@ -68,6 +75,20 @@ class _MethodDescriptor:
                 wrapper = self.__wrapper(obj, self)
                 wrapper = wrappers.setdefault(self, wrapper)
         return wrapper
+
+    def __set__(self, obj, value):
+        try:
+            obj.__dict__[self.__attrname] = value
+        except (AttributeError, TypeError) as e:
+            self.__instance_dict_error(obj, e)
+
+    def __delete__(self, obj):
+        try:
+            del obj.__dict__[self.__attrname]
+        except KeyError:
+            raise AttributeError(self.__attrname) from None
+        except (AttributeError, TypeError) as e:
+            self.__instance_dict_error(obj, e)
 
     def __reduce__(self):
         # pickle and copy by reference, so wrappers and their keys in

@@ -48,6 +48,10 @@ class _WrapperBase:
         return f"<cachedmethod {wrapped!r} of {object.__repr__(self.__obj)}>"
 
     @property
+    def __cachetools_owner__(self):
+        return self.__obj
+
+    @property
     def cache(self):
         return self.__cache(self.__obj)
 
