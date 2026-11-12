@@ -188,6 +188,73 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual({(1, 1)}, set(cache.expire()))
         self.assertEqual([2], [key for key in cache])
 
+    def test_ttl_iter_suspended(self):
+        # A suspended key iterator must not freeze time for
+        # independent reads (see #469): items expiring while it is
+        # suspended are no longer accessible, and are skipped when
+        # the iterator resumes.
+        cache = TTLCache[str, str, int](maxsize=2, ttl=1, timer=Timer())
+        cache["first"] = "first-value"
+        cache["second"] = "second-value"
+
+        cursor = iter(cache)
+        self.assertEqual("first", next(cursor))
+        cache.timer.tick()
+        # independent reads see the current time, for another key...
+        self.assertIsNone(cache.get("second"))
+        self.assertNotIn("second", cache)
+        # ... and for the key already yielded, too
+        self.assertIsNone(cache.get("first"))
+        self.assertNotIn("first", cache)
+        # resuming the iterator skips the now expired item
+        with self.assertRaises(StopIteration):
+            next(cursor)
+
+    def test_ttl_iter_items_suspended(self):
+        # Same as test_ttl_iter_suspended, for items() and values():
+        # a suspended view iterator must not freeze time for
+        # independent reads, while each pair it yields is still read
+        # atomically (see #29).
+        cache = TTLCache[str, str, int](maxsize=2, ttl=1, timer=Timer())
+        self.assertEqual([], list(cache.items()))
+        self.assertEqual([], list(cache.values()))
+
+        cache["first"] = "first-value"
+        cache["second"] = "second-value"
+        items = iter(cache.items())
+        self.assertEqual(("first", "first-value"), next(items))
+        cache.timer.tick()
+        self.assertIsNone(cache.get("second"))
+        self.assertNotIn("second", cache)
+        with self.assertRaises(StopIteration):
+            next(items)
+
+        cache = TTLCache[str, str, int](maxsize=2, ttl=1, timer=Timer())
+        cache["first"] = "first-value"
+        cache["second"] = "second-value"
+        values = iter(cache.values())
+        self.assertEqual("first-value", next(values))
+        cache.timer.tick()
+        self.assertIsNone(cache.get("second"))
+        with self.assertRaises(StopIteration):
+            next(values)
+
+    def test_ttl_items_atomic(self):
+        # With an auto-advancing timer, the value read happens one
+        # tick after the key check; each (key, value) pair must still
+        # be read under a single frozen time (see #29), or items()
+        # would raise KeyError for the first item (see #469).  Each
+        # pair costs exactly one timer tick (the view's own freeze),
+        # so with ttl=3 both pairs are still live when read.
+        cache = TTLCache[int, int, int](maxsize=2, ttl=3, timer=Timer(auto=True))
+        cache[1] = 1
+        cache[2] = 2
+        items = iter(cache.items())
+        self.assertEqual((1, 1), next(items))
+        self.assertEqual((2, 2), next(items))
+        with self.assertRaises(StopIteration):
+            next(items)
+
     def test_ttl_atomic(self):
         cache = TTLCache[int, int | None, int](maxsize=1, ttl=2, timer=Timer(auto=True))
         cache[1] = 1
