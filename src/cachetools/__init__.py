@@ -382,6 +382,44 @@ class RRCache(Cache):
         del self.__keys[:]
 
 
+class _TimedItemsView(collections.abc.ItemsView):
+    """Items view reading each `(key, value)` pair atomically.
+
+    Advancing the key iterator and reading the value happen under a
+    single frozen time, so an item cannot expire between its key being
+    yielded and its value being read (see #29).  The freeze is released
+    before the pair is yielded, so independent reads while the view
+    iterator is suspended see the current time (see #469).
+    """
+
+    def __iter__(self):
+        mapping = self._mapping
+        iterator = iter(mapping)
+        while True:
+            try:
+                with mapping.timer:
+                    key = next(iterator)
+                    value = mapping[key]
+            except StopIteration:
+                return
+            yield (key, value)
+
+
+class _TimedValuesView(collections.abc.ValuesView):
+    """Values view reading each value atomically (see _TimedItemsView)."""
+
+    def __iter__(self):
+        mapping = self._mapping
+        iterator = iter(mapping)
+        while True:
+            try:
+                with mapping.timer:
+                    value = mapping[next(iterator)]
+            except StopIteration:
+                return
+            yield value
+
+
 class _TimedCache(Cache):
     """Base class for time-aware cache implementations."""
 
@@ -441,6 +479,12 @@ class _TimedCache(Cache):
     def get(self, *args, **kwargs):
         with self.__timer:
             return Cache.get(self, *args, **kwargs)
+
+    def items(self):
+        return _TimedItemsView(self)
+
+    def values(self):
+        return _TimedValuesView(self)
 
     def pop(self, *args, **kwargs):
         with self.__timer:
@@ -534,10 +578,14 @@ class TTLCache(_TimedCache):
         root = self.__root
         curr = root.next
         while curr is not root:
-            # "freeze" time for iterator access
+            # Check expiry under a frozen time, but release the freeze
+            # before yielding: a suspended iterator must not freeze
+            # time for independent reads (see #469).
             with self.timer as time:
-                if time < curr.expires:
-                    yield curr.key
+                expired = not (time < curr.expires)
+                key = curr.key
+            if not expired:
+                yield key
             curr = curr.next
 
     def __setstate__(self, state):
@@ -675,10 +723,14 @@ class TLRUCache(_TimedCache):
 
     def __iter__(self):
         for curr in self.__order:
-            # "freeze" time for iterator access
+            # Check expiry under a frozen time, but release the freeze
+            # before yielding: a suspended iterator must not freeze
+            # time for independent reads (see #469).
             with self.timer as time:
-                if time < curr.expires and not curr.removed:
-                    yield curr.key
+                expired = curr.removed or not (time < curr.expires)
+                key = curr.key
+            if not expired:
+                yield key
 
     @property
     def ttu(self):
