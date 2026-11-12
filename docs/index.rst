@@ -651,6 +651,55 @@ often called with the same arguments:
    restores its methods with fresh :meth:`cache_info()` statistics,
    i.e. with the hit and miss counts reset to zero.
 
+   Shallow-copying an instance after a decorated method has been
+   accessed shares that method's wrapper with the original instance.
+   Calls through the copy therefore use the original instance and its
+   cache, even if the copy's attributes or cache have been replaced:
+
+   .. testcode::
+
+      import copy
+
+      class Scaler:
+          def __init__(self, factor):
+              self.factor = factor
+              self.cache = {}
+
+          @cachedmethod(lambda self: self.cache)
+          def scale(self, value):
+              return self.factor * value
+
+      original = Scaler(1)
+      original.scale(2)  # access the method before copying
+      shallow = copy.copy(original)
+      shallow.factor = 10
+      shallow.cache = {}
+      print(shallow.scale(3))
+      print(shallow.scale.cache is original.cache)
+
+   .. testoutput::
+
+      3
+      True
+
+   Use :func:`copy.deepcopy` when the copied instance needs its own
+   bound methods and cache.  This also copies existing cache entries,
+   so clear the copied cache when changing attributes that affect
+   cached results:
+
+   .. testcode::
+
+      deep = copy.deepcopy(original)
+      deep.factor = 10
+      deep.scale.cache_clear()
+      print(deep.scale(3))
+      print(deep.scale.cache is deep.cache)
+
+   .. testoutput::
+
+      30
+      True
+
    When using a shared cache for multiple methods, be aware that
    different cache keys must be created for each method even when
    function arguments are the same, just as with the :func:`cached`
