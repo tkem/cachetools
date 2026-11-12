@@ -220,6 +220,9 @@ class LFUCache(Cache):
             self.count = count
             self.keys = collections.OrderedDict()
 
+        def __reduce__(self):
+            return LFUCache._Link, (self.count,), (None, {"keys": self.keys})
+
         def unlink(self):
             next = self.next
             prev = self.prev
@@ -259,6 +262,16 @@ class LFUCache(Cache):
         del link.keys[key]
         if not link.keys:
             link.unlink()
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        root = self.__root
+        root.prev = root.next = root
+        links = set(self.__links.values())
+        for link in sorted(links, key=lambda obj: obj.count):
+            link.next = root
+            link.prev = prev = root.prev
+            prev.next = root.prev = link
 
     def popitem(self):
         """Remove and return the `(key, value)` pair least frequently used."""
