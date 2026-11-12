@@ -1,3 +1,6 @@
+import copy
+import io
+import pickle
 import unittest
 
 from cachetools import LFUCache
@@ -137,3 +140,90 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertIn(3, cache)
         self.assertIn(5, cache)
         self.assertNotIn(4, cache)
+
+    def test_deepcopy_many_counts(self):
+        cache = LFUCache[int, int](maxsize=200)
+        for key in range(200):
+            cache[key] = key
+            for _ in range(key):
+                cache[key]
+        restored = copy.deepcopy(cache)
+        self.assertEqual(list(restored), list(cache))
+        self.assertEqual(restored.currsize, cache.currsize)
+        for key in range(200):
+            self.assertEqual(restored.popitem(), (key, key))
+        self.assertEqual(len(cache), 200)
+
+    def test_pickle_many_counts(self):
+        cache = LFUCache[int, int](maxsize=200)
+        for key in range(200):
+            cache[key] = key
+            for _ in range(key):
+                cache[key]
+        for pickler in (pickle.Pickler, pickle._Pickler):
+            for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+                with self.subTest(pickler=pickler, protocol=protocol):
+                    stream = io.BytesIO()
+                    pickler(stream, protocol=protocol).dump(cache)
+                    restored = pickle.loads(stream.getvalue())
+                    self.assertEqual(list(restored), list(cache))
+                    self.assertEqual(restored.currsize, cache.currsize)
+                    for key in range(200):
+                        self.assertEqual(restored.popitem(), (key, key))
+        self.assertEqual(len(cache), 200)
+
+    def test_restored_ties_and_mutation(self):
+        cache = LFUCache[int, int](maxsize=6)
+        for key in (6, 5, 4, 3, 2, 1):
+            cache[key] = key
+        for key in (3, 6, 1):
+            cache[key]
+        for key in (4, 5):
+            cache[key]
+            cache[key]
+        for restore in (copy.deepcopy, lambda obj: pickle.loads(pickle.dumps(obj))):
+            with self.subTest(restore=restore):
+                restored = restore(cache)
+                self.assertEqual(restored.popitem(), (2, 2))
+                self.assertEqual(restored.popitem(), (3, 3))
+                restored[6]
+                restored[0] = 0
+                del restored[4]
+                self.assertEqual(restored.popitem(), (0, 0))
+                self.assertEqual(restored.popitem(), (1, 1))
+                self.assertEqual(restored.popitem(), (5, 5))
+                self.assertEqual(restored.popitem(), (6, 6))
+                with self.assertRaises(KeyError):
+                    restored.popitem()
+                restored[7] = 7
+                restored.clear()
+                restored[8] = 8
+                self.assertEqual(restored.popitem(), (8, 8))
+                self.assertEqual(list(cache), [6, 5, 4, 3, 2, 1])
+
+    def test_deepcopy_mutable_values(self):
+        cache = LFUCache[int, list[int]](maxsize=4, getsizeof=len)
+        cache[1] = [1, 2]
+        cache[2] = [3]
+        cache[1]
+        restored = copy.deepcopy(cache)
+        self.assertEqual(restored.maxsize, cache.maxsize)
+        self.assertEqual(restored.currsize, cache.currsize)
+        restored[1].append(4)
+        self.assertEqual(cache[1], [1, 2])
+        restored[3] = [5, 6]
+        self.assertNotIn(2, restored)
+        self.assertIn(2, cache)
+
+    def test_restored_empty_and_single_count(self):
+        for count in (0, 1, 2000):
+            cache = LFUCache[int, int](maxsize=2000)
+            for key in range(count):
+                cache[key] = key
+            for restore in (copy.deepcopy, lambda obj: pickle.loads(pickle.dumps(obj))):
+                with self.subTest(count=count, restore=restore):
+                    restored = restore(cache)
+                    for key in range(count):
+                        self.assertEqual(restored.popitem(), (key, key))
+                    restored[1] = 1
+                    self.assertEqual(restored.popitem(), (1, 1))
