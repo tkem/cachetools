@@ -134,6 +134,8 @@ inserted into the cache.
 .. autoclass:: TTLCache(maxsize, ttl, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttl
 
+   See :ref:`timed-cache-iteration` for how iteration affects expiry.
+
    This class associates a time-to-live value with each item.  Items
    that expire because they have exceeded their time-to-live will no
    longer be accessible, and will be removed eventually.  If no
@@ -174,6 +176,8 @@ inserted into the cache.
 
 .. autoclass:: TLRUCache(maxsize, ttu, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttu
+
+   See :ref:`timed-cache-iteration` for how iteration affects expiry.
 
    Similar to :class:`TTLCache`, this class also associates an
    expiration time with each item.  However, for :class:`TLRUCache`
@@ -223,6 +227,63 @@ inserted into the cache.
       returned by :attr:`timer`.
 
       :returns: An iterable of expired `(key, value)` pairs.
+
+
+.. _timed-cache-iteration:
+
+Time-aware cache iteration
+--------------------------
+
+Iterating over a :class:`TTLCache` or :class:`TLRUCache` freezes its
+`timer` while the iterator is suspended after yielding a key.  This
+keeps the yielded key accessible when it is looked up, for example by
+:meth:`items`, :func:`dict`, or the body of a loop.
+
+The frozen time also applies to other operations on the same cache,
+including lookups of other keys.  A slow loop body or a retained
+iterator can therefore keep otherwise expired items accessible.
+Finish or explicitly close a retained iterator when it is no longer
+needed.  If several iterators are suspended, closing just one does
+not release the others' frozen time.
+
+For example, the lookup below uses the time from the iterator's last
+step, even though the underlying clock has advanced.  Closing the
+iterator allows the cache to observe the new time again:
+
+.. doctest::
+
+   >>> now = [0]
+   >>> cache = TTLCache(maxsize=2, ttl=1, timer=lambda: now[0])
+   >>> cache['first'] = 'first value'
+   >>> cache['second'] = 'second value'
+   >>> cursor = iter(cache)
+   >>> next(cursor)
+   'first'
+   >>> now[0] = 2
+   >>> cache.get('second')
+   'second value'
+   >>> cursor.close()
+   >>> cache.get('second') is None
+   True
+
+The same behavior applies to :class:`TLRUCache` with an equivalent
+`ttu` function:
+
+.. doctest::
+
+   >>> now[0] = 0
+   >>> cache = TLRUCache(2, ttu=lambda key, value, time: time + 1,
+   ...                   timer=lambda: now[0])
+   >>> cache['first'] = 'first value'
+   >>> cursor = iter(cache)
+   >>> next(cursor)
+   'first'
+   >>> now[0] = 2
+   >>> 'first' in cache
+   True
+   >>> cursor.close()
+   >>> 'first' in cache
+   False
 
 
 Extending cache classes
