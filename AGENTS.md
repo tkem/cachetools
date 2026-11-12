@@ -53,9 +53,9 @@ coverage is 100 %; on 3.13+ only the pre-3.13 `@classmethod` line in
   optionally `__getitem__`; after the parent `__getitem__`, check the subclass's own
   bookkeeping, not `key in self`, since `__missing__` may not store the item.
   `popitem()` evicts via `del self[key]`, so `__delitem__` overrides see evictions.
-- `items()` and `values()` read through `__getitem__` and count as a use of every item;
-  inspect state with `list(cache)`. `LFUCache` ties discard the least recently used key
-  (documented since 7.3) in O(1): keep the `OrderedDict` per use count (#461).
+- `items()` and `values()` read through `__getitem__` and count as a use of every item; inspect state with `list(cache)`.
+  Timed-cache iterators release the timer freeze before yielding, while `items()` and `values()` still read each pair under one frozen time (#469, #29).
+  `LFUCache` ties discard the least recently used key (documented since 7.3) in O(1): keep the `OrderedDict` per use count (#461).
 - Timed caches expire lazily (`__len__`, `__repr__` and `currsize` call `expire()`,
   `clear()` does not); every insert and `popitem()` must keep calling that hook.
 - Decorator wrappers are objects, not functions; `_WrapperBase` runs

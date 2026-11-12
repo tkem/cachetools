@@ -172,6 +172,14 @@ inserted into the cache.
 
       :returns: An iterable of expired `(key, value)` pairs.
 
+   Iterating over a cache does not freeze time: an iterator checks
+   each item against the current time as it is reached, so items
+   that expire while an iterator is suspended are skipped when
+   iteration resumes, and reads made while it is suspended see the
+   current time.  The `items()` and `values()` views still read each
+   ``(key, value)`` pair under a single frozen time, so a pair cannot
+   expire between its key being yielded and its value being read.
+
 .. autoclass:: TLRUCache(maxsize, ttu, timer=time.monotonic, getsizeof=None)
    :members: popitem, timer, ttu
 
@@ -210,7 +218,8 @@ inserted into the cache.
    Items that expire because they have exceeded their time-to-use will
    no longer be accessible, and will be removed eventually.  If no
    expired items are there to remove, the least recently used items
-   will be discarded first to make space when necessary.
+   will be discarded first to make space when necessary.  Iterating
+   over the cache behaves as described for :class:`TTLCache` above.
 
    .. method:: expire(self, time=None)
 
