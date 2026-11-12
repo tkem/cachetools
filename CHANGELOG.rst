@@ -1,3 +1,15 @@
+v7.3.1 (2026-11-12)
+===================
+
+- Fix deep-copying and pickling ``LFUCache`` instances with many
+  different use counts (broken since v6.1.0).
+
+- Fix shallow copies of caches sharing internal state with the
+  original.
+
+- Minor documentation improvements.
+
+
 v7.3.0 (2026-11-05)
 ===================
 
