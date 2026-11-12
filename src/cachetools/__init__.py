@@ -215,6 +215,12 @@ class LFUCache(Cache):
             self.count = count
             self.keys = collections.OrderedDict()
 
+        def __getstate__(self):
+            return self.count, self.keys
+
+        def __setstate__(self, state):
+            self.count, self.keys = state
+
         def unlink(self):
             next = self.next
             prev = self.prev
@@ -271,6 +277,15 @@ class LFUCache(Cache):
         root = self.__root
         root.prev = root.next = root
         self.__links.clear()
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        root = self.__root
+        root.prev = root.next = root
+        for link in sorted(set(self.__links.values()), key=lambda obj: obj.count):
+            link.next = root
+            link.prev = prev = root.prev
+            prev.next = root.prev = link
 
     def __touch(self, key):
         """Increment use count."""
