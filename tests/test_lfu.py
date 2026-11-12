@@ -137,3 +137,31 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertIn(3, cache)
         self.assertIn(5, cache)
         self.assertNotIn(4, cache)
+
+    def test_lfu_copy_use_counts(self):
+        """Regression test for recursion errors from copying and
+        pickling LFUCache with many use counts."""
+        import copy
+        import pickle
+        import sys
+
+        n = sys.getrecursionlimit()
+        source = LFUCache[int, int](maxsize=n + 1)
+        for key in range(n):
+            source[key] = key
+            for _ in range(key):
+                source[key]  # key ends up with use count key + 1
+        source[n] = n  # tied with key 0 at use count 1
+
+        for cache in (
+            copy.copy(source),
+            copy.deepcopy(source),
+            pickle.loads(pickle.dumps(source)),
+        ):
+            # compare keys only, since items() would count as a use
+            self.assertEqual(list(source), list(cache))
+            # the copy evicts by use count, then by age
+            order = [cache.popitem()[0] for _ in range(len(cache))]
+            self.assertEqual([0, n, *range(1, n)], order)
+
+        self.assertEqual(n + 1, len(source))
