@@ -3,7 +3,7 @@
 Memoizing collections and decorators, including `functools.lru_cache` variants. Pure
 Python ≥ 3.11, no runtime dependencies, `src/` layout, inline type stubs (`*.pyi`,
 `py.typed`). Single maintainer; `master` is the release branch, `dev/vX.Y.Z` branches
-prepare bugfix releases and `develop` (the 8.0 line) is rebased onto the latest one.
+prepare releases and `develop` holds the next major version, rebased onto `master`.
 Code reviews follow `.github/copilot-instructions.md`.
 
 ## Commands
@@ -38,9 +38,8 @@ coverage is 100 %; on 3.13+ only the pre-3.13 `@classmethod` line in
 - Stubs: never annotate `self` in an `__init__` overload with class-scoped type
   variables (pyright warns, and `tox` does not fail on warnings, so check for
   `0 warnings`); an overload without `timer` relies on the `_TT` default instead.
-- Unsupported use raises `TypeError` before anything is cached, chained `from None`;
-  a store that fails with `ValueError` (value too large) is swallowed and the
-  computed value returned.
+- Unsupported use raises `TypeError` before anything is cached, chained `from None`; a
+  store failing with `ValueError` (value too large) is swallowed, the value returned.
 - Docs (`docs/index.rst`, doctested): wrap prose at column 70, two spaces after a
   sentence, single backticks for parameters and `:meth:`/`:func:`/`:exc:` roles. Keep
   `README.rst` examples in sync with it.
@@ -55,7 +54,9 @@ coverage is 100 %; on 3.13+ only the pre-3.13 `@classmethod` line in
   `popitem()` evicts via `del self[key]`, so `__delitem__` overrides see evictions.
 - `items()` and `values()` read through `__getitem__` and count as a use of every item;
   inspect state with `list(cache)`. `LFUCache` ties discard the least recently used key
-  (documented since 7.3) in O(1): keep the `OrderedDict` per use count (#461).
+  in O(1): keep the `OrderedDict` per use count (#461). `LFUCache` and `TTLCache` links
+  pickle without `next`/`prev` (recursion limit, #474); `__setstate__` relinks them.
+  `__copy__(*shared)` deep-copies all but keys, values and constructor callables (#473).
 - Timed caches expire lazily (`__len__`, `__repr__` and `currsize` call `expire()`,
   `clear()` does not); every insert and `popitem()` must keep calling that hook.
 - Decorator wrappers are objects, not functions; `_WrapperBase` runs
@@ -73,27 +74,26 @@ coverage is 100 %; on 3.13+ only the pre-3.13 `@classmethod` line in
 
 ## Testing
 
-- New behavior needs tests under `tests/`; user-visible features need docs in
-  `docs/index.rst`. One `TestCase` per cache type on `CacheTestMixin`; TTL tests use a
-  manual `Timer`. Objects pickled by name must be reachable from module level.
+- New behavior needs tests in `tests/`, user-visible features docs in `docs/index.rst`.
+  One `TestCase` per cache type on `CacheTestMixin`; TTL tests use a manual `Timer`.
+  Objects pickled by name must be module-level. Copy and pickle caches in a used state.
 - Stub checks need concrete annotated tests without `# type: ignore`, since
   `test_func.py` calls decorators via `Callable[..., Any]`.
 - Threading tests use real `Lock`/`Condition` objects (`WaitCondition(lock)` forces a
   contended `wait()`), join with `TIMEOUT` and assert the thread finished.
-- Performance: `timeit`, best of 7, on a pinned core (`taskset`), never in a VM,
-  against a git worktree of the previous release. Never trade documented subclass
-  hooks or semantics for speed.
+- Performance: `timeit`, best of 7, one pinned core (`taskset`), never in a VM, against
+  a git worktree of the previous release; never trade documented subclass hooks or
+  semantics for speed. Scripts and logs go in `.cache/tmp/`, not `/tmp`; delete after.
 
 ## Boundaries
 
 - Never edit `CHANGELOG.rst` or bump `__version__`; both are release-only.
-- Never promise cross-version pickle compatibility or build on the byte format; any
-  release, even a bugfix, may change it.
+- Never promise or rely on cross-version pickle compatibility; any release may break it.
 - Do not re-raise the *Maintainer Decisions* in `.github/copilot-instructions.md`.
 
 ## Git
 
 - PRs reference an open issue (except trivial fixes), in separate commits:
   `Fix #123: ...`, `Tests for #123: ...`, `Docs for #123: ...`.
-- Run `tox -p auto` before pushing. Update this file in the same PR that changes a
-  convention, and keep it under 100 lines.
+- Run `tox -p auto` before pushing. Never change this file or the `.github/copilot-*`
+  files in a code PR; they get a PR of their own. Keep this file under 100 lines.
