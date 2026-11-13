@@ -160,6 +160,13 @@ inserted into the cache.
 
       cache = TTLCache(maxsize=10, ttl=timedelta(hours=12), timer=datetime.now)
 
+   While a key iterator is suspended between yielded keys, the
+   cache's timer is frozen at the time of the current iteration step.
+   Other operations on the same cache use this frozen time too, so
+   they may still return items that expire while the iterator is
+   suspended.  Advancing or closing the iterator releases the frozen
+   time.  This keeps iteration followed by item lookup consistent.
+
    .. method:: expire(self, time=None)
 
       Expired items will be removed from a cache lazily, e.g. when
@@ -211,6 +218,13 @@ inserted into the cache.
    no longer be accessible, and will be removed eventually.  If no
    expired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
+
+   While a key iterator is suspended between yielded keys, the
+   cache's timer is frozen at the time of the current iteration step.
+   Other operations on the same cache use this frozen time too, so
+   they may still return items that expire while the iterator is
+   suspended.  Advancing or closing the iterator releases the frozen
+   time.  This keeps iteration followed by item lookup consistent.
 
    .. method:: expire(self, time=None)
 
