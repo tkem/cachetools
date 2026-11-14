@@ -1,8 +1,31 @@
+import copy
+import io
+import pickle
 import unittest
 
 from cachetools import LFUCache
 
 from . import CacheTestMixin
+
+
+def _many_counts_cache(n=200):
+    cache = LFUCache[int, int](maxsize=n)
+    for key in range(n):
+        cache[key] = key
+        for _ in range(key):
+            cache[key]  # key ends up with use count key + 1
+    return cache
+
+
+def _assert_same_eviction_order(test, restored, original):
+    test.assertEqual(list(restored), list(original))
+    test.assertEqual(restored.currsize, original.currsize)
+    # Keys were given distinct use counts key + 1, so popitem() must
+    # remove them in ascending key order on both caches.
+    while len(restored):
+        test.assertEqual(restored.popitem(), original.popitem())
+    test.assertEqual(0, len(restored))
+    test.assertEqual(0, len(original))
 
 
 class LFUCacheTest(unittest.TestCase, CacheTestMixin):
@@ -137,3 +160,45 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertIn(3, cache)
         self.assertIn(5, cache)
         self.assertNotIn(4, cache)
+
+    def test_deepcopy_many_distinct_counts(self):
+        cache = _many_counts_cache()
+        restored = copy.deepcopy(cache)
+        _assert_same_eviction_order(self, restored, cache)
+
+    def test_pickle_many_distinct_counts(self):
+        cache = _many_counts_cache()
+        for pickler in (pickle.Pickler, pickle._Pickler):
+            for protocol in range(pickle.HIGHEST_PROTOCOL + 1):
+                with self.subTest(pickler=pickler, protocol=protocol):
+                    stream = io.BytesIO()
+                    pickler(stream, protocol=protocol).dump(cache)
+                    restored = pickle.loads(stream.getvalue())
+                    _assert_same_eviction_order(self, restored, _many_counts_cache())
+
+    def test_restored_cache_keeps_ties_and_stays_usable(self):
+        cache = LFUCache[int, int](maxsize=3)
+        cache[1] = 1
+        cache[2] = 2
+        cache[3] = 3
+        cache[3]  # count 2; keys 1 and 2 stay tied at count 1
+
+        restored = pickle.loads(pickle.dumps(cache))
+        restored[4] = 4  # must evict 1, the oldest of the tied keys
+        self.assertNotIn(1, restored)
+        self.assertIn(2, restored)
+        self.assertIn(3, restored)
+        self.assertIn(4, restored)
+
+        restored[2]  # raise key 2 above the tied keys 3 and 4
+        restored[2]
+        restored[3]  # raise key 3 above key 4 as well
+        restored[5] = 5  # must evict 4, the only remaining count-1 key
+        self.assertNotIn(4, restored)
+        self.assertIn(2, restored)
+        self.assertIn(3, restored)
+        self.assertIn(5, restored)
+
+        # A restored cache must itself survive another round trip.
+        restored = pickle.loads(pickle.dumps(restored))
+        self.assertEqual([2, 3, 5], list(restored))
