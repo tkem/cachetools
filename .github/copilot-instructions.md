@@ -42,7 +42,9 @@ freezes time per operation. Expiry is lazy: `__len__`, `__repr__` and `currsize`
 `expire()` first, `clear()` does not, and deleting a present-but-expired key removes it
 and raises `KeyError`. `expire()` is a documented override hook, so every insert and
 `popitem()` must keep calling it. Look links/items up with `.get()`; raising `KeyError`
-per new key cost ~200 ns.
+per new key cost ~200 ns. `LFUCache` and `TTLCache` links pickle without `next`/`prev`
+(recursion limit, #474) and `__setstate__` relinks them. `__copy__` shares `__dict__`,
+then each class replaces its own state after `super().__copy__()` (#473).
 
 **`@cached`** (`_cached.py`): one closure per lock/condition/info combination;
 `condition` without `lock` serves as both. Call `functools.update_wrapper()` *before*
@@ -99,9 +101,13 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
   `test_method_typed`).
 - `test_threading.py`: join with `TIMEOUT` and assert threads finished; its
   `WaitCondition` forces a contended `wait()`.
+- Copy, deep-copy and pickle caches in a used state (many use counts or expiry times),
+  with `pickle._Pickler` too: fresh caches and the C pickler hide recursion limits.
 - Performance work: `timeit`, best of 7, on a pinned core (`taskset`), never in a VM,
   against a git worktree of the previous release; never trade documented subclass
   hooks or semantics for speed.
+- Probe and benchmark scripts, logs and old trees go in `.cache/tmp/` inside the
+  workspace, never `/tmp`; remove it when done.
 
 ## Code Review
 
@@ -114,13 +120,18 @@ tox -e py -- tests/test_ttl.py -k expire   # posargs go to pytest
 - Keep it brief: one or two sentences per row, numbers only where they decide
   something. Keep accepted trade-offs as Info rows; record settled matters under
   *Maintainer Decisions*. A review changes nothing; fix only when asked.
+- List only interpreter versions actually run, and mark whatever could not be verified
+  where it stands (e.g. "not run on 3.13", "CI not run for this commit").
 
 ## Maintainer Decisions (do not re-raise)
 
 - Pickling and deep-copying objects that use `@cachedmethod` is supported (#417) and
   must keep working.
 - `copy.copy()` of an instance with an active `@cachedmethod` wrapper shares the
-  wrapper; accepted.
+  wrapper; accepted, and documented as a note since #466.
+- A shallow copy of a cache shares all attributes with the original, as
+  `collections.UserDict.__copy__()` does; a subclass with mutable state of its own
+  extends `__copy__()` (#473).
 - Stacking `@cachedmethod` decorators is unsupported and untested.
 - Class access to `@cachedmethod` (`Cls.method(obj, ...)`) builds and discards a
   `Wrapper` per call; accepted.
