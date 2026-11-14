@@ -420,3 +420,30 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         sized["abc"] = "abc"
         self.assertEqual("abc", sized["abc"])
         self.assertEqual(3, sized.currsize)
+
+    def test_tlru_copy(self):
+        import copy
+
+        source = TLRUCache[int, int, int](
+            maxsize=3, ttu=lambda _key, value, time: time + value, timer=Timer()
+        )
+        source[1] = 3
+        source[2] = 1
+        source[3] = 2
+        source[1] = 2  # leaves a removed item behind, least recently used is 2
+
+        cache = copy.copy(source)
+        self.assertEqual(list(source), list(cache))
+
+        # the copy evicts as its source would, on its own
+        cache[4] = 5
+        self.assertEqual([1, 3, 4], sorted(cache))
+        self.assertEqual([1, 2, 3], sorted(source))
+
+        # items expire in the copy as in its source
+        cache.timer.tick()
+        self.assertEqual([1, 3], sorted(source))
+        self.assertEqual([1, 3, 4], sorted(cache))
+        source.timer.tick()
+        self.assertEqual([], list(source))
+        self.assertEqual([4], list(cache))

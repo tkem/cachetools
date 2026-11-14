@@ -541,6 +541,61 @@ class CacheTestMixin(SimplifiedTestCaseProtocol):
             self.assertEqual(n, len(cache))
             self.assertEqual(source, cache)
 
+    def test_copy_attributes(self):
+        import copy
+        import threading
+
+        class Cache(self.Cache):
+            def __init__(self, maxsize, **kwargs):
+                super().__init__(maxsize, **kwargs)
+                self.lock = threading.Lock()  # cannot be deep-copied
+                self.stats = {"hits": 0}
+
+        source = Cache(maxsize=2)
+        source.update({1: [1], 2: [2]})
+
+        cache = copy.copy(source)
+        self.assertIs(type(source), type(cache))
+        # a shallow copy shares attributes and values with its source
+        self.assertIs(source.lock, cache.lock)
+        self.assertIs(source.stats, cache.stats)
+        self.assertIs(source[1], cache[1])
+        self.assertIs(source[2], cache[2])
+
+        # but none of the cache's own state
+        cache[3] = [3]
+        del cache[next(iter(cache))]
+        self.assertEqual(1, len(cache))
+        self.assertEqual(2, len(source))
+        self.assertEqual(2, source.currsize)
+        self.assertIn(1, source)
+        self.assertIn(2, source)
+        self.assertNotIn(3, source)
+
+    def test_copy_getsizeof(self):
+        import copy
+
+        class GetSizeOf:
+            def __call__(self, value):
+                return value
+
+        source = self.Cache(maxsize=3, getsizeof=GetSizeOf())
+        source.update({1: 1, 2: 2})
+
+        cache = copy.copy(source)
+        self.assertIs(source.getsizeof, cache.getsizeof)
+        self.assertEqual(3, cache.currsize)
+
+        # item sizes are kept separately for source and copy
+        cache[2] = 1
+        self.assertEqual(2, cache.currsize)
+        self.assertEqual(3, source.currsize)
+        del source[2]
+        self.assertEqual(1, source.currsize)
+        self.assertEqual(2, cache.currsize)
+        del cache[2]
+        self.assertEqual(1, cache.currsize)
+
     def test_deepcopy(self):
         import copy
 
