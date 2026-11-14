@@ -1,3 +1,10 @@
+v7.3.2 (2026-11-14)
+===================
+
+- Properly support shallow copies of caches, including subclasses
+  with additional attributes (broken since v7.3.1).
+
+
 v7.3.1 (2026-11-12)
 ===================
 
