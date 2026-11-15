@@ -1176,3 +1176,30 @@ class ClassMethodTest(unittest.TestCase):
 
         with self.assertRaisesRegex(TypeError, "class method"):
             self.Cached.get_class(42)  # type: ignore
+
+    def test_outer_decorator(self):
+        import functools
+
+        def decorator(method):
+            @functools.wraps(method)
+            def wrapper(*args, **kwargs):
+                return method(*args, **kwargs)
+
+            return wrapper
+
+        class Decorated(Cached):
+            @decorator
+            @cachedmethod(lambda self: self.cache)
+            def get_inner(self, value):
+                return 42
+
+            @cachedmethod(lambda self: self.cache)
+            @decorator
+            def get_outer(self, value):
+                return 42
+
+        decorated = Decorated({})
+        with self.assertRaisesRegex(TypeError, "outermost decorator"):
+            decorated.get_inner(42)
+        self.assertEqual(decorated.get_outer(42), 42)
+        self.assertEqual(decorated.cache, {(42,): 42})

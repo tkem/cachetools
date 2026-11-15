@@ -78,9 +78,14 @@ class _MethodDescriptor:
     def _lookup(owner, name):
         return owner.__dict__[name]
 
-    # called for @classmethod since Python 3.13
+    # called by whatever wraps the descriptor: @classmethod since Python
+    # 3.13, @staticmethod, @property or any other function decorator
     def __call__(self, /, *args, **kwargs):
-        raise TypeError("Decorating class methods is not supported")
+        raise TypeError(
+            "Cannot call @cachedmethod descriptor directly: @cachedmethod must "
+            "be the outermost decorator, and decorating class methods, static "
+            "methods or properties is not supported"
+        )
 
     def __get_unbound(self):
         # created once and shared by all class accesses
