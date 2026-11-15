@@ -631,3 +631,15 @@ class PickleTest(unittest.TestCase):
         func = self.pickled_func
         self.assertIs(copy.copy(func), func)
         self.assertIs(copy.deepcopy(func), func)
+
+    def test_copy_partial(self):
+        import copy
+        import functools
+
+        # a partial object has no __qualname__ to be copied by reference with
+        partial = functools.partial(int, base=2)
+        func = cachetools.cached(cachetools.LRUCache(maxsize=2))(partial)
+        self.assertFalse(hasattr(func, "__qualname__"))
+        self.assertIs(copy.copy(func), func)
+        self.assertIs(copy.deepcopy(func), func)
+        self.assertEqual(func("101"), 5)

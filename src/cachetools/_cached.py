@@ -35,9 +35,15 @@ class _WrapperBase:
         self.cache_lock = lock
         self.cache_condition = cond
 
-    # descriptor and pickle support as for functools.lru_cache (C version)
+    # descriptor, copy and pickle support as for functools.lru_cache (C version)
     def __get__(self, obj, objtype=None):
         return self if obj is None else types.MethodType(self, obj)
+
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
 
     def __reduce__(self):
         return self.__qualname__
