@@ -1002,6 +1002,13 @@ class WeakRefMethodTest(unittest.TestCase):
 
 
 class NoneMethodTest(unittest.TestCase):
+    def test_decorator(self):
+        for cache in (None, Cache(2)):
+            with self.assertRaisesRegex(TypeError, "callable"):
+                cachedmethod(cache)  # type: ignore
+            with self.assertRaisesRegex(TypeError, "callable"):
+                cachedmethod(cache, info=True)  # type: ignore
+
     def test_none_info(self):
         cached = Cached(None)
         wrapper = cached.get_info

@@ -866,6 +866,9 @@ def cachedmethod(cache, key=keys.methodkey, lock=None, condition=None, info=Fals
     """
     from ._cachedmethod import _wrapper
 
+    if not callable(cache):
+        raise TypeError("cache must be callable")
+
     def decorator(method):
         make_info = CacheInfo._make_info if info else None
         return _wrapper(method, cache, key, lock, condition, make_info)
