@@ -352,7 +352,11 @@ class LRUCache(Cache):
 
     def __setitem__(self, key, value, cache_setitem=Cache.__setitem__):
         cache_setitem(self, key, value)
-        self.__touch(key)
+        order = self.__order
+        if key in order:
+            order.move_to_end(key)
+        else:
+            order[key] = None
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         cache_delitem(self, key)
@@ -377,13 +381,6 @@ class LRUCache(Cache):
     def clear(self):
         Cache.clear(self)
         self.__order.clear()
-
-    def __touch(self, key):
-        """Mark as recently used."""
-        try:
-            self.__order.move_to_end(key)
-        except KeyError:
-            self.__order[key] = None
 
 
 class RRCache(Cache):
