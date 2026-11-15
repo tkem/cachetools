@@ -31,6 +31,25 @@ v8.0.0 (2026-11-06)
 - Various test improvements.
 
 
+v7.3.2 (2026-11-14)
+===================
+
+- Properly support shallow copies of caches, including subclasses
+  with additional attributes (broken since v7.3.1).
+
+
+v7.3.1 (2026-11-12)
+===================
+
+- Fix deep-copying and pickling ``LFUCache`` instances with many
+  different use counts (broken since v6.1.0).
+
+- Fix shallow copies of caches sharing internal state with the
+  original.
+
+- Minor documentation improvements.
+
+
 v7.3.0 (2026-11-05)
 ===================
 
