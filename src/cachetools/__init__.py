@@ -464,6 +464,12 @@ class _TimedCache(Cache):
         def __copy__(self):
             return _TimedCache._Timer(self.__timer)
 
+        def __deepcopy__(self, memo):
+            # otherwise __getattr__ forwards to the timer's own __deepcopy__
+            import copy
+
+            return _TimedCache._Timer(copy.deepcopy(self.__timer, memo))
+
         def __reduce__(self):
             return _TimedCache._Timer, (self.__timer,)
 
