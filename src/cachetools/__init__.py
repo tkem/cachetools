@@ -331,10 +331,11 @@ class LRUCache(Cache):
 
     def __touch(self, key):
         """Mark as recently used."""
-        try:
-            self.__order.move_to_end(key)
-        except KeyError:
-            self.__order[key] = None
+        order = self.__order
+        if key in order:
+            order.move_to_end(key)
+        else:
+            order[key] = None
 
 
 class RRCache(Cache):
