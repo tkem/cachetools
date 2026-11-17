@@ -1,87 +1,91 @@
-# Code Review — cachetools 8.0.0
+# Code Review — cachetools 8.0.1
 
-**Date:** 2026-11-06
-**Reviewed:** `develop` at `f4217fa` ("Prepare v8.0.0.", `__version__` 8.0.0, changelog
-dated 2026-11-06), based on `master` at `7f6228e` ("Update copilot instructions and
-review."), i.e. v7.3.0.
+**Date:** 2026-11-17, `__version__` 8.0.1 (changelog dated 2026-11-17, not tagged yet)
+**Reviewed:** `develop` at `0828f54` "Release v8.0.1.", plus this review commit.
 
-**CI status:** All `tox` environments pass locally on CPython 3.14.4 (`py`: 416 passed;
-pyright 0 errors, 0 warnings); `py` also passes on 3.11.15 and 3.12.13. GitHub Actions
-has not run for `f4217fa` (not pushed); the same code at `3eae540` was green on the
-full matrix. **Coverage:** 100% on Python < 3.13; on 3.13+ only `_descriptor.py:36`,
-the pre-3.13 `@classmethod` path.
+**CI status:** `tox -p auto` passes on CPython 3.14.4 (465 tests, pyright 0 errors, 0
+warnings), `py` on 3.11.15, 3.12.13 and PyPy 7.3.21; 3.13 not run here. Actions is green
+for `0828f54` (3.11–3.15, 3.13t–3.15t, PyPy 3.11).
+**Coverage:** 100% on 3.11, 3.12 and PyPy; 3.14 lacks `_descriptor.py:36`.
 
 ## Code — Potential Issues
 
 | # | Priority | Location | Finding |
 |---|----------|----------|---------|
-| 1 | Low | `Cache.__setitem__` / `__delitem__` | Size accounting assumes a value's size is stable after insertion; mutating cached values in place desyncs `currsize`. Documented footgun. |
-| 2 | Low | `_decorator.py` `_ConditionMixin` / `_ConditionInfoMixin` via `@cachedmethod` | Pending sets are per wrapper, so two instances sharing one cache and condition do not coordinate pending keys. |
-| 3 | Low | condition variants of `@cached` / `@cachedmethod` | Same-thread recursion on the same key hangs on its own pending marker, where the `lock` variants raise `RecursionError`. Suggested fix: make the pending set a dict of key to `threading.get_ident()` and let the owning thread call the function uncached instead of waiting; the hit path stays unchanged, a miss pays one `get_ident()` call (unmeasured). |
-| 4 | Low | `Cache` (inherited `items()` / `values()`) | Both views read through `__getitem__`, so iterating them (or `dict(cache)`) counts as a use of every item: `LRUCache` and `TLRUCache` fall back to insertion order and every `LFUCache` count increments. `keys()`, `in` and `repr()` do not. Undocumented. Suggested fix: document it in the `Cache` section, or for 8.0 override `items()` and `values()` with views that read via `Cache.__getitem__` for each key of `iter(self)`, a potentially breaking change since subclass `__getitem__` overrides would no longer see iteration (untested). |
-| 5 | Info | `_MethodDescriptor.__get__` (class-access path) | `Cls.method(obj, ...)` builds and discards a wrapper per call before `obj.__dict__.setdefault()` returns the stored one: 2003 ns per hit against 313 through the instance and 622 via `super()`, which reuses its stored wrapper (*Maintainer Decisions*). |
-| 6 | Info | `_cachedmethod.py` `_wrapper` | `update_wrapper(descriptor, method)` runs *after* `_MethodDescriptor(wrapper)`, so a stacked `@cachedmethod` copies the inner descriptor's `__dict__` (factory, owner, name) over the outer's and the pair silently acts as the inner decorator alone. Unsupported (*Maintainer Decisions*). |
-| 7 | Info | `_cached.py` `_WrapperBase.__reduce__` | Pickling by `__qualname__` means a wrapper rebound under another name, or whose original name was deleted, unpickles to the wrong object or fails. A wrapped callable without `__qualname__` (e.g. a `functools.partial`) fails with `AttributeError`, also for `copy.copy()` and `copy.deepcopy()` of the wrapper or of anything holding it. |
-| 8 | Info | `_descriptor.py` `_Unbound.__call__` / `_MethodDescriptor.__call__` | By design, autospec'd instances accept any arguments, so autospec no longer checks arity. A wrong receiver (`Cls.method(1)`) raises `TypeError` "No `__dict__` attribute on 'int' instance"; `@staticmethod`, `@property` or any function decorator that calls the descriptor directly reports the "class methods" message. |
-| 9 | Info | `_MethodDescriptor.__get__` | A descriptor assigned after class creation (e.g. by a class decorator) never receives `__set_name__`, so any access, `hasattr(Cls, name)` included, raises `TypeError` until `__set_name__` is called by hand. Undocumented use, asserted by `test_decorator_no_set_name`. After `del Cls.method` an already obtained class callable keeps working through the `super()` path (`test_class_call_after_delete`). |
-| 10 | Info | `cachedmethod()` / `_cachedmethod.py` `_WrapperBase` properties | Unlike `cached(None)`, a non-callable `cache` such as `cachedmethod(None)` is accepted at decoration and at attribute access, and fails at the first call with `'NoneType' object is not callable`; `cache(self)` returning `None` (unsupported since 7.0) fails at the first call with `'NoneType' object is not subscriptable`. Both are `TypeError`s, only later and less specific. |
+| 1 | Low | `_decorator.py` `_ConditionMixin` / `_ConditionInfoMixin` via `@cachedmethod` | Pending sets are per wrapper, so two instances sharing one cache and condition do not coordinate pending keys. |
+| 2 | Low | condition variants of `@cached` / `@cachedmethod` | Same-thread recursion on the same key hangs on its own pending marker, where the `lock` variants raise `RecursionError`. Suggested fix (unmeasured): record the owning thread per pending key and let it call the function uncached. |
+| 3 | Low | `Cache` (inherited `items()` / `values()`) | Iterating either view (or `dict(cache)`) reads through `__getitem__` and counts as a use of every item: `LRUCache`, `TTLCache` and `TLRUCache` fall back to insertion order, every `LFUCache` count increments. Undocumented; `keys()`, `in` and `repr()` are unaffected. |
+| 4 | Low | `_TimedCache._Timer.__getattr__` | Known issue: `copy.deepcopy()` of a `TTLCache` or `TLRUCache` whose timer object defines `__deepcopy__` yields a copy holding the bare timer, whose first insert raises `TypeError`. Suggested fix (tested, not applied): a `_Timer.__deepcopy__` that wraps a deep copy of the timer. |
+| 5 | Low | `TTLCache.__iter__` / `TLRUCache.__iter__` | Modifying a timed cache while iterating over it is not detected, where the other classes raise `RuntimeError` like `dict`. Updating an existing key in the loop, which is safe for the others, ends a `TTLCache` iteration after the first key and makes a `TLRUCache` yield keys repeatedly; inserting new keys keeps a `TTLCache` loop going, and after `clear()` it still yields the removed keys. Suggested fix (tried on 3.14.4, not applied): iterate over a snapshot of the keys and skip those no longer present. |
+| 6 | Info | `Cache.__copy__`; `LFUCache.__setstate__` / `TTLCache.__setstate__` | Unsupported by decision (*Maintainer Decisions*): once a subclass sets a `__slots__` attribute, a shallow copy lacks it (`AttributeError` on use), and deep-copying or pickling such an `LFUCache` or `TTLCache` subclass raises `ValueError`. Empty or unset slots are unaffected; the subclass provides its own `__copy__` and `__setstate__`. `__slots__` gains nothing there: every `Cache` instance has a `__dict__` anyway, so a slot saves no memory and does not restrict attributes. |
+| 7 | Info | `_cached.py` `_WrapperBase.__reduce__` | Wrappers pickle by `__qualname__`: pickling raises `pickle.PicklingError` once that name is rebound or deleted, and `AttributeError` for a callable without `__qualname__` (e.g. a `functools.partial`). |
+| 8 | Info | `TTLCache.__setstate__` / `RRCache` | A deep-copied or unpickled `TTLCache` can iterate in a different order (ties in expiry time), so evictions can differ once `items()` or `values()` was iterated (Code #3). A deep-copied or unpickled `RRCache` with the default `choice` replays a clone of the `random` module's generator, and its pickle carries about 4 kB of generator state. An `LFUCache` pickled here does not load in v8.0.0 (`_Link` has no `next`); v8.0.0 pickles load here. |
+| 9 | Info | `TTLCache.__iter__` / `TLRUCache.__iter__` (#469) | Both yield inside `with self.timer`, so while an iterator is suspended the whole cache sees the frozen time: expired items stay visible and an item set meanwhile takes its expiry from it. Yielding outside the freeze could make `for key in cache: cache[key]` raise `KeyError`, a potentially breaking change; undocumented. |
 
 ## Performance
 
-CPython 3.14.4, ns per operation, best of 7 (`timeit`, one pinned core, about ±5%).
-Caches hold 100 items (`maxsize=100` for evicting inserts, new keys from
-`itertools.count()`, 18 ns included); decorators use `LRUCache(1024)`.
+CPython 3.14.4, ns per operation, best of 7 (`timeit`, one pinned core, about ±5%),
+measured 2026-11-15 on bare metal with `.github/copilot-bench.py`. Caches hold 100
+items (`maxsize=100` for evicting inserts, new keys from `itertools.count()`, 20 ns
+included); decorators use `LRUCache(1024)`, method calls include the attribute lookup
+(`obj.method(1)`).
 
 | Operation | `dict` | `Cache` | `LRU` | `LFU` | `TTL` | `TLRU` |
 |---|---|---|---|---|---|---|
-| get hit | 13 | 26 | 62 | 134 | 175 | 178 |
-| contains | 13 | 36 | 36 | 37 | 135 | 129 |
-| get miss (`KeyError`) | 64 | 250 | 325 | 326 | 413 | 413 |
-| set, existing key | 13 | 63 | 111 | 166 | 384 | 630 |
-| set, evicting | 110 | 331 | 499 | 472 | 1073 | 1550 |
+| get hit | 13 | 27 | 65 | 143 | 180 | 184 |
+| contains | 13 | 36 | 36 | 36 | 135 | 137 |
+| get miss (`KeyError`) | 66 | 257 | 339 | 341 | 433 | 440 |
+| set, existing key | 14 | 66 | 107 | 173 | 418 | 662 |
+| set, evicting | 111 | 336 | 396 | 492 | 1152 | 1674 |
 
 | Decorator call | hit | evicting miss |
 |---|---|---|
-| `@cached` | 237 | 1378 |
-| `@cached(lock=Lock())` | 310 | 1591 |
-| `@cached(condition=Condition())` | 410 | 2060 |
-| `@cached(info=True)` | 280 | 1396 |
-| `@cached` on a method (bound) | 334 | |
-| `@cachedmethod` | 296 | 1459 |
-| `@cachedmethod(condition=...)` | 584 | 2297 |
-| `@cachedmethod(info=True)` | 331 | 1497 |
-| `cachetools.func.lru_cache` | 450 | 2117 |
-| `functools.lru_cache` (C) | 27 | 81 |
+| `@cached` | 247 | 1337 |
+| `@cached(lock=Lock())` | 326 | 1599 |
+| `@cached(condition=Condition())` | 426 | 2057 |
+| `@cached(info=True)` | 292 | 1401 |
+| `@cached` on a method (bound) | 365 | |
+| `@cachedmethod` | 331 | 1472 |
+| `@cachedmethod(condition=...)` | 637 | 2337 |
+| `@cachedmethod(info=True)` | 375 | 1537 |
+| `cachetools.func.lru_cache` | 476 | 2131 |
+| `functools.lru_cache` (C) | 28 | 82 |
 
-`FIFOCache` evicting 390, `RRCache` 541, `Cache` update with `getsizeof` 128;
-`hashkey(1, 2, 3)` 43, `hashkey(1, 2, a=3)` 198, `typedkey(1, 2, 3)` 145.
+`FIFOCache` evicting 413, `RRCache` 556, `Cache` update with `getsizeof` 132;
+`hashkey(1, 2, 3)` 46, `hashkey(1, 2, a=3)` 212, `typedkey(1, 2, 3)` 155. `copy.copy()`
+of 1000 items, in µs: `dict` 2.4, `Cache` 2.8, `FIFOCache` 36, `LRUCache` 36, `LFUCache`
+80, `RRCache` 7, `TTLCache` 248, `TLRUCache` 246.
 
 | # | Priority | Location | Finding |
 |---|----------|----------|---------|
-| 1 | Info | `_cached.py` `_WrapperBase.__get__` | A hit through a method costs 334 ns against 237 for a direct call: each attribute access runs the Python-level `__get__` and builds a `types.MethodType`, where a plain function binds at C level. The price of wrapper objects over closures. |
-| 2 | Info | `TTLCache.__setitem__` / `popitem` (and `TLRUCache`) | An evicting insert costs 1073 ns against 499 for `LRUCache` (TLRU 1550): `expire()` runs twice, the `_Timer` is entered twice and `del self[key]` re-checks expiry. Skipping `popitem()`'s own `expire()` and bypassing `__delitem__` would save more, but a direct `popitem()` could then return an expired item and subclass `__delitem__` overrides would no longer see evictions. |
-| 3 | Info | `_cachedmethod.py` `_WrapperBase` properties | A `@cachedmethod` hit costs 296 ns against 237 for `@cached`: the `cache` (and `cache_lock`) properties call the user's `cache(self)` lambda on every call, and the key goes through `functools.partial`. First access per instance 1871 ns including `M(cache)` at 56 (wrapper construction alone 828); class call 2003 (Code #5). Inherent to the per-instance design. |
-| 4 | Info | `LFUCache.__touch` | A hit that moves its key to the next use-count link costs 217 ns (cycling over 100 keys) against 134 for a key alone in its link, the table's figure: one `OrderedDict` insert and delete per move. Evicting inserts stay flat with size, 528 ns at `maxsize` 10 000 and 584 at 100 000. |
+| 1 | Info | `_cached.py` `_WrapperBase.__get__` | A hit through a method costs 365 ns against 247 for a direct call: each attribute access runs the Python-level `__get__` and builds a `types.MethodType`. |
+| 2 | Info | `TTLCache.__setitem__` / `popitem` (and `TLRUCache`) | An evicting insert costs 1152 ns against 396 for `LRUCache` (TLRU 1674): `expire()` runs twice, the `_Timer` is entered twice (three times in `TLRUCache`) and `del self[key]` re-checks expiry. Skipping these would let a direct `popitem()` return an expired item or hide evictions from `__delitem__` overrides. |
+| 3 | Info | `_cachedmethod.py` `_WrapperBase` properties | A `@cachedmethod` hit costs 331 ns against 247 for `@cached`: the user's `cache(self)` is called on every call and the key goes through `functools.partial`. First call on a new instance 1967 ns, class call 2136. |
+| 4 | Info | `LFUCache.__touch` | A hit that moves its key to the next use-count link costs 232 ns against 143 for a key alone in its link. Evicting inserts stay flat with size: 543 ns at `maxsize` 10 000, 541 at 100 000. |
 
 ## Type Stubs
 
 | # | Priority | Finding |
 |---|----------|---------|
-| 1 | Info | `_cachedmethod_unbound.__call__` takes the receiver positional-only, so `Cls.method(self=obj, ...)` works at runtime but needs `# type: ignore` (`test_class_call_keyword_receiver`). |
-| 2 | Info | `@classmethod` over `@cached`/`func.*_cache` reports a false "Argument missing" error; pyright does not bind through the wrapper's `__get__`. Rare. |
-| 3 | Info | `Cache.setdefault` mirrors typeshed's `dict` overloads: `cache.setdefault(key)` without a default is an error unless the value type is `X \| None`, which also rejects it for `Cache[K, object]`. |
+| 1 | Info | `_cachedmethod_unbound.__call__` takes the receiver positional-only, so `Cls.method(self=obj, ...)` works at runtime but needs `# type: ignore` ("Expected 1 more positional argument"). |
+| 2 | Info | `@classmethod` over `@cached` or `func.*_cache` type-checks falsely: calls through the class or an instance report "Argument missing for parameter" (pyright), though they work at runtime. |
 
 ## Tests — Gaps
 
 | # | Priority | Finding |
 |---|----------|---------|
-| 1 | Info | The `self` keyword tests (`test_self_keyword`, #451) cover the default `@cached` and `@cachedmethod` wrappers and the class call only; the positional-only receivers of the lock, condition and `info` mixin `__call__` methods remain unguarded. |
-| 2 | Info | `__repr__` on timed caches is never asserted to expire on its own, and `currsize` only indirectly, through `cache_info()` in `test_func.py`'s `test_ttl_expire`; the cache tests assert both after `len()`, `clear()` or `__setitem__`. |
-| 3 | Info | `NoneMethodTest.test_none_info` asserts only that `cache_info()` raises `TypeError` when `cache(self)` returns `None`; that the call itself fails, and that `cachedmethod(None)` fails at first access (Code #10), is unasserted. |
+| 1 | Low | No test modifies a timed cache while iterating over it (Code #5); the mixin could assert for every class that updating existing keys in a loop visits each key once. |
+| 2 | Info | Of the decorators that the new `@cachedmethod` error message names, only an outer function decorator is tested (`test_outer_decorator`), not `@staticmethod` or `@property`. |
+| 3 | Info | `test_self_keyword` (#451) covers the default `@cached` and `@cachedmethod` wrappers and the class call only, not the lock, condition and `info` variants. |
+| 4 | Info | `__repr__` on timed caches is never asserted to expire on its own, and `currsize` only indirectly through `cache_info()`. |
+| 5 | Info | `NoneMethodTest.test_none_info` asserts only that `cache_info()` raises `TypeError` when `cache(self)` returns `None`; that the call itself fails with `TypeError` is unasserted. |
+| 6 | Info | `test_lfu_copy_use_counts` pickles with the default protocol and the C pickler only, which without the #474 fix fails on 3.11 only (from 247 use counts), so elsewhere only its deep-copy arm guards that fix. |
 
 ## Docs (`docs/index.rst`)
 
 | # | Priority | Finding |
 |---|----------|---------|
-| 1 | Low | Neither `@cached` nor `cachetools.func.*_cache` mention decorating methods, which now bind explicitly through `__get__`; a one-line caveat that cache and counters are then shared across instances would help. |
-| 2 | Low | The `cached` section still speaks of a "memoizing wrapper function" whose "wrapped function is instrumented", while the result is a callable object; and `cache_lock` is described as exposing the `lock` parameter, but with `condition` alone it is the condition object (asserted by tests). |
+| 1 | Low | Neither `@cached` nor `cachetools.func.*_cache` mention decorating methods, where cache and counters are shared across instances. |
+| 2 | Low | The `cached` section still speaks of a "memoizing wrapper function", while the result is a callable object, and describes `cache_lock` as the `lock` parameter, though with `condition` alone it is the condition object. |
+| 3 | Low | New in 8.0.1 and undocumented: what a shallow copy of a cache shares (keys, values and attributes) and that a subclass with mutable state of its own must extend `__copy__`; that `@cached` wrappers copy and deep-copy as themselves; and that `@cachedmethod` must be the outermost decorator, where the docs name only `classmethod`. |
+| 4 | Info | The `README.rst` example is outside the Sphinx doctest run, and its PyOWM and `get_pep` snippets have no doctested counterpart; it runs on this tree with `urlopen` and `pyowm` stubbed (not rerun in this review). |
