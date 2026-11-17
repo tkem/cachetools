@@ -457,6 +457,18 @@ class CacheTestMixin(SimplifiedTestCaseProtocol):
         self.assertEqual(1, len(cache))
         self.assertEqual(4, cache.currsize)
 
+    def test_iter_update(self):
+        cache = self.Cache(maxsize=3)
+        cache.update({1: 1, 2: 2, 3: 3})
+
+        # updating items while iterating visits each key once, in order
+        keys = []
+        for key in cache:
+            keys.append(key)
+            cache[key] = key * 10
+        self.assertEqual([1, 2, 3], keys)
+        self.assertEqual([10, 20, 30], list(cache.values()))
+
     def test_pickle(self):
         import pickle
 

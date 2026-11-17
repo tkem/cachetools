@@ -336,3 +336,23 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         cache.timer.tick()
         self.assertEqual([], list(cache))
         self.assertEqual([1], list(source))
+
+    def test_ttl_iter_modify(self):
+        cache = TTLCache[int, int, int](maxsize=6, ttl=2, timer=Timer())
+        cache.update({1: 1, 2: 2, 3: 3})
+
+        # items inserted while iterating are not visited
+        keys = []
+        for key in cache:
+            keys.append(key)
+            cache[key + 10] = key
+        self.assertEqual([1, 2, 3], keys)
+        self.assertEqual([1, 2, 3, 11, 12, 13], list(cache))
+
+        # items removed while iterating are skipped
+        keys = []
+        for key in cache:
+            keys.append(key)
+            cache.clear()
+        self.assertEqual([1], keys)
+        self.assertEqual([], list(cache))
