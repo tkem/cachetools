@@ -1,3 +1,23 @@
+v8.0.1 (2026-11-17)
+===================
+
+- Fix copying and deep-copying ``@cached`` wrappers of callables
+  without a ``__qualname__``, e.g. ``functools.partial`` objects
+  (broken since v8.0.0).
+
+- Fix deep-copying and pickling ``LFUCache`` instances with many
+  different use counts (broken since v6.1.0).
+
+- Properly support shallow copies of caches, including subclasses
+  with additional attributes.
+
+- Minor ``LRUCache`` performance improvements.
+
+- Minor ``@cachedmethod`` error handling improvements.
+
+- Minor documentation improvements.
+
+
 v8.0.0 (2026-11-06)
 ===================
 
