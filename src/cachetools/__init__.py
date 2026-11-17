@@ -602,14 +602,15 @@ class TTLCache(_TimedCache):
             raise KeyError(key)
 
     def __iter__(self):
-        root = self.__root
-        curr = root.next
-        while curr is not root:
+        # Iterate over a snapshot of keys, in insertion order: Note that
+        # changes/updates while iterating do not raise RuntimeError, since
+        # items may also expire, so this seems to be the easier way.
+        for key in list(Cache.__iter__(self)):
             # "freeze" time for iterator access
             with self.timer as time:
-                if time < curr.expires:
-                    yield curr.key
-            curr = curr.next
+                link = self.__links.get(key)
+                if link is not None and time < link.expires:
+                    yield key
 
     def __copy__(self):
         copy = super().__copy__()
@@ -758,11 +759,15 @@ class TLRUCache(_TimedCache):
             raise KeyError(key)
 
     def __iter__(self):
-        for curr in self.__order:
+        # Iterate over a snapshot of keys, in insertion order: Note that
+        # changes/updates while iterating do not raise RuntimeError, since
+        # items may also expire, so this seems to be the easier way.
+        for key in list(Cache.__iter__(self)):
             # "freeze" time for iterator access
             with self.timer as time:
-                if time < curr.expires and not curr.removed:
-                    yield curr.key
+                item = self.__items.get(key)
+                if item is not None and time < item.expires:
+                    yield key
 
     def __copy__(self):
         copy = super().__copy__()
