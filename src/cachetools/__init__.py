@@ -113,6 +113,10 @@ class Cache(collections.abc.MutableMapping):
     def __len__(self):
         return len(self.__data)
 
+    # Instance attributes are shared with the copy, except for the
+    # cache's own data.  Subclasses providing additional attributes
+    # that must not be shared should implement their own __copy__.
+
     def __copy__(self):
         cls = type(self)
         copy = cls.__new__(cls)
@@ -123,7 +127,7 @@ class Cache(collections.abc.MutableMapping):
         return copy
 
     # Note that we cannot simply inherit get(), pop() and setdefault()
-    # from MutableMapping, since these rely on __getitem__ throwing a
+    # from MutableMapping, since these rely on __getitem__ raising a
     # KeyError on cache miss.  This is not the case if __missing__ is
     # implemented for a Cache subclass, so we have to roll our own,
     # somewhat less elegant versions.
@@ -251,7 +255,7 @@ class LFUCache(Cache):
 
     def __getitem__(self, key, cache_getitem=Cache.__getitem__):
         value = cache_getitem(self, key)
-        if key in self.__links:  # __missing__ may not store item
+        if key in self.__links:  # __missing__ may not store the item
             self.__touch(key)
         return value
 
@@ -305,7 +309,7 @@ class LFUCache(Cache):
         curr = root.next
         if curr is root:
             raise KeyError("%s is empty" % type(self).__name__) from None
-        key = next(iter(curr.keys))  # remove the "oldest" element
+        key = next(iter(curr.keys))  # least recently used key with the lowest use count
         value = Cache.__getitem__(self, key)
         del self[key]
         return (key, value)
@@ -346,7 +350,7 @@ class LRUCache(Cache):
         value = cache_getitem(self, key)
         try:
             self.__order.move_to_end(key)
-        except KeyError:  # __missing__ may not store item
+        except KeyError:  # __missing__ may not store the item
             pass
         return value
 
@@ -517,9 +521,9 @@ class _TimedCache(Cache):
             return Cache.setdefault(self, *args, **kwargs)
 
     def clear(self):
-        # Subclasses must override to also reset their own time-tracking
-        # structures; we do not call expire() here since clear() should
-        # be O(1) regardless of cache contents.
+        # Subclasses must override this to also reset their own
+        # time-tracking structures.  We do not call expire() here,
+        # since clear() should be O(1) regardless of cache contents.
         Cache.clear(self)
 
     def expire(self, time=None):  # pragma: no cover
@@ -600,9 +604,9 @@ class TTLCache(_TimedCache):
             raise KeyError(key)
 
     def __iter__(self):
-        # Iterate over a snapshot of keys, in insertion order: Note that
-        # changes/updates while iterating do not raise RuntimeError, since
-        # items may also expire, so this seems to be the easier way.
+        # Iterate over a snapshot of keys, in insertion order.  Inserting or
+        # deleting items while iterating does not raise RuntimeError as for
+        # dict, since items may also expire meanwhile.
         for key in list(Cache.__iter__(self)):
             # "freeze" time for iterator access
             with self.timer as time:
@@ -733,12 +737,12 @@ class TLRUCache(_TimedCache):
             self.expire(time)
             expires = self.__ttu(key, value, time)
             if not (time < expires):
-                # updating an existing item with an already expired
-                # one should remove the existing item
+                # Updating an existing item with an already expired
+                # one should remove the existing item.
                 return self.__delitem(key)
             cache_setitem(self, key, value)
-        # removing an existing item would break the heap structure, so
-        # only mark it as removed for now
+        # Removing an existing item would break the heap structure, so
+        # only mark it as removed for now.
         items = self.__items
         item = items.get(key)
         if item is not None:
@@ -749,7 +753,7 @@ class TLRUCache(_TimedCache):
 
     def __delitem__(self, key, cache_delitem=Cache.__delitem__):
         with self.timer as time:
-            # no self.expire() for performance reasons, e.g. self.clear() [#67]
+            # no self.expire() for performance reasons, e.g. when evicting [#67]
             cache_delitem(self, key)
         item = self.__items.pop(key)
         item.removed = True
@@ -757,9 +761,9 @@ class TLRUCache(_TimedCache):
             raise KeyError(key)
 
     def __iter__(self):
-        # Iterate over a snapshot of keys, in insertion order: Note that
-        # changes/updates while iterating do not raise RuntimeError, since
-        # items may also expire, so this seems to be the easier way.
+        # Iterate over a snapshot of keys, in insertion order.  Inserting or
+        # deleting items while iterating does not raise RuntimeError as for
+        # dict, since items may also expire meanwhile.
         for key in list(Cache.__iter__(self)):
             # "freeze" time for iterator access
             with self.timer as time:
@@ -860,7 +864,7 @@ def cached(cache, key=keys.hashkey, lock=None, condition=None, info=False):
     """
     from ._cached import _wrapper
 
-    if cache is None:  # no longer supported since v8.0.0
+    if cache is None:  # unsupported since v8.0.0
         raise TypeError("cache must not be None")
 
     def decorator(func):

@@ -37,10 +37,10 @@ class _WrapperBase:
         self.cache_key = functools.partial(key, obj)
 
     def __reduce__(self):
-        # rebuild via the descriptor instead of pickling unpicklable
-        # internals, e.g. __wrapped__, lock/cond closures; note that
-        # this will also reset hits and misses counts for *Info*
-        # wrappers
+        # Rebuild via the descriptor instead of pickling unpicklable
+        # internals, e.g. __wrapped__, lock/cond closures.  Note that
+        # this will also reset the hit and miss counts of *Info*
+        # wrappers.
         return (self.__descriptor.__get__, (self.__obj,))
 
     def __repr__(self):

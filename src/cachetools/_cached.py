@@ -27,8 +27,8 @@ class _WrapperBase:
     """Wrapper base class providing the public cache attributes."""
 
     def __init__(self, func, cache, key, lock=None, cond=None):
-        # update first, so func.__dict__ cannot override wrapper state,
-        # e.g. when stacking decorators
+        # Update first, so func.__dict__ cannot override wrapper state,
+        # e.g. when stacking decorators.
         functools.update_wrapper(self, func)
         self.cache = cache
         self.cache_key = key

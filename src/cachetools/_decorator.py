@@ -75,7 +75,6 @@ class _ConditionMixin:
         cond = self.cache_condition
 
         with lock:
-            # apparently significantly faster than cond.wait_for(...)
             while key in self.__pending:
                 cond.wait()
             try:
@@ -183,7 +182,6 @@ class _ConditionInfoMixin:
         cond = self.cache_condition
 
         with lock:
-            # apparently significantly faster than cond.wait_for(...)
             while key in self.__pending:
                 cond.wait()
             try:

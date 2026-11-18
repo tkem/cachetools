@@ -193,8 +193,8 @@ class _cached_wrapper_info(_cached_wrapper[_P, _R]):
         obj: _S,
         objtype: type | None = None,
     ) -> _cached_wrapper_info[_Q, _R]: ...
-    # pyright cannot match the self-typed base overload; each return type is
-    # the _cached_wrapper_info subtype of the corresponding base return type
+    # Pyright cannot match the self-typed base overload.  Each return type is
+    # the _cached_wrapper_info subtype of the corresponding base return type.
     @overload
     def __get__(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, obj: object, objtype: type | None = None

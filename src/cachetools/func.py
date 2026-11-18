@@ -21,9 +21,8 @@ class _UnboundTTLCache(TTLCache):
 
 def _cache(cache, maxsize, typed):
     def decorator(func):
-        # like functools.lru_cache, this has to be thread-safe;
-        # additionally, this also prevents cache stampede scenarios
-        # using a condition variable
+        # Like functools.lru_cache, this has to be thread-safe.  Using
+        # a condition variable also prevents cache stampedes.
         key = keys.typedkey if typed else keys.hashkey
         wrapper = cached(cache=cache, key=key, condition=Condition(), info=True)(func)
         wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}  # type: ignore

@@ -31,8 +31,8 @@ class _MethodDescriptor:
 
         if attrname is None:
             if isinstance(obj, type):
-                # before Python 3.13, @classmethod calls __get__(cls, type(cls))
-                # without forwarding __set_name__
+                # Before Python 3.13, @classmethod calls __get__(cls, type(cls))
+                # without forwarding __set_name__.
                 self.__call__()  # raise TypeError as in Python >= 3.13
             msg = "Cannot use descriptor instance without calling __set_name__ on it"
             raise TypeError(msg) from None
@@ -48,9 +48,9 @@ class _MethodDescriptor:
         else:
             descriptor = None  # removed from the class after __set_name__
         if descriptor is self:
-            # replace descriptor instance with wrapper in instance dict; in case
-            # of a race condition where another thread already replaced the
-            # descriptor, prefer the initial wrapper.
+            # Replace the descriptor instance with the wrapper in the instance
+            # dict.  In case of a race condition where another thread already
+            # replaced the descriptor, prefer the initial wrapper.
             wrapper = self.__wrapper(obj, self)
             try:
                 wrapper = obj.__dict__.setdefault(attrname, wrapper)
@@ -70,16 +70,16 @@ class _MethodDescriptor:
         return wrapper
 
     def __reduce__(self):
-        # pickle and copy by reference, so wrappers and their keys in
-        # "__cachetools_cachedmethods" can be pickled and deep-copied
+        # Pickle and copy by reference, so wrappers and their keys in
+        # "__cachetools_cachedmethods" can be pickled and deep-copied.
         return (self._lookup, (self.__owner, self.__attrname))
 
     @staticmethod
     def _lookup(owner, name):
         return owner.__dict__[name]
 
-    # called by whatever wraps the descriptor: @classmethod since Python
-    # 3.13, @staticmethod, @property or any other function decorator
+    # Called by whatever wraps the descriptor: @classmethod since Python
+    # 3.13, @staticmethod, @property or any other function decorator.
     def __call__(self, /, *args, **kwargs):
         raise TypeError(
             "Cannot call @cachedmethod descriptor directly: @cachedmethod must "
@@ -95,7 +95,7 @@ class _MethodDescriptor:
 
     def __instance_dict_error(self, obj, error):
         if isinstance(error, AttributeError):
-            # not all objects have __dict__ (e.g. class defines slots)
+            # not all objects have __dict__ (e.g. if the class defines __slots__)
             msg = (
                 f"No '__dict__' attribute on {type(obj).__name__!r} "
                 f"instance to cache {self.__attrname!r}"
@@ -137,8 +137,8 @@ class _Unbound:
             return self
         return self.__descriptor.__get__(obj)
 
-    # Receiver is taken from *args so autospec'd instances accept any call,
-    # as they did before class access returned a callable.
+    # The receiver is taken from *args, so autospec'd instances accept any
+    # call, as they did before class access returned a callable.
     def __call__(self, /, *args, **kwargs):
         if args:
             obj, *args = args
