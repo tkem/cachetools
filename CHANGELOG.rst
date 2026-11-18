@@ -1,3 +1,15 @@
+v7.3.3 (2026-11-18)
+===================
+
+- Fix deep-copying ``TTLCache`` and ``TLRUCache`` instances whose
+  timer defines ``__deepcopy__``.
+
+- Fix updating ``TTLCache`` and ``TLRUCache`` items while iterating,
+  which skipped or repeated keys.
+
+- Minor ``LRUCache`` performance improvements.
+
+
 v7.3.2 (2026-11-14)
 ===================
 
