@@ -1,3 +1,15 @@
+v8.0.2 (2026-11-18)
+===================
+
+- Fix deep-copying ``TTLCache`` and ``TLRUCache`` instances whose
+  timer defines ``__deepcopy__``.
+
+- Fix updating ``TTLCache`` and ``TLRUCache`` items while iterating,
+  which skipped or repeated keys.
+
+- Minor code improvements.
+
+
 v8.0.1 (2026-11-17)
 ===================
 
