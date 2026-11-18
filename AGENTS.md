@@ -43,7 +43,7 @@ coverage is 100 %, except the pre-3.13 `@classmethod` line (`_descriptor.py`) on
   anything is cached (`from None`); a store failing with `ValueError` returns the value.
 - Docs (`docs/index.rst`, doctested): wrap prose at column 70, two spaces after a
   sentence, single backticks for parameters and `:meth:`/`:func:`/`:exc:` roles. Keep
-  `README.rst` examples in sync with it.
+  `README.rst` examples in sync. Multi-line code comments are full sentences, too.
 
 ## Architecture Constraints
 

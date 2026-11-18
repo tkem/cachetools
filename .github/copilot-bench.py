@@ -1,8 +1,8 @@
 """Benchmark behind the performance figures in copilot-review.md.
 
-Prints nanoseconds per operation (microseconds for copies), best of 7
-(timeit).  Run it on bare metal with one pinned core, for this tree or
-for a git worktree of the previous release:
+Prints nanoseconds per operation (microseconds for copying and listing
+1000 items), best of 7 (timeit).  Run it on bare metal with one pinned
+core, for this tree or for a git worktree of the previous release:
 
     PYTHONPATH=src taskset -c 3 python3 .github/copilot-bench.py
 
@@ -176,7 +176,7 @@ def bench_lfu():
 
 
 def bench_copies():
-    print("%-36s" % "copy.copy(), 1000 items" + "     µs")
+    print("%-36s" % "1000 items, µs" + "   copy   list")
     caches = [
         {},
         cachetools.Cache(1000),
@@ -189,8 +189,9 @@ def bench_copies():
     ]
     for c in caches:
         c.update((i, i) for i in range(1000))
-        ns = best("copy(c)", 2000, c=c, copy=copy.copy)
-        print("%-36s%7.1f" % (type(c).__name__, ns / 1000))
+        copied = best("copy(c)", 2000, c=c, copy=copy.copy)
+        listed = best("list(c)", 2000, c=c)
+        print("%-36s%7.1f%7.1f" % (type(c).__name__, copied / 1000, listed / 1000))
 
 
 if __name__ == "__main__":
