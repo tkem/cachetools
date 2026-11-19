@@ -1,3 +1,4 @@
+import itertools
 import math
 import unittest
 
@@ -246,6 +247,25 @@ class TLRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertNotIn(0, cache)
         self.assertEqual(cache[1], None)
         self.assertEqual(1, len(cache))
+
+    def test_ttu_iter_mutation(self):
+        def ttu(_key, _value, time):
+            return time + 2
+
+        cache = TLRUCache[int, int, int](maxsize=10, ttu=ttu, timer=Timer())
+        for key in (1, 2, 3):
+            cache[key] = key
+        # inserting while iterating must not extend the iteration
+        seen = []
+        for key in itertools.islice(cache, 10):
+            seen.append(key)
+            cache[100 + key] = key
+        self.assertEqual([1, 2, 3], seen)
+        # an iterator started before clear() must not yield removed items
+        it = iter(cache)
+        next(it)
+        cache.clear()
+        self.assertEqual([], list(it))
 
     def test_ttu_atomic(self):
         cache = TLRUCache[int, int | None, int](

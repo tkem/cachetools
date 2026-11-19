@@ -1,3 +1,4 @@
+import itertools
 import math
 import unittest
 
@@ -187,6 +188,22 @@ class TTLCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual([2], [key for key in cache])
         self.assertEqual({(1, 1)}, set(cache.expire()))
         self.assertEqual([2], [key for key in cache])
+
+    def test_ttl_iter_mutation(self):
+        cache = TTLCache[int, int, int](maxsize=10, ttl=2, timer=Timer())
+        for key in (1, 2, 3):
+            cache[key] = key
+        # inserting while iterating must not extend the iteration
+        seen = []
+        for key in itertools.islice(cache, 10):
+            seen.append(key)
+            cache[100 + key] = key
+        self.assertEqual([1, 2, 3], seen)
+        # an iterator started before clear() must not yield removed items
+        it = iter(cache)
+        next(it)
+        cache.clear()
+        self.assertEqual([], list(it))
 
     def test_ttl_atomic(self):
         cache = TTLCache[int, int | None, int](maxsize=1, ttl=2, timer=Timer(auto=True))
