@@ -531,14 +531,15 @@ class TTLCache(_TimedCache):
             raise KeyError(key)
 
     def __iter__(self):
-        root = self.__root
-        curr = root.next
-        while curr is not root:
+        # Iterate over a snapshot of keys, in insertion order.  Inserting or
+        # deleting items while iterating does not raise RuntimeError as for
+        # dict, since items may also expire meanwhile.
+        for key in list(Cache.__iter__(self)):
             # "freeze" time for iterator access
             with self.timer as time:
-                if time < curr.expires:
-                    yield curr.key
-            curr = curr.next
+                link = self.__links.get(key)
+                if link is not None and time < link.expires:
+                    yield key
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -674,11 +675,15 @@ class TLRUCache(_TimedCache):
             raise KeyError(key)
 
     def __iter__(self):
-        for curr in self.__order:
+        # Iterate over a snapshot of keys, in insertion order.  Inserting or
+        # deleting items while iterating does not raise RuntimeError as for
+        # dict, since items may also expire meanwhile.
+        for key in list(Cache.__iter__(self)):
             # "freeze" time for iterator access
             with self.timer as time:
-                if time < curr.expires and not curr.removed:
-                    yield curr.key
+                item = self.__items.get(key)
+                if item is not None and time < item.expires:
+                    yield key
 
     @property
     def ttu(self):
