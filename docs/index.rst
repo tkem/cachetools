@@ -372,6 +372,10 @@ often called with the same arguments:
       condition variable must be created with the corresponding lock,
       e.g. ``condition=threading.Condition(lock)``; an unrelated
       :class:`threading.Condition` will raise :exc:`RuntimeError`.
+      On current CPython versions, passing the lock separately this
+      way is also slightly faster than providing `condition` alone,
+      since acquiring the lock through a :class:`threading.Condition`
+      adds Python-level method calls on every cache access.
 
    The decorator's `cache`, `key`, `lock` and `condition` parameters
    are also available as :attr:`cache`, :attr:`cache_key`,
