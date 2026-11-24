@@ -110,6 +110,12 @@ inserted into the cache.
    This class discards the least recently used items first to make
    space when necessary.
 
+   Retrieving an item via :meth:`LRUCache.__getitem__` marks it as
+   most recently used, as does inserting or updating it.  Since
+   :meth:`items` and :meth:`values` retrieve every item in turn,
+   iterating over these views leaves the cache discarding items in
+   insertion order.
+
 .. autoclass:: RRCache(maxsize, choice=random.choice, getsizeof=None)
    :members: choice, popitem
 
