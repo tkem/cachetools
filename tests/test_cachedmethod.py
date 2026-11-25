@@ -1056,8 +1056,15 @@ class UnboundMethodTest(unittest.TestCase):
         self.assertEqual(cached.count, 1)
 
     def test_class_call_without_instance(self):
+        cached = Cached(Cache(2))
         with self.assertRaises(TypeError):
             Cached.get()  # type: ignore
+        with self.assertRaises(TypeError):
+            Cached.get(None, cached, 1)  # type: ignore
+        with self.assertRaises(TypeError):
+            Cached.get(self=None, value=1)  # type: ignore
+        self.assertEqual(cached.count, 0)
+        self.assertFalse(cached.cache)
 
     def test_class_call_keyword_receiver(self):
         cached = Cached(Cache(2))
