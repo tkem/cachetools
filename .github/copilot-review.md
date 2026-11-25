@@ -1,11 +1,12 @@
 # Code Review — cachetools 8.0.3
 
-**Date:** 2026-11-25, `__version__` 8.0.3 (changelog dated 2026-11-25, not tagged yet)
-**Reviewed:** `develop` at `8bd4a69` "Release v8.0.3.", plus this review commit.
+**Date:** 2026-11-25, `__version__` 8.0.3 (released 2026-11-25)
+**Reviewed:** `develop` at `321a3b6` "Update copilot instructions and review." (tag
+`v8.0.3`, same as `master`), plus this review commit.
 
 **CI status:** `tox -p auto` passes on CPython 3.14.4 (480 tests, pyright 0 errors, 0
 warnings), `py` on 3.11.15, 3.12.13 and PyPy 7.3.21; 3.13 not run here. Actions is green
-for `8bd4a69` (3.11–3.15, 3.13t–3.15t, PyPy 3.11).
+for `321a3b6`, on `master` and for the tag (3.11–3.15, 3.13t–3.15t, PyPy 3.11).
 **Coverage:** 100% on 3.11, 3.12 and PyPy; 3.14 lacks `_descriptor.py:36`.
 
 ## Code — Potential Issues
