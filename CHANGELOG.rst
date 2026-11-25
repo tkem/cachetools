@@ -1,3 +1,17 @@
+v8.0.3 (2026-11-25)
+===================
+
+- Fix recursive calls with the same cache key waiting forever in
+  ``@cached`` and ``@cachedmethod`` with ``condition``, and in the
+  ``cachetools.func`` decorators.
+
+- Minor ``cachetools.func`` performance improvements.
+
+- Minor ``@cachedmethod`` error handling improvements.
+
+- Minor documentation improvements.
+
+
 v8.0.2 (2026-11-18)
 ===================
 
