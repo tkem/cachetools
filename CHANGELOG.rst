@@ -1,3 +1,11 @@
+v7.3.4 (2026-11-25)
+===================
+
+- Minor ``cachetools.func`` performance improvements.
+
+- Minor documentation improvements.
+
+
 v7.3.3 (2026-11-18)
 ===================
 
