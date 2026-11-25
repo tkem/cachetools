@@ -177,6 +177,104 @@ class ThreadingTest(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     Cached().method()
 
+    def test_cached_cond_recursion(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+                calls = []
+
+                @cached(LRUCache(1), condition=Condition(), info=info)
+                def func(calls=calls):
+                    calls.append(None)
+                    return func() + 1 if len(calls) < 3 else 0
+
+                self.run_cond_recursion_test(func, calls, info)
+
+    def test_cachedmethod_cond_recursion(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+                cache = LRUCache(1)
+                cond = Condition()
+                calls = []
+
+                class Cached:
+                    @cachedmethod(lambda _: cache, condition=lambda _: cond, info=info)
+                    def method(self, calls=calls):
+                        calls.append(None)
+                        return self.method() + 1 if len(calls) < 3 else 0
+
+                self.run_cond_recursion_test(Cached().method, calls, info)
+
+    def run_cond_recursion_test(self, func, calls, info):
+        results = []
+        # a daemon thread, so a recursive call waiting forever for its
+        # own pending call fails the test instead of blocking the exit
+        thread = Thread(target=lambda: results.append(func()), daemon=True)
+        thread.start()
+        thread.join(timeout=self.TIMEOUT)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(results, [2])
+
+        # only the outermost call's result is cached
+        self.assertEqual(func(), 2)
+        self.assertEqual(len(calls), 3)
+        if info:
+            cache_info = func.cache_info()
+            self.assertEqual((cache_info.hits, cache_info.misses), (1, 3))
+
+    def test_cached_cond_recursive_error(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+                cond = WaitCondition()
+
+                @cached(LRUCache(1), key=lambda call: (), condition=cond, info=info)
+                def func(call):
+                    return call()
+
+                self.run_cond_recursive_error_test(func, cond)
+
+    def test_cachedmethod_cond_recursive_error(self):
+        for info in (False, True):
+            with self.subTest(info=info):
+                cache = LRUCache(1)
+                cond = WaitCondition()
+
+                class Cached:
+                    @cachedmethod(
+                        lambda _: cache,
+                        key=lambda self, call: (),
+                        condition=lambda _: cond,
+                        info=info,
+                    )
+                    def method(self, call):
+                        return call()
+
+                self.run_cond_recursive_error_test(Cached().method, cond)
+
+    def run_cond_recursive_error_test(self, func, cond):
+        error = ValueError("recursive call failed")
+        results = {}
+
+        def inner():
+            waiter.start()
+            if not cond.waiting.wait(self.TIMEOUT):
+                raise TimeoutError("second caller did not wait")
+            raise error
+
+        def run(name, call):
+            try:
+                results[name] = func(call)
+            except ValueError as exc:
+                results[name] = exc
+
+        owner = Thread(target=run, args=("owner", lambda: func(inner)), daemon=True)
+        waiter = Thread(target=run, args=("waiter", lambda: 42), daemon=True)
+        owner.start()
+        for thread in (owner, waiter):
+            thread.join(timeout=self.TIMEOUT)
+            self.assertFalse(thread.is_alive())
+        self.assertEqual(results, {"owner": error, "waiter": 42})
+        self.assertEqual(func.cache[()], 42)
+
     def run_cond_wait_test(self, func, cond, started, release, calls):
         results = [None] * 2
 

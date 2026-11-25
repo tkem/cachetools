@@ -358,14 +358,13 @@ often called with the same arguments:
    If `condition` is not :const:`None`, it must specify a `condition
    variable`_, i.e. an object providing :meth:`wait()`,
    :meth:`wait_for()`, :meth:`notify()` and :meth:`notify_all()`
-   methods as defined by :class:`threading.Condition`.  Using a
-   `condition` variable will prevent concurrent execution of the
-   wrapped function with *identical* parameters, or cache keys.
-   Instead, a calling thread will check if an identical function call
-   is already executing, and will then wait for the pending call to
-   finish.  The executing thread will notify any waiting threads as
-   soon as the function completes, which will then return the cached
-   function result.
+   methods as defined by :class:`threading.Condition`.  When one
+   thread is computing a result for a cache key, other threads
+   calling the same wrapper with that key wait, then check the cache
+   again.  If the computing thread calls the wrapper recursively with
+   the same key, the recursive call runs uncached and counts as a
+   miss when `info=True`.  Only the outermost call can store a result
+   for that key.
 
    .. note::
 

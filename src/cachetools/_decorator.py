@@ -65,8 +65,11 @@ class _LockedMixin:
 
 class _ConditionMixin:
     def __init__(self, func):
+        from threading import get_ident
+
         self.__func = func
-        self.__pending = set()
+        self.__get_ident = get_ident
+        self.__pending = {}  # maps keys to the calling thread
 
     def __call__(self, /, *args, **kwargs):
         cache = self.cache
@@ -76,11 +79,20 @@ class _ConditionMixin:
 
         with lock:
             while key in self.__pending:
+                if self.__pending[key] == self.__get_ident():
+                    # A recursive call would wait for its own pending
+                    # call forever, so it calls the function again.
+                    recursive = True
+                    break
                 cond.wait()
-            try:
-                return cache[key]
-            except KeyError:
-                self.__pending.add(key)
+            else:
+                try:
+                    return cache[key]
+                except KeyError:
+                    self.__pending[key] = self.__get_ident()
+                    recursive = False
+        if recursive:
+            return self.__func(*args, **kwargs)
         try:
             val = self.__func(*args, **kwargs)
             with lock:
@@ -91,7 +103,7 @@ class _ConditionMixin:
                 return val
         finally:
             with lock:
-                self.__pending.remove(key)
+                del self.__pending[key]
                 cond.notify_all()
 
     def cache_clear(self):
@@ -170,10 +182,13 @@ class _LockedInfoMixin:
 
 class _ConditionInfoMixin:
     def __init__(self, func, info):
+        from threading import get_ident
+
         self.__func = func
         self.__info = info
         self.__hits = self.__misses = 0
-        self.__pending = set()
+        self.__get_ident = get_ident
+        self.__pending = {}  # maps keys to the calling thread
 
     def __call__(self, /, *args, **kwargs):
         cache = self.cache
@@ -183,14 +198,24 @@ class _ConditionInfoMixin:
 
         with lock:
             while key in self.__pending:
+                if self.__pending[key] == self.__get_ident():
+                    # A recursive call would wait for its own pending
+                    # call forever, so it calls the function again.
+                    self.__misses += 1
+                    recursive = True
+                    break
                 cond.wait()
-            try:
-                result = cache[key]
-                self.__hits += 1
-                return result
-            except KeyError:
-                self.__pending.add(key)
-                self.__misses += 1
+            else:
+                try:
+                    result = cache[key]
+                    self.__hits += 1
+                    return result
+                except KeyError:
+                    self.__pending[key] = self.__get_ident()
+                    self.__misses += 1
+                    recursive = False
+        if recursive:
+            return self.__func(*args, **kwargs)
         try:
             val = self.__func(*args, **kwargs)
             with lock:
@@ -201,7 +226,7 @@ class _ConditionInfoMixin:
                 return val
         finally:
             with lock:
-                self.__pending.remove(key)
+                del self.__pending[key]
                 cond.notify_all()
 
     def cache_clear(self):
