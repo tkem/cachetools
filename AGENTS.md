@@ -2,9 +2,9 @@
 
 Memoizing collections and decorators, including `functools.lru_cache` variants. Pure
 Python ≥ 3.11, no runtime dependencies, `src/` layout, inline type stubs (`*.pyi`,
-`py.typed`). Single maintainer; `master` is the release branch, `dev/vX.Y.Z` branches
-prepare releases and `develop` holds the next release, rebased onto `master`.
-Code reviews follow `.github/copilot-instructions.md`.
+`py.typed`). Single maintainer; `master` is the release branch, `develop` prepares the
+next release, rebased onto `master`, and `dev/vX.Y.x` branches maintain older series
+with fixes picked from `master`. Code reviews follow `.github/copilot-instructions.md`.
 
 ## Commands
 
@@ -25,9 +25,8 @@ coverage is 100 %, except the pre-3.13 `@classmethod` line (`_descriptor.py`) on
 
 ## Code Style
 
-- No annotations in `.py` files; types live in the `.pyi` stubs. Decorator
-  `@overload`s come in the order keyword-only `info: Literal[True]`,
-  `info: Literal[False] = ...` (default), positional `Literal[True]`.
+- No annotations in `.py` files; types live in the `.pyi` stubs. Decorator `@overload`
+  order: keyword-only `info: Literal[True]`, `info: Literal[False] = ...`, positional.
 - Prefer clarity and performance over DRY: one wrapper class per lock/condition/info
   combination in `_decorator.py`, `_cached.py` and `_cachedmethod.py`, and the key
   functions in `keys.py` are written out in full. Apply a change to **all** variants.
@@ -62,8 +61,9 @@ coverage is 100 %, except the pre-3.13 `@classmethod` line (`_descriptor.py`) on
   `clear()` does not); every insert and `popitem()` must keep calling that hook.
 - Decorator wrappers are objects, not functions (`@cached` ones copy as themselves);
   `_WrapperBase` runs `update_wrapper()` *before* setting its attributes (stacking).
-- A `condition` passed with a separate `lock` must be created with that lock
-  (`Condition(lock)`), as `wait()` and `notify_all()` run under `lock`; not checked.
+- A separate `lock` must be its `condition`'s own (`Condition(lock)`, not checked);
+  `func.py` passes one, as `with cond:` runs Python-level methods (#485). Pending keys
+  map to threads, so recursion runs uncached; `threading` is imported lazily there.
 - `@cachedmethod` stores per-instance wrappers in `obj.__dict__`; `super()` lookups and
   lookups after `del Cls.method` use `obj.__dict__["__cachetools_cachedmethods"]`.
   `cache_key` is `partial(key, obj)`, not `types.MethodType`, which on PyPy accepts a

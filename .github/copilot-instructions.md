@@ -16,14 +16,17 @@ review process.
 - Run `git status` and `git log` first: the maintainer rebases and amends, so the base,
   hashes and staged work change between looks. Name the reviewed tree by its base commit
   (hash, subject, release tag if any) plus "this review commit", never by the review
-  commit's own hash. List only interpreters actually run, and say whether Actions ran
-  for the reviewed code. Read a failed job's log and reproduce it with the interpreter
-  version named there; report it even when it cannot be reproduced here, with what was
-  tried.
-- Keep it brief: under 100 lines, at most ten rows per section, one or two sentences
-  per row, numbers only where they decide something, current snapshot only. Drop "no
-  issues" sections and, when a section is over the limit, Info rows that only restate
-  accepted design. Record settled matters under *Maintainer Decisions*.
+  commit's own hash. Cite no other commit hash anywhere in the review: a rebase
+  invalidates it, so name the issue or the release instead. List only interpreters
+  actually run, and say whether Actions ran for the reviewed code. Read a failed job's
+  log and reproduce it with the interpreter version named there; report it even when it
+  cannot be reproduced here, with what was tried.
+- Keep it brief: under 100 lines, at most ten rows per section, one or two sentences per
+  row, numbers only where they decide something, current snapshot only. Drop "no issues"
+  sections and, when a section is over the limit, Info rows that only restate accepted
+  design. Record settled matters under *Maintainer Decisions*. When rewriting a row,
+  keep what the maintainer asked it to say (e.g. a finding's practical reach, or that a
+  fix would be a potentially breaking change).
 - `CHANGELOG.rst` is reviewed, and edited only when the maintainer asks: imperative
   one-liners with ``double backticks`` and no issue numbers, tagged "(breaking change)",
   "(potentially breaking change)" or "(broken since vX.Y.Z)", the latter checked against
@@ -37,12 +40,16 @@ review process.
   random trace against the base release, and measure with `.github/copilot-bench.py`,
   extending it for any new figure. Before calling a moved figure a change, rerun it and
   the base release in the same session: timed-cache hits differ by 20 ns between
-  processes on the same source. Record cache state with `list(cache)`, since `items()`
-  and `values()` count as a use of every item. Modify caches while iterating over them,
-  too. Read comments against the code; a stale example is a finding. Find test gaps by
-  reading the tests against the code and coverage (a fix commit that touches no test is
-  one); run mutation tests only when asked. Check that a new test fails without its fix
-  under a timeout, since a loop bug hangs the suite.
+  processes on the same source. After a speed-up, re-measure the rows it touches (best
+  of three runs) and date them. Record cache state with `list(cache)`, since `items()`
+  and `values()` count as a use of every item. In practice that only changes `LRUCache`
+  (insertion order afterwards); the other classes are touched marginally or not at all,
+  so say which classes a finding really affects before proposing a fix or docs. Modify
+  caches while iterating over them, too. Read comments against the code; a stale example
+  is a finding. Find test gaps by reading the tests against the code and coverage (a fix
+  commit that touches no test is one); run mutation tests only when asked. Check that a
+  new test fails without its fix under a timeout, since a loop bug hangs the suite; a
+  test for a hang runs the call in a daemon thread and joins it with a timeout.
 - Pickle (protocols 2 to 5, also with `pickle._Pickler`, #474; the obsolete protocols 0
   and 1 are unsupported, do not report them), copy and deep-copy caches in a used state,
   on the oldest supported Python too, and compare the clones' later evictions. Repeat
@@ -55,6 +62,11 @@ review process.
 - Issue text for a fix, when asked for: a title, a minimal example with its output, the
   cause in a sentence or two, the releases it reproduces in ("not a regression" if it
   never worked) and the expected behavior. Keep it short, one long line per paragraph.
+- Verify a reported issue in three steps: the mechanism in the code, the reporter's
+  script on the interpreters at hand (say when the reported version is not installed),
+  and the implied fix applied temporarily with the suite and the measurement, then
+  reverted. Report its side effects, too. Docs wording for a measured effect names the
+  mechanism and hedges the size ("slightly faster"); the figures stay in the review.
 - Keep probe scripts, logs and old trees in `.cache/tmp/` inside the workspace, never
   in `/tmp`, and remove it when done. Exception: pyright skips files under `.cache/`
   and reports "0 errors", so check stubs with a temporary file in the repository root
