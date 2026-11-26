@@ -166,6 +166,15 @@ inserted into the cache.
 
       cache = TTLCache(maxsize=10, ttl=timedelta(hours=12), timer=datetime.now)
 
+   Iterating over a :class:`TTLCache`, or over its :meth:`keys`,
+   :meth:`values` and :meth:`items` views, visits keys in insertion
+   order and skips items that have expired by the time they are
+   reached.  Use :meth:`items` or :meth:`values` to retrieve values
+   while iterating, since looking up an item by its key may raise
+   :exc:`KeyError` if it has expired meanwhile.  Inserting or
+   deleting items while iterating has unspecified results that may
+   change in future versions.
+
    To copy the items of a :class:`TTLCache`, use
    ``dict(cache.items())``.  Calling ``dict(cache)`` may raise
    :exc:`KeyError` if an item expires while it is being copied.
@@ -222,8 +231,8 @@ inserted into the cache.
    expired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
 
-   Copying the items of a :class:`TLRUCache` behaves as described for
-   :class:`TTLCache`.
+   Iterating over a :class:`TLRUCache`, or copying its items, behaves
+   as described for :class:`TTLCache`.
 
    .. method:: expire(self, time=None)
 
