@@ -5,7 +5,7 @@ from cachetools import LFUCache
 from . import CacheTestMixin
 
 
-class LFUCacheTest(unittest.TestCase, CacheTestMixin):
+class LFUCacheTest(unittest.TestCase, CacheTestMixin[LFUCache]):
     Cache = LFUCache
 
     def test_lfu(self):
@@ -79,28 +79,6 @@ class LFUCacheTest(unittest.TestCase, CacheTestMixin):
             self.assertIn(key - 2, cache)
             self.assertIn(key - 1, cache)
             self.assertIn(key, cache)
-
-    def test_lfu_getsizeof(self):
-        cache = LFUCache[int, int](maxsize=3, getsizeof=lambda x: x)
-
-        cache[1] = 1
-        cache[2] = 2
-
-        self.assertEqual(len(cache), 2)
-        self.assertEqual(cache[1], 1)
-        self.assertEqual(cache[2], 2)
-
-        cache[3] = 3
-
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache[3], 3)
-        self.assertNotIn(1, cache)
-        self.assertNotIn(2, cache)
-
-        with self.assertRaises(ValueError):
-            cache[4] = 4
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache[3], 3)
 
     def test_lfu_update_existing(self):
         cache = LFUCache[int, int | str](maxsize=2)

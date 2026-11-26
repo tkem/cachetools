@@ -5,7 +5,7 @@ from cachetools import FIFOCache
 from . import CacheTestMixin
 
 
-class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
+class FIFOCacheTest(unittest.TestCase, CacheTestMixin[FIFOCache]):
     Cache = FIFOCache
 
     def test_fifo(self):
@@ -36,28 +36,6 @@ class FIFOCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[4], 4)
         self.assertEqual(cache[5], 5)
         self.assertNotIn(3, cache)
-
-    def test_fifo_getsizeof(self):
-        cache = FIFOCache[int, int](maxsize=3, getsizeof=lambda x: x)
-
-        cache[1] = 1
-        cache[2] = 2
-
-        self.assertEqual(len(cache), 2)
-        self.assertEqual(cache[1], 1)
-        self.assertEqual(cache[2], 2)
-
-        cache[3] = 3
-
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache[3], 3)
-        self.assertNotIn(1, cache)
-        self.assertNotIn(2, cache)
-
-        with self.assertRaises(ValueError):
-            cache[4] = 4
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache[3], 3)
 
     def test_fifo_update_existing(self):
         cache = FIFOCache[int, int | str](maxsize=2)

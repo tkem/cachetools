@@ -5,7 +5,7 @@ from cachetools import LRUCache
 from . import CacheTestMixin
 
 
-class LRUCacheTest(unittest.TestCase, CacheTestMixin):
+class LRUCacheTest(unittest.TestCase, CacheTestMixin[LRUCache]):
     Cache = LRUCache
 
     def test_lru(self):
@@ -36,28 +36,6 @@ class LRUCacheTest(unittest.TestCase, CacheTestMixin):
         self.assertEqual(cache[4], 4)
         self.assertEqual(cache[5], 5)
         self.assertNotIn(2, cache)
-
-    def test_lru_getsizeof(self):
-        cache = LRUCache[int, int](maxsize=3, getsizeof=lambda x: x)
-
-        cache[1] = 1
-        cache[2] = 2
-
-        self.assertEqual(len(cache), 2)
-        self.assertEqual(cache[1], 1)
-        self.assertEqual(cache[2], 2)
-
-        cache[3] = 3
-
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache[3], 3)
-        self.assertNotIn(1, cache)
-        self.assertNotIn(2, cache)
-
-        with self.assertRaises(ValueError):
-            cache[4] = 4
-        self.assertEqual(len(cache), 1)
-        self.assertEqual(cache[3], 3)
 
     def test_lru_update_existing(self):
         cache = LRUCache[int, int | str](maxsize=2)
