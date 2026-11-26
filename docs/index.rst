@@ -392,11 +392,13 @@ often called with the same arguments:
       since acquiring the lock through a :class:`threading.Condition`
       adds Python-level method calls on every cache access.
 
-   The decorator's `cache`, `key`, `lock` and `condition` parameters
-   are also available as :attr:`cache`, :attr:`cache_key`,
-   :attr:`cache_lock` and :attr:`cache_condition` attributes of the
-   memoizing wrapper function.  These can be used for clearing the
-   cache or invalidating individual cache items, for example.
+   The decorator's `cache`, `key` and `condition` parameters are
+   available as :attr:`cache`, :attr:`cache_key` and
+   :attr:`cache_condition` attributes of the memoizing callable.
+   The :attr:`cache_lock` attribute is `lock` if supplied, otherwise
+   `condition`.  If neither is supplied, :attr:`cache_lock` is
+   :const:`None`.  These attributes can be used for clearing the cache
+   or invalidating individual cache items, for example.
 
    .. testcode::
 
@@ -586,10 +588,16 @@ often called with the same arguments:
       Likewise, a condition variable returned by `condition(self)`
       must be associated with a lock returned by `lock(self)`.
 
-   Similarly to the :func:`cached` function decorator, the `cache`,
-   `key`, `lock` and `condition` parameters are also available as
+   Similarly to :func:`cached`, the wrapped instance method provides
    :attr:`cache`, :attr:`cache_key`, :attr:`cache_lock` and
-   :attr:`cache_condition` attributes of the wrapped instance method.
+   :attr:`cache_condition` attributes.  The :attr:`cache` property
+   calls `cache(self)` to retrieve the current cache object, and
+   :attr:`cache_key` calls `key` with `self` already bound.  The
+   :attr:`cache_lock` property calls `lock(self)` if `lock` is
+   supplied, otherwise `condition(self)` if `condition` is supplied,
+   or returns :const:`None`.  The :attr:`cache_condition` property
+   calls `condition(self)` if supplied, otherwise it returns
+   :const:`None`.
    A :meth:`cache_clear()` function will also be provided, as well as
    an optional :meth:`cache_info()` function reporting per-instance
    cache statistics.
