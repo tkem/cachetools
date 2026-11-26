@@ -109,6 +109,14 @@ class DecoratorTestMixin(SimplifiedTestCaseProtocol):
         # Then do a call which will cause a deadlock with a non-reentrant lock.
         self.assertEqual(cached(RecursiveEquals(True)), RecursiveEquals(True))
 
+    def test_decorator_lock(self):
+        cached = self.decorator(maxsize=2)(lambda n: n)
+        # since v8.0.3, lock and condition are separate objects
+        self.assertIsNot(cached.cache_lock, cached.cache_condition)
+        # assert the lock is the condition's own
+        with cached.cache_lock:
+            cached.cache_condition.notify_all()
+
     def test_decorator_method(self):
         """Though it is not encouraged, like functools.lru_cache, the
         cachetools.func decorators may be used on methods, too.
