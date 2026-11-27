@@ -520,6 +520,42 @@ class _TimedCache(Cache):
         with self.__timer:
             return Cache.setdefault(self, *args, **kwargs)
 
+    class _ItemsView(collections.abc.ItemsView):
+        __slots__ = ()
+
+        def __iter__(self):
+            cache = self._mapping
+            for key in cache:
+                try:
+                    value = cache[key]
+                except KeyError:
+                    continue
+                yield key, value
+
+    def items(self):
+        return _TimedCache._ItemsView(self)
+
+    class _ValuesView(collections.abc.ValuesView):
+        __slots__ = ()
+
+        def __iter__(self):
+            cache = self._mapping
+            for key in cache:
+                try:
+                    value = cache[key]
+                except KeyError:
+                    continue
+                yield value
+
+        def __contains__(self, value):
+            for v in self:
+                if v is value or v == value:
+                    return True
+            return False
+
+    def values(self):
+        return _TimedCache._ValuesView(self)
+
     def clear(self):
         # Subclasses must override this to also reset their own
         # time-tracking structures.  We do not call expire() here,
@@ -608,11 +644,9 @@ class TTLCache(_TimedCache):
         # deleting items while iterating does not raise RuntimeError as for
         # dict, since items may also expire meanwhile.
         for key in list(Cache.__iter__(self)):
-            # "freeze" time for iterator access
-            with self.timer as time:
-                link = self.__links.get(key)
-                if link is not None and time < link.expires:
-                    yield key
+            link = self.__links.get(key)
+            if link is not None and self.timer() < link.expires:
+                yield key
 
     def __copy__(self):
         copy = super().__copy__()
@@ -765,11 +799,9 @@ class TLRUCache(_TimedCache):
         # deleting items while iterating does not raise RuntimeError as for
         # dict, since items may also expire meanwhile.
         for key in list(Cache.__iter__(self)):
-            # "freeze" time for iterator access
-            with self.timer as time:
-                item = self.__items.get(key)
-                if item is not None and time < item.expires:
-                    yield key
+            item = self.__items.get(key)
+            if item is not None and self.timer() < item.expires:
+                yield key
 
     def __copy__(self):
         copy = super().__copy__()

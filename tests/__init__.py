@@ -844,16 +844,38 @@ class TimedCacheTestMixin(CacheTestMixin[T]):
                 self.timer.tick()
                 return super().__getitem__(key)
 
-        # time does not advance while an iterator is suspended
+        # An item may expire between an iterator returning its key and
+        # the item being retrieved.  The views skip it then.
         for values in (
-            lambda cache: [cache[key] for key in cache],
             lambda cache: [value for _, value in cache.items()],
             lambda cache: list(cache.values()),
+            lambda cache: [1] if 1 in cache.values() else [],
         ):
             cache = self.typed_cache(TickingCache, maxsize=2, ttl=1)
             cache.update({1: 1, 2: 2})
-            self.assertEqual([1], values(cache))
+            self.assertEqual([], values(cache))
             self.assertEqual(0, len(cache))
+
+    def test_timed_values_contains(self):
+        cache = self.cache(maxsize=2, ttl=1)
+        cache.update({1: 1, 2: 2})
+
+        self.assertIn(2, cache.values())
+        self.assertNotIn(3, cache.values())
+        cache.timer.tick()
+        self.assertNotIn(2, cache.values())
+
+    def test_timed_iter_suspended(self):
+        cache = self.cache(maxsize=2, ttl=1)
+        cache.update({1: 1, 2: 2})
+
+        # a suspended iterator does not keep items from expiring
+        iterator = iter(cache)
+        self.assertEqual(1, next(iterator))
+        cache.timer.tick()
+        self.assertNotIn(1, cache)
+        self.assertEqual(0, len(cache))
+        self.assertEqual([], list(iterator))
 
     def test_timed_iter_expired(self):
         cache = self.cache(maxsize=2, ttl=2)
