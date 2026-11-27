@@ -106,7 +106,7 @@ inserted into the cache.
    tie, the least recently used of these items is discarded.
 
    Inserting or updating a cache item via :meth:`LFUCache.__setitem__`
-   also counts as a use of the item; an update will increment the
+   also counts as a use of the item.  An update will increment the
    item's use count.
 
    .. versionchanged:: 7.3
@@ -166,6 +166,10 @@ inserted into the cache.
 
       cache = TTLCache(maxsize=10, ttl=timedelta(hours=12), timer=datetime.now)
 
+   To copy the items of a :class:`TTLCache`, use
+   ``dict(cache.items())``.  Calling ``dict(cache)`` may raise
+   :exc:`KeyError` if an item expires while it is being copied.
+
    .. method:: expire(self, time=None)
 
       Expired items will be removed from a cache lazily, e.g. when
@@ -217,6 +221,9 @@ inserted into the cache.
    no longer be accessible, and will be removed eventually.  If no
    expired items are there to remove, the least recently used items
    will be discarded first to make space when necessary.
+
+   Copying the items of a :class:`TLRUCache` behaves as described for
+   :class:`TTLCache`.
 
    .. method:: expire(self, time=None)
 
@@ -385,7 +392,7 @@ often called with the same arguments:
       guards the cache.  In practice, when using
       :class:`threading.Lock` and :class:`threading.Condition`, the
       condition variable must be created with the corresponding lock,
-      e.g. ``condition=threading.Condition(lock)``; an unrelated
+      e.g. ``condition=threading.Condition(lock)``.  An unrelated
       :class:`threading.Condition` will raise :exc:`RuntimeError`.
       On current CPython versions, passing the lock separately this
       way is also slightly faster than providing `condition` alone,
@@ -395,8 +402,8 @@ often called with the same arguments:
    The decorator's `cache`, `key`, `lock` and `condition` parameters
    are also available as :attr:`cache`, :attr:`cache_key`,
    :attr:`cache_lock` and :attr:`cache_condition` attributes of the
-   memoizing wrapper function.  These can be used for clearing the
-   cache or invalidating individual cache items, for example.
+   memoizing callable.  These can be used for clearing the cache or
+   invalidating individual cache items, for example.
 
    .. testcode::
 
@@ -450,6 +457,10 @@ often called with the same arguments:
    The original underlying function is accessible through the
    :attr:`__wrapped__` attribute.  This can be used for introspection
    or for bypassing the cache.
+
+   Decorating instance methods with :func:`cached` is not
+   recommended, since the cache is then shared by all instances of
+   the class.  Use :func:`cachedmethod` for instance methods instead.
 
    It is also possible to use a single shared cache object with
    multiple functions.  However, care must be taken that different
@@ -862,6 +873,9 @@ The wrapped function is also instrumented with :meth:`cache_info` and
 performance and clear the cache.  Please see the
 :func:`functools.lru_cache` documentation for details.  Also note that
 all the decorators in this module are thread-safe.
+
+As with :func:`functools.lru_cache`, decorating a method shares the
+cache among all instances of its class.
 
 
 .. decorator:: fifo_cache(user_function)
