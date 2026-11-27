@@ -155,6 +155,15 @@ class Cache(collections.abc.MutableMapping):
             self[key] = value = default
         return value
 
+    # MutableMapping.update() looks up each key of another mapping,
+    # which raises KeyError if an item of a timed cache has expired
+    # meanwhile.  The items() view of a timed cache skips such items.
+
+    def update(self, other=(), /, **kwargs):
+        if isinstance(other, _TimedCache):
+            other = other.items()
+        collections.abc.MutableMapping.update(self, other, **kwargs)
+
     # Although the MutableMapping.clear() default implementation works
     # perfectly well, it calls popitem() in a loop until the cache is
     # empty, resulting in O(n) complexity.  For large caches, this

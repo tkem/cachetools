@@ -844,12 +844,18 @@ class TimedCacheTestMixin(CacheTestMixin[T]):
                 self.timer.tick()
                 return super().__getitem__(key)
 
+        def updated(source):
+            cache = self.cache(maxsize=2)
+            cache.update(source)
+            return list(cache.values())
+
         # An item may expire between an iterator returning its key and
-        # the item being retrieved.  The views skip it then.
+        # the item being retrieved.  The views and update() skip it then.
         for values in (
             lambda cache: [value for _, value in cache.items()],
             lambda cache: list(cache.values()),
             lambda cache: [1] if 1 in cache.values() else [],
+            updated,
         ):
             cache = self.typed_cache(TickingCache, maxsize=2, ttl=1)
             cache.update({1: 1, 2: 2})
