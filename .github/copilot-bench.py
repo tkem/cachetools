@@ -176,7 +176,7 @@ def bench_lfu():
 
 
 def bench_copies():
-    print("%-36s" % "1000 items, µs" + "   copy   list")
+    print("%-36s" % "1000 items, µs" + "   copy   list  items")
     caches = [
         {},
         cachetools.Cache(1000),
@@ -191,7 +191,11 @@ def bench_copies():
         c.update((i, i) for i in range(1000))
         copied = best("copy(c)", 2000, c=c, copy=copy.copy)
         listed = best("list(c)", 2000, c=c)
-        print("%-36s%7.1f%7.1f" % (type(c).__name__, copied / 1000, listed / 1000))
+        items = best("list(c.items())", 2000, c=c)
+        name = type(c).__name__
+        print(
+            "%-36s%7.1f%7.1f%7.1f" % (name, copied / 1000, listed / 1000, items / 1000)
+        )
 
 
 if __name__ == "__main__":

@@ -41,8 +41,8 @@ coverage is 100 %, except the pre-3.13 `@classmethod` line (`_descriptor.py`) on
 - Unsupported use raises `TypeError`, at decoration time where it shows, else before
   anything is cached (`from None`); a store failing with `ValueError` returns the value.
 - Docs (`docs/index.rst`, doctested): wrap prose at column 70, two spaces after a
-  sentence, single backticks for parameters and `:meth:`/`:func:`/`:exc:` roles. Keep
-  `README.rst` examples in sync. Multi-line code comments are full sentences, too.
+  sentence, no semicolons, single backticks for parameters and `:meth:`/`:func:` roles.
+  Keep `README.rst` examples in sync. Multi-line code comments are full sentences, too.
 
 ## Architecture Constraints
 
@@ -58,7 +58,7 @@ coverage is 100 %, except the pre-3.13 `@classmethod` line (`_descriptor.py`) on
   pickle without `next`/`prev` (recursion limit, #474); `__setstate__` relinks them.
   `__copy__` copies `__dict__` shallowly; each class then copies its own state (#473).
 - Timed caches expire lazily (`__len__`, `__repr__` and `currsize` call `expire()`,
-  `clear()` does not); every insert and `popitem()` must keep calling that hook.
+  `clear()` does not); inserts and `popitem()` must too. `__iter__` freezes time.
 - Decorator wrappers are objects, not functions (`@cached` ones copy as themselves);
   `_WrapperBase` runs `update_wrapper()` *before* setting its attributes (stacking).
 - A separate `lock` must be its `condition`'s own (`Condition(lock)`, not checked);
@@ -75,10 +75,10 @@ coverage is 100 %, except the pre-3.13 `@classmethod` line (`_descriptor.py`) on
 ## Testing
 
 - New behavior needs tests in `tests/`, user-visible features docs in `docs/index.rst`.
-  One `TestCase` per cache type on `CacheTestMixin`; TTL tests use a manual `Timer`.
-  Objects pickled by name must be module-level. Copy and pickle caches in a used state.
-- Stub checks need concrete annotated tests without `# type: ignore`, since
-  `test_func.py` calls decorators via `Callable[..., Any]`.
+  One `TestCase` per cache type on `CacheTestMixin[Cls]` (timed: `TimedCacheTestMixin`)
+  with `Cache = Cls`; shared tests build caches via `self.cache()` / `typed_cache()`.
+- Nothing pickled may be local; copy and pickle used caches. Stub checks need concrete
+  annotated tests, no `# type: ignore` (`test_func.py` uses `Callable[..., Any]`).
 - Threading tests use real `Lock`/`Condition` objects (`WaitCondition(lock)` forces a
   contended `wait()`), join with `TIMEOUT` and assert the thread finished.
 - Performance: `.github/copilot-bench.py` (`timeit`, best of 7) on one pinned core
